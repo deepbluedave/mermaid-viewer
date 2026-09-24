@@ -1,0 +1,35 @@
+flowchart TD
+    Browser["Customer Browser"]
+
+    subgraph PublicZone["Zone: Public Edge"]
+        subgraph Dmz["Subzone: DMZ"]
+            Cdn["Content Delivery Network"]
+            Waf["Web Application Firewall"]
+            LoadBalancer["Application Load Balancer"]
+        end
+    end
+
+    subgraph AppZone["Zone: Private Application Network"]
+        subgraph AppSubnet["Subzone: Application Subnet"]
+            Api["Core API"]
+            Worker["Background Worker"]
+        end
+    end
+
+    subgraph DataZone["Zone: Data Services"]
+        subgraph DataSubnet["Subzone: Isolated Data Tier"]
+            Database[("Primary Database")]
+            Cache[("Redis Cache")]
+            Queue[("Message Queue")]
+        end
+    end
+
+    Browser -->|HTTPS| Cdn
+    Cdn --> Waf
+    Waf -->|Filtered traffic| LoadBalancer
+    LoadBalancer -->|API requests| Api
+    Api -->|Read and write| Database
+    Api -->|Fast lookup| Cache
+    Api -->|Queue jobs| Queue
+    Queue --> Worker
+    Worker -->|Store results| Database

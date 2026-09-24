@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Architecture Diagram Studio (Air-Gapped Edition)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      height: 100vh;
+      background: #0b1120;
+      color: #f8fafc;
+      overflow: hidden;
+      padding: 16px;
+      gap: 16px;
+    }
+
+    /* Left Sidebar */
+    #sidebar {
+      width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .panel-header {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel-header span { color: #38bdf8; font-weight: 600; }
+    
+    textarea {
+      flex: 1;
+      padding: 14px;
+      font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 11.5px;
+      line-height: 1.5;
+      background: #111827;
+      color: #f1f5f9;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      resize: none;
+      outline: none;
+      white-space: pre;
+    }
+    textarea:focus { border-color: #38bdf8; }
+
+    /* Right Canvas / Viewport */
+    #viewport {
+      flex: 1;
+      height: 100%;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+      user-select: none;
+      background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    #viewport.dragging { cursor: grabbing; }
+
+    #diagram-container {
+      display: inline-block;
+      transform-origin: 0 0;
+      padding: 60px;
+    }
+
+    /* Floating Toolbar */
+    .toolbar {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 4px 6px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+      z-index: 10;
+    }
+    .toolbar button {
+      background: #1e293b;
+      border: none;
+      color: #f8fafc;
+      min-width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 8px;
+    }
+    .toolbar button:hover { background: #334155; }
+    .toolbar-group {
+      display: flex;
+      gap: 2px;
+      padding: 2px;
+      background: #1e293b;
+      border-radius: 7px;
+    }
+    .toolbar-group button {
+      min-width: 0;
+      font-size: 11px;
+      padding: 0 8px;
+      white-space: nowrap;
+    }
+    .toolbar-group button[aria-pressed="true"] {
+      background: #38bdf8;
+      color: #082f49;
+      font-weight: 700;
+    }
+    .toolbar-group button[aria-pressed="true"]:hover { background: #7dd3fc; }
+    .zoom-level { font-size: 12px; min-width: 44px; text-align: center; color: #94a3b8; }
+    
+    .hint {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      font-size: 11px;
+      color: #64748b;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Error Toast */
+    #error-banner {
+      display: none;
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      background: rgba(127, 29, 29, 0.95);
+      color: #fecaca;
+      border: 1px solid #ef4444;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 11.5px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      z-index: 20;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="sidebar">
+    <div class="panel-header">
+      Mermaid Definition
+      <span>Air-Gapped &bull; Local Engine</span>
+    </div>
+    <textarea id="editor" spellcheck="false" placeholder="Paste Mermaid diagram here..."></textarea>
+  </div>
+
+  <div id="viewport">
+    <div id="error-banner"></div>
+    <div id="diagram-container"></div>
+    <div class="hint">Scroll to Zoom &bull; Drag to Pan</div>
+    <div class="toolbar">
+      <div class="toolbar-group" role="group" aria-label="Flow direction">
+        <button type="button" data-direction="TD" aria-pressed="true">TD</button>
+        <button type="button" data-direction="LR" aria-pressed="false">LR</button>
+      </div>
+      <div class="toolbar-group" role="group" aria-label="Layout style">
+        <button type="button" data-layout-mode="hierarchical" aria-pressed="false">Hierarchical</button>
+        <button type="button" data-layout-mode="adaptive" aria-pressed="true">Adaptive</button>
+      </div>
+      <button id="btn-zoom-out">−</button>
+      <span class="zoom-level" id="zoom-text">100%</span>
+      <button id="btn-zoom-in">+</button>
+      <button id="btn-reset">Reset</button>
+      <button id="btn-fit">Fit</button>
+    </div>
+  </div>
+
+  <!-- Local Air-Gapped Dependencies (No CDN) -->
+  <script src="./vendor/panzoom.min.js"></script>
+  <script src="./vendor/mermaid.min.js"></script>
+
+  <script>
+    // 1. Use Mermaid's theme system for a light monochrome palette.
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      themeVariables: {
+        background: '#ffffff',
+        primaryColor: '#ffffff',
+        primaryTextColor: '#1f2933',
+        primaryBorderColor: '#66717c',
+        secondaryColor: '#ffffff',
+        secondaryTextColor: '#1f2933',
+        secondaryBorderColor: '#66717c',
+        tertiaryColor: '#edf0f2',
+        tertiaryTextColor: '#1f2933',
+        tertiaryBorderColor: '#b8c0c8',
+        mainBkg: '#ffffff',
+        textColor: '#1f2933',
+        lineColor: '#66717c',
+        nodeBorder: '#66717c',
+        nodeTextColor: '#1f2933',
+        clusterBkg: '#edf0f2',
+        clusterBorder: '#b8c0c8',
+        defaultLinkColor: '#66717c',
+        edgeLabelBackground: '#ffffff',
+        noteBkgColor: '#edf0f2',
+        noteTextColor: '#1f2933',
+        noteBorderColor: '#b8c0c8',
+        actorBkg: '#ffffff',
+        actorBorder: '#66717c',
+        actorTextColor: '#1f2933',
+        actorLineColor: '#66717c',
+        signalColor: '#66717c',
+        signalTextColor: '#1f2933',
+        labelBoxBkgColor: '#ffffff',
+        labelBoxBorderColor: '#b8c0c8',
+        labelTextColor: '#1f2933'
+      },
+      themeCSS: '.cluster rect { stroke-dasharray: 2 3; stroke-linecap: round; } .edgeLabel .labelBkg { box-sizing: border-box; background-color: #ffffff !important; border: 1px solid #cbd5e1; border-radius: 3px; padding: 1px 3px; }',
+      securityLevel: 'loose',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      flowchart: {
+        useMaxWidth: false,
+        htmlLabels: true,
+        curve: 'basis'
+      }
+    });
+
+    const editor = document.getElementById('editor');
+    const container = document.getElementById('diagram-container');
+    const viewport = document.getElementById('viewport');
+    const errorBanner = document.getElementById('error-banner');
+    const zoomText = document.getElementById('zoom-text');
+
+    // 2. Initialize Panzoom
+    let panzoomInstance = null;
+    if (window.Panzoom) {
+      panzoomInstance = Panzoom(container, {
+        maxScale: 6,
+        minScale: 0.02,
+        origin: '0 0',
+        canvas: true
+      });
+
+      // Mouse wheel zoom
+      viewport.addEventListener('wheel', panzoomInstance.zoomWithWheel, { passive: false });
+
+      // Update cursor styling on drag
+      container.addEventListener('panzoomstart', () => viewport.classList.add('dragging'));
+      container.addEventListener('panzoomend', () => viewport.classList.remove('dragging'));
+
+      // Keep zoom percentage display updated
+      container.addEventListener('panzoomchange', (e) => {
+        zoomText.textContent = `${Math.round(e.detail.scale * 100)}%`;
+      });
+    }
+
+    // 3. Diagram Rendering with Debounce
+    let renderIndex = 0;
+    let debounceTimer = null;
+    let selectedDirection = 'TD';
+    let selectedLayoutMode = 'adaptive';
+
+    function syncFlowControlsFromSource(source) {
+      const directionMatch = source.match(/^[ \t]*(?:flowchart|graph)[ \t]+(TB|TD|BT|RL|LR)\b/m);
+      const layoutMatch = source.match(/^[ \t]*layout[ \t]*:[ \t]*['"]?([^\s'"#]+)/m);
+      selectedDirection = directionMatch && ['LR', 'RL'].includes(directionMatch[1]) ? 'LR' : 'TD';
+      selectedLayoutMode = layoutMatch && /dagre|mrtree/.test(layoutMatch[1]) ? 'hierarchical' : 'adaptive';
+      setPressedButtons('[data-direction]', 'direction', selectedDirection);
+      setPressedButtons('[data-layout-mode]', 'layoutMode', selectedLayoutMode);
+    }
+
+    function setPressedButtons(selector, dataKey, selectedValue) {
+      document.querySelectorAll(selector).forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset[dataKey] === selectedValue));
+      });
+    }
+
+    function applyFlowControls(source) {
+      if (!/^[ \t]*(?:flowchart|graph)\b/m.test(source)) return source;
+
+      let code = source.replace(
+        /^([ \t]*(?:flowchart|graph))(?:[ \t]+(?:TB|TD|BT|RL|LR))?\b/m,
+        `$1 ${selectedDirection}`
+      );
+      const layout = selectedLayoutMode === 'hierarchical' ? 'elk.mrtree' : 'elk';
+      const frontmatterPattern = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/;
+      const frontmatter = frontmatterPattern.exec(code);
+
+      if (frontmatter) {
+        let yaml = frontmatter[1];
+        const layoutLinePattern = /^([ \t]*layout[ \t]*:[ \t]*).*$/m;
+
+        if (layoutLinePattern.test(yaml)) {
+          yaml = yaml.replace(layoutLinePattern, `$1${layout}`);
+        } else if (/^[ \t]*config[ \t]*:[ \t]*$/m.test(yaml)) {
+          yaml = yaml.replace(/^([ \t]*config[ \t]*:[ \t]*)$/m, `$1\n  layout: ${layout}`);
+        } else {
+          yaml += `${yaml.trim() ? '\n' : ''}config:\n  layout: ${layout}`;
+        }
+
+        code = `---\n${yaml}\n---\n${code.slice(frontmatter[0].length)}`;
+      } else {
+        code = `---\nconfig:\n  layout: ${layout}\n---\n${code}`;
+      }
+
+      return code;
+    }
+
+    syncFlowControlsFromSource(editor.value);
+
+    function preventClusterLabelClipping(svg) {
+      svg.querySelectorAll('.cluster-label foreignObject').forEach((foreignObject) => {
+        const label = foreignObject.firstElementChild;
+        if (!label) return;
+
+        const currentWidth = Number(foreignObject.getAttribute('width')) || 0;
+        const contentWidth = Math.ceil(label.scrollWidth);
+        if (contentWidth <= currentWidth) return;
+
+        const extraWidth = contentWidth - currentWidth;
+        const currentX = Number(foreignObject.getAttribute('x')) || 0;
+        foreignObject.setAttribute('x', String(currentX - extraWidth / 2));
+        foreignObject.setAttribute('width', String(contentWidth));
+      });
+    }
+
+    async function renderDiagram() {
+      const source = applyFlowControls(editor.value.trim());
+      // Keep explicit source palettes from overriding the viewer's monochrome theme.
+      const code = source.replace(/^[ \t]*classDef\b.*$/gm, '');
+      if (!code) {
+        container.innerHTML = '';
+        errorBanner.style.display = 'none';
+        return;
+      }
+
+      try {
+        const renderId = 'mermaid-render-' + (++renderIndex);
+        const { svg } = await mermaid.render(renderId, code);
+        
+        container.innerHTML = svg;
+        const renderedSvg = container.querySelector('svg');
+        preventClusterLabelClipping(renderedSvg);
+        errorBanner.style.display = 'none';
+
+        // Let the new SVG and Panzoom transform settle before measuring it.
+        requestAnimationFrame(() => requestAnimationFrame(fitToView));
+      } catch (err) {
+        console.error('Mermaid render error:', err);
+        errorBanner.textContent = err.message || 'Syntax Error in Mermaid definition';
+        errorBanner.style.display = 'block';
+      }
+    }
+
+    // Fit to view calculation
+    function fitToView() {
+      if (!panzoomInstance) return;
+      const svg = container.querySelector('svg');
+      if (!svg) return;
+
+      const svgRect = svg.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const viewportRect = viewport.getBoundingClientRect();
+      const currentScale = panzoomInstance.getScale() || 1;
+      const currentPan = panzoomInstance.getPan();
+      const rawW = svgRect.width / currentScale;
+      const rawH = svgRect.height / currentScale;
+      const svgOffsetX = (svgRect.left - containerRect.left) / currentScale;
+      const svgOffsetY = (svgRect.top - containerRect.top) / currentScale;
+      const containerBaseX = containerRect.left - currentPan.x * currentScale;
+      const containerBaseY = containerRect.top - currentPan.y * currentScale;
+
+      const pad = 48;
+      const vw = Math.max(1, viewport.clientWidth - pad * 2);
+      const vh = Math.max(1, viewport.clientHeight - pad * 2);
+      const scale = Math.max(0.02, Math.min(vw / rawW, vh / rawH, 1.25));
+      panzoomInstance.zoom(scale, { animate: false });
+
+      // Panzoom applies scale before translate, so pan values are in the
+      // container's unscaled coordinate space. Center the SVG itself (rather
+      // than the padded diagram container) in the viewport.
+      const targetLeft = viewportRect.left + viewport.clientLeft + (viewport.clientWidth - rawW * scale) / 2;
+      const targetTop = viewportRect.top + viewport.clientTop + (viewport.clientHeight - rawH * scale) / 2;
+      const finalX = (targetLeft - containerBaseX) / scale - svgOffsetX;
+      const finalY = (targetTop - containerBaseY) / scale - svgOffsetY;
+      panzoomInstance.pan(finalX, finalY, { animate: false });
+    }
+
+    // Load the default diagram from its separate source file.
+    let editorWasEdited = false;
+    const defaultDiagramPath = './diagrams/zones-and-subzones.mmd';
+    async function loadInitialDiagram() {
+      try {
+        const response = await fetch(defaultDiagramPath);
+        if (!response.ok) throw new Error(`Diagram file request failed (${response.status})`);
+        const source = await response.text();
+        if (!editorWasEdited && !editor.value.trim()) editor.value = source;
+      } catch (err) {
+        if (!editor.value.trim()) {
+          errorBanner.textContent = `Could not load ${defaultDiagramPath}. Open this viewer through a local web server, or paste Mermaid into the editor.`;
+          errorBanner.style.display = 'block';
+          return;
+        }
+      }
+
+      syncFlowControlsFromSource(editor.value);
+      renderDiagram();
+    }
+
+    // Live update when typing in editor (350ms debounce)
+    editor.addEventListener('input', () => {
+      editorWasEdited = true;
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(renderDiagram, 350);
+    });
+
+    // Toolbar Buttons
+    document.getElementById('btn-zoom-in').addEventListener('click', () => panzoomInstance && panzoomInstance.zoomIn());
+    document.getElementById('btn-zoom-out').addEventListener('click', () => panzoomInstance && panzoomInstance.zoomOut());
+    document.getElementById('btn-reset').addEventListener('click', () => panzoomInstance && panzoomInstance.reset());
+    document.getElementById('btn-fit').addEventListener('click', fitToView);
+
+    function renderAfterControlChange() {
+      clearTimeout(debounceTimer);
+      renderDiagram();
+    }
+
+    document.querySelectorAll('[data-direction]').forEach((button) => {
+      button.addEventListener('click', () => {
+        selectedDirection = button.dataset.direction;
+        setPressedButtons('[data-direction]', 'direction', selectedDirection);
+        renderAfterControlChange();
+      });
+    });
+
+    document.querySelectorAll('[data-layout-mode]').forEach((button) => {
+      button.addEventListener('click', () => {
+        selectedLayoutMode = button.dataset.layoutMode;
+        setPressedButtons('[data-layout-mode]', 'layoutMode', selectedLayoutMode);
+        renderAfterControlChange();
+      });
+    });
+
+    window.addEventListener('resize', fitToView);
+
+    // Initial source load and render
+    loadInitialDiagram();
+  </script>
+</body>
+</html>

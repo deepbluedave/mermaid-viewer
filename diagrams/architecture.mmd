@@ -1,0 +1,75 @@
+flowchart LR
+%% ZONE 1: INGRESS & ACTORS
+%% ==========================================
+    subgraph ZoneActors["🌐 Trust Zone: Multi-Channel Ingress"]
+        RetailApp["📱 Retail Mobile Banking<br/>TLS 1.3 / QUIC / Cert Pinning"]
+        B2BAPI["🏢 Institutional FIX REST<br/>mTLS / OAuth 2.1"]
+        ATM["🏧 ATM Switch Network<br/>ISO 8583 / AS2 Encrypted"]
+        TraderDesk["⚡ Co-located HFT Desk<br/>Dark Fiber FIX 5.0 SP2"]
+    end
+
+%% ==========================================
+%% ZONE 2: PERIMETER & FAST PATH
+%% ==========================================
+    subgraph ZoneEdge["🛡️ Trust Zone: Edge Perimeter & Fast Path"]
+        Anycast["Global Anycast Shield<br/>Volumetric L3/L4 Scrubber"]
+        WAF["Envoy Zero-Trust WAF<br/>SPIFFE Identity / WASM"]
+        L1Switch["Arista 7130 L1 Switch<br/>4ns Matrix Replication"]
+        FPGA["FPGA Tick-to-Trade<br/>Kernel Bypass DPDK"]
+    end
+
+%% ==========================================
+%% ZONE 3: COMPUTATION & CORE EXECUTION
+%% ==========================================
+    subgraph ZoneCore["⚙️ Trust Zone: High-Velocity Execution"]
+        RingBuffer[("Disruptor Ring-Buffer<br/>Lockless Memory IPC")]
+        MatchingEngine["C++23 Matching Engine<br/>Core-Pinned AVX-512"]
+        TxCoordinator["Temporal Saga Coordinator<br/>Distributed Clearing"]
+        SettlementService["Settlement Processor<br/>ISO 20022 Engine"]
+        GNNFraud["Graph AI Fraud Engine<br/>Topological Link Scoring"]
+        FeatureStore[("Redis Cluster<br/>Low Latency Features")]
+        KillSwitch{"⚡ Autonomous Risk<br/>Circuit Breaker"}
+    end
+
+%% ==========================================
+%% ZONE 4: CRYPTOGRAPHY & IMMUTABLE DATA
+%% ==========================================
+    subgraph ZoneStorage["🏛️ Trust Zone: Confidential Persistence"]
+        EventStream[("Apache Kafka Log<br/>NVMe Tiered Storage")]
+        ActiveDB[("CockroachDB Multi-Region<br/>Serializable ACID")]
+        Ledger[("Immutable Ledger<br/>Post-Quantum Hash Trees")]
+        HSM["Hardware Security Vault<br/>FIPS 140-3 L4 HSM"]
+    end
+
+%% ==========================================
+%% CONNECTIONS & FLOW
+%% ==========================================
+    RetailApp -->|HTTPS / TLS| Anycast
+    B2BAPI -->|mTLS Handshake| Anycast
+    ATM -->|Dedicated VPN| WAF
+    Anycast ==>|Clean Flow| WAF
+    WAF ==>|gRPC Order| TxCoordinator
+
+    TraderDesk ==>|Dark Fiber Ticks| L1Switch
+    L1Switch ==>|Tick Stream| FPGA
+    FPGA ==>|DMA Kernel Bypass| RingBuffer
+    RingBuffer ==> MatchingEngine
+
+    MatchingEngine -->|Pre-Trade Query| FeatureStore
+    MatchingEngine ==>|Executed Fills| SettlementService
+    SettlementService ==>|Register Tx| TxCoordinator
+
+    WAF -.->|Async Telemetry| GNNFraud
+    FeatureStore <-->|Vector Retrieval| GNNFraud
+    GNNFraud -->|Anomaly Risk Score| KillSwitch
+    KillSwitch -.->|Halt Trading| MatchingEngine
+    KillSwitch -.->|Revoke Client| WAF
+
+    TxCoordinator ==>|Dual Write Hash| Ledger
+    SettlementService ==>|ACID Finality| ActiveDB
+    SettlementService -->|Publish Events| EventStream
+    Ledger <-->|HMAC Attestation| HSM
+
+    EventStream -.->|CDC Streaming| FeatureStore
+    SettlementService ==>|Push Fill Notice| RetailApp
+    MatchingEngine ==>|Drop-Copy Feed| TraderDesk
