@@ -1,0 +1,11 @@
+{
+  "vendor/mermaid.min.js": "83601283cb0aca97b49ffefbab46263e593eadbb6437b4b98aaea63138181530",
+  "vendor/libavoid/dist/index.js": "b37ef71a879c786edd03895891a55df2288427ce21f3a00e79e92e9ade205c16",
+  "vendor/libavoid/dist/index-node.mjs": "79c7751cf72b2e53a081e7e432fda4adb547922a80708a0d76e38dd70f5b22ab",
+  "vendor/libavoid/dist/libavoid.wasm": "65deb7172894049eb554cf6e02c520274ac117a1992d3d16a3f346c09ceb41e5",
+  "vendor/source/elk-v0.9.1.tar.gz": "8f7ce8eebf527f085904a2a4ae402fae26335cd36c6a7dbc044f62dd8b33bf5a",
+  "vendor/source/elkjs-0.9.3.tar.gz": "b79f22b70f92f74f3393663763ac6e4a3c6ceaa2d52a252aa099675e85b3d1a4",
+  "vendor/libavoid/source/libavoid-js-5062a42.tar.gz": "d96f107ab99b5dfd5ab25021f1883a763dc533d1c5dcc64ebc7e70c5a1264c66",
+  "vendor/libavoid/source/adaptagrams-v1.0.5.tar.gz": "68a854899f8c818207e6a39ba655730856ad0249918098e2fd7ccda5ac91ad2d",
+  "vendor/libavoid/source/libavoid-js-0.5.0-beta.5.tgz": "9582e89a42d8d3e1f4e73f2f13e781c058dca7d4ba8a073250ef8005f5c4586f"
+}

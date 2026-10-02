@@ -1,462 +1,71 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Architecture Diagram Studio (Air-Gapped Edition)</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      display: flex;
-      height: 100vh;
-      background: #0b1120;
-      color: #f8fafc;
-      overflow: hidden;
-      padding: 16px;
-      gap: 16px;
-    }
-
-    /* Left Sidebar */
-    #sidebar {
-      width: 480px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-    .panel-header {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #94a3b8;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .panel-header span { color: #38bdf8; font-weight: 600; }
-    
-    textarea {
-      flex: 1;
-      padding: 14px;
-      font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      font-size: 11.5px;
-      line-height: 1.5;
-      background: #111827;
-      color: #f1f5f9;
-      border: 1px solid #1f2937;
-      border-radius: 8px;
-      resize: none;
-      outline: none;
-      white-space: pre;
-    }
-    textarea:focus { border-color: #38bdf8; }
-
-    /* Right Canvas / Viewport */
-    #viewport {
-      flex: 1;
-      height: 100%;
-      background: #f8fafc;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      position: relative;
-      overflow: hidden;
-      cursor: grab;
-      user-select: none;
-      background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-      background-size: 24px 24px;
-    }
-    #viewport.dragging { cursor: grabbing; }
-
-    #diagram-container {
-      display: inline-block;
-      transform-origin: 0 0;
-      padding: 60px;
-    }
-
-    /* Floating Toolbar */
-    .toolbar {
-      position: absolute;
-      bottom: 20px;
-      right: 20px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 4px 6px;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
-      z-index: 10;
-    }
-    .toolbar button {
-      background: #1e293b;
-      border: none;
-      color: #f8fafc;
-      min-width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 8px;
-    }
-    .toolbar button:hover { background: #334155; }
-    .toolbar-group {
-      display: flex;
-      gap: 2px;
-      padding: 2px;
-      background: #1e293b;
-      border-radius: 7px;
-    }
-    .toolbar-group button {
-      min-width: 0;
-      font-size: 11px;
-      padding: 0 8px;
-      white-space: nowrap;
-    }
-    .toolbar-group button[aria-pressed="true"] {
-      background: #38bdf8;
-      color: #082f49;
-      font-weight: 700;
-    }
-    .toolbar-group button[aria-pressed="true"]:hover { background: #7dd3fc; }
-    .zoom-level { font-size: 12px; min-width: 44px; text-align: center; color: #94a3b8; }
-    
-    .hint {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      font-size: 11px;
-      color: #64748b;
-      pointer-events: none;
-      z-index: 10;
-    }
-
-    /* Error Toast */
-    #error-banner {
-      display: none;
-      position: absolute;
-      top: 16px;
-      left: 16px;
-      right: 16px;
-      background: rgba(127, 29, 29, 0.95);
-      color: #fecaca;
-      border: 1px solid #ef4444;
-      border-radius: 6px;
-      padding: 10px 14px;
-      font-size: 11.5px;
-      font-family: monospace;
-      white-space: pre-wrap;
-      z-index: 20;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'">
+  <title>Mermaid Diagram Studio</title>
+  <link rel="stylesheet" href="studio.css?v=appearance-final">
 </head>
 <body>
-
-  <div id="sidebar">
-    <div class="panel-header">
-      Mermaid Definition
-      <span>Air-Gapped &bull; Local Engine</span>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">◇</span><div><strong>Diagram Studio</strong><span>Mermaid to your own arrangement</span></div></div>
+    <div class="file-actions">
+      <button disabled id="btn-new">New</button>
+      <button disabled id="btn-open">Open…</button>
+      <button disabled id="btn-save">Save project</button>
+      <select disabled id="export-format" aria-label="Export format"><option value="svg">SVG image</option><option value="png">PNG image</option><option value="mermaid">Mermaid source</option></select>
+      <button disabled id="btn-export">Export</button>
+      <button disabled id="btn-hierarchy" aria-expanded="true">Hierarchy</button>
+      <button disabled id="btn-source" aria-expanded="false">Source</button>
     </div>
-    <textarea id="editor" spellcheck="false" placeholder="Paste Mermaid diagram here..."></textarea>
-  </div>
-
-  <div id="viewport">
-    <div id="error-banner"></div>
-    <div id="diagram-container"></div>
-    <div class="hint">Scroll to Zoom &bull; Drag to Pan</div>
-    <div class="toolbar">
-      <div class="toolbar-group" role="group" aria-label="Flow direction">
-        <button type="button" data-direction="TD" aria-pressed="true">TD</button>
-        <button type="button" data-direction="LR" aria-pressed="false">LR</button>
-      </div>
-      <div class="toolbar-group" role="group" aria-label="Layout style">
-        <button type="button" data-layout-mode="hierarchical" aria-pressed="false">Hierarchical</button>
-        <button type="button" data-layout-mode="adaptive" aria-pressed="true">Adaptive</button>
-      </div>
-      <button id="btn-zoom-out">−</button>
-      <span class="zoom-level" id="zoom-text">100%</span>
-      <button id="btn-zoom-in">+</button>
-      <button id="btn-reset">Reset</button>
-      <button id="btn-fit">Fit</button>
+    <span class="local-badge">LOCAL · OFFLINE</span>
+  </header>
+  <nav class="toolbar" aria-label="Diagram tools">
+    <div class="tool-group" role="group" aria-label="Editing tools">
+      <button disabled data-tool="select" aria-pressed="true" title="Select and move (V)">↖ Select</button>
+      <button disabled data-tool="pan" aria-pressed="false" title="Pan (H or hold Space)">✥ Pan</button>
+      <button disabled data-tool="node" aria-pressed="false" title="Add node (N)">□ Node</button>
+      <button disabled data-tool="connect" aria-pressed="false" title="Connect (C)">↗ Connect</button>
+      <button disabled data-tool="zone" aria-pressed="false" title="Add zone (Z)">▧ Zone</button>
     </div>
-  </div>
-
-  <!-- Local Air-Gapped Dependencies (No CDN) -->
-  <script src="./vendor/panzoom.min.js"></script>
+    <div class="tool-group"><button id="btn-undo" title="Undo (Ctrl/Cmd+Z)" disabled>Undo</button><button id="btn-redo" title="Redo (Ctrl/Cmd+Shift+Z)" disabled>Redo</button><button id="btn-delete" disabled>Delete</button></div>
+    <div class="tool-group">
+      <select disabled id="alignment" aria-label="Alignment and distribution"><option value="">Arrange…</option><option value="left">Align left</option><option value="center-x">Align centres horizontally</option><option value="right">Align right</option><option value="top">Align top</option><option value="center-y">Align centres vertically</option><option value="bottom">Align bottom</option><option value="distribute-x">Distribute horizontally</option><option value="distribute-y">Distribute vertically</option></select>
+    </div>
+    <div class="tool-group layout-tools"><label for="direction">Flow</label><select disabled id="direction" aria-label="Flow direction"><option>TD</option><option>LR</option><option>BT</option><option>RL</option></select><select disabled id="layout-mode" aria-label="Layout style"><option value="adaptive">Adaptive</option><option value="hierarchical">Hierarchical</option></select><button disabled id="btn-layout">Auto layout</button></div>
+    <div class="tool-group font-tools"><label for="font-size">Text</label><input disabled id="font-size" type="number" min="10" max="48" step="1" value="13" aria-label="Diagram font size"><span>px</span></div>
+  </nav>
+  <main>
+    <aside id="source-panel" class="source-panel">
+      <div id="hierarchy-content">
+        <div class="panel-heading"><h2>Hierarchy</h2><span id="hierarchy-count"></span></div>
+        <p class="panel-description">Zones contain nodes and other zones. Drag objects in or out on the canvas.</p>
+        <div id="hierarchy-tree" role="group" aria-label="Diagram hierarchy"></div>
+        <h3>Connections</h3><div id="hierarchy-flows" aria-label="Diagram connections"></div>
+      </div>
+      <div id="source-content" hidden>
+      <div class="panel-heading"><h2>Mermaid source</h2><span id="source-state">In sync</span></div>
+      <p class="panel-description">The starting point for your diagram. Visual edits generate fresh source.</p>
+      <label class="visually-hidden" for="editor">Mermaid definition</label>
+      <textarea disabled id="editor" spellcheck="false" placeholder="Paste a flowchart or graph here…"></textarea>
+      <div class="source-actions"><button disabled id="btn-apply" class="primary">Apply source</button><button id="btn-discard" disabled>Discard draft</button></div>
+      <div class="examples"><label for="example">Examples</label><select disabled id="example"><option value="">Choose an example…</option><option value="zones-and-subzones">Zones and subzones</option><option value="architecture">Architecture</option></select></div>
+      <p class="small-note">Project files retain the layout. Mermaid exports retain the structure.</p>
+      </div>
+    </aside>
+    <section id="viewport" aria-label="Diagram canvas" tabindex="0">
+      <svg id="canvas" xmlns="http://www.w3.org/2000/svg" role="graphics-document" aria-label="Editable diagram"><g id="world"></g></svg>
+      <div id="canvas-help">Drag nodes or zone headers · Shift-drag background to select · Scroll to zoom</div>
+      <div id="loading" role="status">Starting local engines…</div>
+      <div class="zoom-toolbar"><button disabled id="btn-zoom-out" aria-label="Zoom out">−</button><span id="zoom-text">100%</span><button disabled id="btn-zoom-in" aria-label="Zoom in">+</button><button disabled id="btn-fit">Fit</button><label class="grid-control"><input disabled id="snap-grid" type="checkbox"> Snap grid</label><label class="grid-control"><input disabled id="alignment-guides" type="checkbox" checked> Guides</label></div>
+    </section>
+    <aside class="properties-panel" aria-label="Object properties"><div class="panel-heading"><h2>Properties</h2><span id="selection-count">No selection</span></div><div id="properties"><p class="empty-properties">Select a node, edge, or zone to edit its properties.</p></div><div class="keyboard-help"><strong>At your fingertips</strong><p>V Select · H Pan · N Node · C Connect · Z Zone</p><p>Arrow keys nudge · Shift for larger steps<br>Escape cancels · Delete removes</p></div></aside>
+  </main>
+  <footer><span id="status" role="status">Loading…</span><span id="counts"></span></footer>
+  <div id="error-banner" role="alert" hidden><span id="error-message"></span><button disabled id="dismiss-error" aria-label="Dismiss error">×</button></div>
+  <input disabled id="file-input" type="file" accept=".json,.mmd,.mermaid,.txt" hidden>
   <script src="./vendor/mermaid.min.js"></script>
-
-  <script>
-    // 1. Use Mermaid's theme system for a light monochrome palette.
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: 'base',
-      themeVariables: {
-        background: '#ffffff',
-        primaryColor: '#ffffff',
-        primaryTextColor: '#1f2933',
-        primaryBorderColor: '#66717c',
-        secondaryColor: '#ffffff',
-        secondaryTextColor: '#1f2933',
-        secondaryBorderColor: '#66717c',
-        tertiaryColor: '#edf0f2',
-        tertiaryTextColor: '#1f2933',
-        tertiaryBorderColor: '#b8c0c8',
-        mainBkg: '#ffffff',
-        textColor: '#1f2933',
-        lineColor: '#66717c',
-        nodeBorder: '#66717c',
-        nodeTextColor: '#1f2933',
-        clusterBkg: '#edf0f2',
-        clusterBorder: '#b8c0c8',
-        defaultLinkColor: '#66717c',
-        edgeLabelBackground: '#ffffff',
-        noteBkgColor: '#edf0f2',
-        noteTextColor: '#1f2933',
-        noteBorderColor: '#b8c0c8',
-        actorBkg: '#ffffff',
-        actorBorder: '#66717c',
-        actorTextColor: '#1f2933',
-        actorLineColor: '#66717c',
-        signalColor: '#66717c',
-        signalTextColor: '#1f2933',
-        labelBoxBkgColor: '#ffffff',
-        labelBoxBorderColor: '#b8c0c8',
-        labelTextColor: '#1f2933'
-      },
-      themeCSS: '.cluster rect { stroke-dasharray: 2 3; stroke-linecap: round; } .edgeLabel .labelBkg { box-sizing: border-box; background-color: #ffffff !important; border: 1px solid #cbd5e1; border-radius: 3px; padding: 1px 3px; }',
-      securityLevel: 'loose',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      flowchart: {
-        useMaxWidth: false,
-        htmlLabels: true,
-        curve: 'basis'
-      }
-    });
-
-    const editor = document.getElementById('editor');
-    const container = document.getElementById('diagram-container');
-    const viewport = document.getElementById('viewport');
-    const errorBanner = document.getElementById('error-banner');
-    const zoomText = document.getElementById('zoom-text');
-
-    // 2. Initialize Panzoom
-    let panzoomInstance = null;
-    if (window.Panzoom) {
-      panzoomInstance = Panzoom(container, {
-        maxScale: 6,
-        minScale: 0.02,
-        origin: '0 0',
-        canvas: true
-      });
-
-      // Mouse wheel zoom
-      viewport.addEventListener('wheel', panzoomInstance.zoomWithWheel, { passive: false });
-
-      // Update cursor styling on drag
-      container.addEventListener('panzoomstart', () => viewport.classList.add('dragging'));
-      container.addEventListener('panzoomend', () => viewport.classList.remove('dragging'));
-
-      // Keep zoom percentage display updated
-      container.addEventListener('panzoomchange', (e) => {
-        zoomText.textContent = `${Math.round(e.detail.scale * 100)}%`;
-      });
-    }
-
-    // 3. Diagram Rendering with Debounce
-    let renderIndex = 0;
-    let debounceTimer = null;
-    let selectedDirection = 'TD';
-    let selectedLayoutMode = 'adaptive';
-
-    function syncFlowControlsFromSource(source) {
-      const directionMatch = source.match(/^[ \t]*(?:flowchart|graph)[ \t]+(TB|TD|BT|RL|LR)\b/m);
-      const layoutMatch = source.match(/^[ \t]*layout[ \t]*:[ \t]*['"]?([^\s'"#]+)/m);
-      selectedDirection = directionMatch && ['LR', 'RL'].includes(directionMatch[1]) ? 'LR' : 'TD';
-      selectedLayoutMode = layoutMatch && /dagre|mrtree/.test(layoutMatch[1]) ? 'hierarchical' : 'adaptive';
-      setPressedButtons('[data-direction]', 'direction', selectedDirection);
-      setPressedButtons('[data-layout-mode]', 'layoutMode', selectedLayoutMode);
-    }
-
-    function setPressedButtons(selector, dataKey, selectedValue) {
-      document.querySelectorAll(selector).forEach((button) => {
-        button.setAttribute('aria-pressed', String(button.dataset[dataKey] === selectedValue));
-      });
-    }
-
-    function applyFlowControls(source) {
-      if (!/^[ \t]*(?:flowchart|graph)\b/m.test(source)) return source;
-
-      let code = source.replace(
-        /^([ \t]*(?:flowchart|graph))(?:[ \t]+(?:TB|TD|BT|RL|LR))?\b/m,
-        `$1 ${selectedDirection}`
-      );
-      const layout = selectedLayoutMode === 'hierarchical' ? 'elk.mrtree' : 'elk';
-      const frontmatterPattern = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/;
-      const frontmatter = frontmatterPattern.exec(code);
-
-      if (frontmatter) {
-        let yaml = frontmatter[1];
-        const layoutLinePattern = /^([ \t]*layout[ \t]*:[ \t]*).*$/m;
-
-        if (layoutLinePattern.test(yaml)) {
-          yaml = yaml.replace(layoutLinePattern, `$1${layout}`);
-        } else if (/^[ \t]*config[ \t]*:[ \t]*$/m.test(yaml)) {
-          yaml = yaml.replace(/^([ \t]*config[ \t]*:[ \t]*)$/m, `$1\n  layout: ${layout}`);
-        } else {
-          yaml += `${yaml.trim() ? '\n' : ''}config:\n  layout: ${layout}`;
-        }
-
-        code = `---\n${yaml}\n---\n${code.slice(frontmatter[0].length)}`;
-      } else {
-        code = `---\nconfig:\n  layout: ${layout}\n---\n${code}`;
-      }
-
-      return code;
-    }
-
-    syncFlowControlsFromSource(editor.value);
-
-    function preventClusterLabelClipping(svg) {
-      svg.querySelectorAll('.cluster-label foreignObject').forEach((foreignObject) => {
-        const label = foreignObject.firstElementChild;
-        if (!label) return;
-
-        const currentWidth = Number(foreignObject.getAttribute('width')) || 0;
-        const contentWidth = Math.ceil(label.scrollWidth);
-        if (contentWidth <= currentWidth) return;
-
-        const extraWidth = contentWidth - currentWidth;
-        const currentX = Number(foreignObject.getAttribute('x')) || 0;
-        foreignObject.setAttribute('x', String(currentX - extraWidth / 2));
-        foreignObject.setAttribute('width', String(contentWidth));
-      });
-    }
-
-    async function renderDiagram() {
-      const source = applyFlowControls(editor.value.trim());
-      // Keep explicit source palettes from overriding the viewer's monochrome theme.
-      const code = source.replace(/^[ \t]*classDef\b.*$/gm, '');
-      if (!code) {
-        container.innerHTML = '';
-        errorBanner.style.display = 'none';
-        return;
-      }
-
-      try {
-        const renderId = 'mermaid-render-' + (++renderIndex);
-        const { svg } = await mermaid.render(renderId, code);
-        
-        container.innerHTML = svg;
-        const renderedSvg = container.querySelector('svg');
-        preventClusterLabelClipping(renderedSvg);
-        errorBanner.style.display = 'none';
-
-        // Let the new SVG and Panzoom transform settle before measuring it.
-        requestAnimationFrame(() => requestAnimationFrame(fitToView));
-      } catch (err) {
-        console.error('Mermaid render error:', err);
-        errorBanner.textContent = err.message || 'Syntax Error in Mermaid definition';
-        errorBanner.style.display = 'block';
-      }
-    }
-
-    // Fit to view calculation
-    function fitToView() {
-      if (!panzoomInstance) return;
-      const svg = container.querySelector('svg');
-      if (!svg) return;
-
-      const svgRect = svg.getBoundingClientRect();
-      const containerRect = container.getBoundingClientRect();
-      const viewportRect = viewport.getBoundingClientRect();
-      const currentScale = panzoomInstance.getScale() || 1;
-      const currentPan = panzoomInstance.getPan();
-      const rawW = svgRect.width / currentScale;
-      const rawH = svgRect.height / currentScale;
-      const svgOffsetX = (svgRect.left - containerRect.left) / currentScale;
-      const svgOffsetY = (svgRect.top - containerRect.top) / currentScale;
-      const containerBaseX = containerRect.left - currentPan.x * currentScale;
-      const containerBaseY = containerRect.top - currentPan.y * currentScale;
-
-      const pad = 48;
-      const vw = Math.max(1, viewport.clientWidth - pad * 2);
-      const vh = Math.max(1, viewport.clientHeight - pad * 2);
-      const scale = Math.max(0.02, Math.min(vw / rawW, vh / rawH, 1.25));
-      panzoomInstance.zoom(scale, { animate: false });
-
-      // Panzoom applies scale before translate, so pan values are in the
-      // container's unscaled coordinate space. Center the SVG itself (rather
-      // than the padded diagram container) in the viewport.
-      const targetLeft = viewportRect.left + viewport.clientLeft + (viewport.clientWidth - rawW * scale) / 2;
-      const targetTop = viewportRect.top + viewport.clientTop + (viewport.clientHeight - rawH * scale) / 2;
-      const finalX = (targetLeft - containerBaseX) / scale - svgOffsetX;
-      const finalY = (targetTop - containerBaseY) / scale - svgOffsetY;
-      panzoomInstance.pan(finalX, finalY, { animate: false });
-    }
-
-    // Load the default diagram from its separate source file.
-    let editorWasEdited = false;
-    const defaultDiagramPath = './diagrams/zones-and-subzones.mmd';
-    async function loadInitialDiagram() {
-      try {
-        const response = await fetch(defaultDiagramPath);
-        if (!response.ok) throw new Error(`Diagram file request failed (${response.status})`);
-        const source = await response.text();
-        if (!editorWasEdited && !editor.value.trim()) editor.value = source;
-      } catch (err) {
-        if (!editor.value.trim()) {
-          errorBanner.textContent = `Could not load ${defaultDiagramPath}. Open this viewer through a local web server, or paste Mermaid into the editor.`;
-          errorBanner.style.display = 'block';
-          return;
-        }
-      }
-
-      syncFlowControlsFromSource(editor.value);
-      renderDiagram();
-    }
-
-    // Live update when typing in editor (350ms debounce)
-    editor.addEventListener('input', () => {
-      editorWasEdited = true;
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(renderDiagram, 350);
-    });
-
-    // Toolbar Buttons
-    document.getElementById('btn-zoom-in').addEventListener('click', () => panzoomInstance && panzoomInstance.zoomIn());
-    document.getElementById('btn-zoom-out').addEventListener('click', () => panzoomInstance && panzoomInstance.zoomOut());
-    document.getElementById('btn-reset').addEventListener('click', () => panzoomInstance && panzoomInstance.reset());
-    document.getElementById('btn-fit').addEventListener('click', fitToView);
-
-    function renderAfterControlChange() {
-      clearTimeout(debounceTimer);
-      renderDiagram();
-    }
-
-    document.querySelectorAll('[data-direction]').forEach((button) => {
-      button.addEventListener('click', () => {
-        selectedDirection = button.dataset.direction;
-        setPressedButtons('[data-direction]', 'direction', selectedDirection);
-        renderAfterControlChange();
-      });
-    });
-
-    document.querySelectorAll('[data-layout-mode]').forEach((button) => {
-      button.addEventListener('click', () => {
-        selectedLayoutMode = button.dataset.layoutMode;
-        setPressedButtons('[data-layout-mode]', 'layoutMode', selectedLayoutMode);
-        renderAfterControlChange();
-      });
-    });
-
-    window.addEventListener('resize', fitToView);
-
-    // Initial source load and render
-    loadInitialDiagram();
-  </script>
+  <script type="module" src="./app.mjs?v=appearance-final"></script>
 </body>
 </html>

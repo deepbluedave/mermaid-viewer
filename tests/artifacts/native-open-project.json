@@ -1,0 +1,262 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Browser",
+      "label": "Customer Browser",
+      "shape": "rectangle",
+      "parentId": null,
+      "x": 281.2,
+      "y": 21,
+      "width": 153.6,
+      "height": 54
+    },
+    {
+      "id": "Cdn",
+      "label": "Content Delivery Network",
+      "shape": "rectangle",
+      "parentId": "Dmz",
+      "x": 250.8,
+      "y": 331,
+      "width": 214.39999999999998,
+      "height": 54
+    },
+    {
+      "id": "Waf",
+      "label": "Web Application Firewall",
+      "shape": "rectangle",
+      "parentId": "Dmz",
+      "x": 250.8,
+      "y": 451,
+      "width": 214.39999999999998,
+      "height": 54
+    },
+    {
+      "id": "LoadBalancer",
+      "label": "Application Load Balancer",
+      "shape": "rectangle",
+      "parentId": "Dmz",
+      "x": 281.2,
+      "y": 602,
+      "width": 153.6,
+      "height": 64
+    },
+    {
+      "id": "Api",
+      "label": "Core API",
+      "shape": "rectangle",
+      "parentId": "AppSubnet",
+      "x": 598.2314171424277,
+      "y": 1112.4361853966345,
+      "width": 120,
+      "height": 54
+    },
+    {
+      "id": "Worker",
+      "label": "Background Worker",
+      "shape": "rectangle",
+      "parentId": "AppSubnet",
+      "x": 75.4,
+      "y": 973,
+      "width": 161.2,
+      "height": 54
+    },
+    {
+      "id": "Database",
+      "label": "Primary Database",
+      "shape": "cylinder",
+      "parentId": "DataSubnet",
+      "x": 75.2,
+      "y": 1443.129020690918,
+      "width": 153.6,
+      "height": 70
+    },
+    {
+      "id": "Cache",
+      "label": "Redis Cache",
+      "shape": "cylinder",
+      "parentId": "DataSubnet",
+      "x": 286,
+      "y": 1431.1290283203125,
+      "width": 120,
+      "height": 70
+    },
+    {
+      "id": "Queue",
+      "label": "Message Queue",
+      "shape": "cylinder",
+      "parentId": "DataSubnet",
+      "x": 474.6,
+      "y": 1443.1290283203125,
+      "width": 130.8,
+      "height": 70
+    }
+  ],
+  "zones": [
+    {
+      "id": "Dmz",
+      "label": "Subzone: DMZ",
+      "parentId": "PublicZone",
+      "x": 230.8,
+      "y": 259,
+      "width": 254.39999999999998,
+      "height": 435
+    },
+    {
+      "id": "PublicZone",
+      "label": "Zone: Public Edge",
+      "parentId": null,
+      "x": 210.8,
+      "y": 198,
+      "width": 294.4,
+      "height": 520
+    },
+    {
+      "id": "AppSubnet",
+      "label": "Subzone: Application Subnet",
+      "parentId": "AppZone",
+      "x": 55.400000000000006,
+      "y": 913,
+      "width": 682.8314171424278,
+      "height": 273.4361853966345
+    },
+    {
+      "id": "AppZone",
+      "label": "Zone: Private Application Network",
+      "parentId": null,
+      "x": 32,
+      "y": 852,
+      "width": 726.2314171424277,
+      "height": 354.4361853966345
+    },
+    {
+      "id": "DataSubnet",
+      "label": "Subzone: Isolated Data Tier",
+      "parentId": "DataZone",
+      "x": 55.2,
+      "y": 1371.0546875,
+      "width": 580.8,
+      "height": 187.148681640625
+    },
+    {
+      "id": "DataZone",
+      "label": "Zone: Data Services",
+      "parentId": null,
+      "x": 32,
+      "y": 1310.0546875,
+      "width": 628,
+      "height": 272.148681640625
+    }
+  ],
+  "edges": [
+    {
+      "id": "L_Browser_Cdn_0",
+      "source": "Browser",
+      "target": "Cdn",
+      "label": "HTTPS",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_Cdn_Waf_0",
+      "source": "Cdn",
+      "target": "Waf",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_Waf_LoadBalancer_0",
+      "source": "Waf",
+      "target": "LoadBalancer",
+      "label": "Filtered traffic",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_LoadBalancer_Api_0",
+      "source": "LoadBalancer",
+      "target": "Api",
+      "label": "API requests",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_Api_Database_0",
+      "source": "Api",
+      "target": "Database",
+      "label": "Read and write",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_Api_Cache_0",
+      "source": "Api",
+      "target": "Cache",
+      "label": "Fast lookup",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_Api_Queue_0",
+      "source": "Api",
+      "target": "Queue",
+      "label": "Queue jobs",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_Queue_Worker_0",
+      "source": "Queue",
+      "target": "Worker",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_Worker_Database_0",
+      "source": "Worker",
+      "target": "Database",
+      "label": "Store results",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    }
+  ],
+  "settings": {
+    "direction": "TD",
+    "layout": "adaptive",
+    "grid": false,
+    "view": {
+      "x": 264.6704663725632,
+      "y": 47.70485601410793,
+      "scale": 0.29976876123295443
+    }
+  }
+}

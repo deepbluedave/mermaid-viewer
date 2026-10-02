@@ -1,0 +1,109 @@
+# Acceptance verification
+
+Latest revision verified on 2 October 2026 against SPEC.md in the local Codex browser at 1280 × 720, served by Python's local HTTP server. The editor's actual Mermaid 12.0.0 bundle and libavoid WASM were used.
+
+## Automated results
+
+- `npm test`: **48/48 passed** (model, native routing engine, label placement, local-asset/licence checks, and exact release binary/source-package provenance). Nested zones and title bands leave routes unchanged; contained nodes remain obstacles and zone endpoints remain attached after moving. Parallel attachments stay separate on all five shape outlines; straight connections stay outside their endpoint interiors; crowded sides and resize retain distinct pins. Long, short-link, multiline, crossing, and self-loop labels are checked without changing routes or geometry.
+- `tests/browser.html`: **16/16 passed** (Mermaid imports, shape/style/direction round-tripping, quoted/entity/Unicode/multiline/empty labels, unsupported features, both layouts, standalone SVG/PNG rendering, model serialization). A rasterized export verifies a crossing line is subdued but still visible beneath a title. Parallel long labels remain separate and included in exported image bounds, with leaders identifying displaced labels.
+- `tests/ui.html`: **38/38 passed** (real app event handlers for creation, properties, membership, alignment/distribution, history, source drafts/application, layouts, gesture cancellation, project open/save, connections, and all exports). New, pending label commits, creation inside nested zones, fresh-source fitting, and world-coordinate grid dots are covered. Opened saved projects start clean. Parallel arrow tips and reconnect handles remain separate after node movement, shape changes, and Undo.
+
+The structural revision additionally checks click-to-connect and contextual cursors/handles, node and zone drop parenting, visible property-based placement, minimum spacing during editing and both layouts, legacy crowded-project recovery, hierarchy selection/collapse, descriptions/notes persistence, and crossing bridges in standalone exports.
+
+Latest machine-readable browser results are in `artifacts/appearance-browser-results.json` and `artifacts/appearance-ui-results.json` (also copied to `artifacts/browser-results.json` and `artifacts/ui-results.json`). The UI harness suppresses repeated OS downloads and substitutes capture for synthetic pointer events. Those checks are complemented by native mouse and file-picker checks below; the harness does not replace testing the native gestures.
+
+## Native interaction checks
+
+- Dragged Core API at 30%, 47%, and 73% zoom. A 20-pixel horizontal / 15-pixel vertical drag produced the corresponding diagram-unit delta at each scale. Canvas translation/scale did not change. Undo restored each complete drag.
+- Selected a public zone and its directly selected child, then dragged the zone header. The nested zone and all three nodes moved once; unrelated nodes and canvas view stayed fixed. Undo restored them.
+- Created an edge by dragging the CDN's handle onto Core API, then dragged its target endpoint onto Background Worker. The model and properties reflected the new endpoints.
+- Resized the public zone through its corner handle. The zone grew; contained node coordinates did not change.
+- Shift-dragged a selection box from empty space inside the DMZ. Both enclosed nodes were selected.
+- Used Pan and wheel zoom. The canvas view changed while node coordinates stayed fixed.
+- Saved an edited project through the actual Save project button, inspected its downloaded JSON, and reopened it through Open's native file picker. The Core API coordinates `(598.2314171424277, 1112.4361853966345)` and saved canvas view were restored without automatic layout. A copy of this test output is `artifacts/native-open-project.json`.
+
+Native gesture measurements are in `artifacts/native-results.json`.
+
+After making zones fully traversable, a native 25-pixel horizontal / 15-pixel vertical drag on the public zone's title overlay at 30% zoom moved the zone and its children by the corresponding diagram-unit delta. The external worker and canvas view remained fixed, and Undo restored the original geometry. This follow-up is recorded in `artifacts/zone-title-native-results.json`.
+
+After separating connection pins, three parallel edges between a rectangle and a database cylinder were visually checked at 125% zoom. A native 40-pixel horizontal / 100-pixel vertical drag moved the destination by 32 / 80 diagram units. All routes remained orthogonal with separate source and target attachments, and Undo restored the nodes and routes. Measurements are in `artifacts/edge-spacing-native-results.json` and the preview is `artifacts/edge-spacing-preview.jpg`.
+
+## Review from a fresh diagram
+
+Started with a small Mermaid diagram, then used New and the actual toolbar to build three nodes, nested Application/Request handling zones, a grouped Data services zone, two parallel labeled connections, a worker connection, and a self-loop. The review reproduced and fixed:
+
+- A fresh small source retaining the previous diagram's tiny zoom.
+- Property label typing lost when clicking the canvas or another tool, including native keyboard typing.
+- Newly created nodes and zones appearing inside zones without belonging to them.
+- Grid dots remaining fixed to the screen while snapping used diagram coordinates.
+- Parallel long edge labels overlapping and obscuring each other.
+- Controls accepting input before the local engines finished starting.
+- An opened saved project incorrectly displaying Unsaved changes.
+
+Native follow-up checks changed the request node to a circle and undid it, dragged it with snapping at 126% zoom, moved the outer zone, resized it, and undid each move/resize. Descendants moved once; unrelated nodes and the view stayed fixed; routes remained orthogonal. Saved the diagram through the actual Save button, cleared the canvas through New, and reopened the downloaded project through Open's file chooser. Geometry, routes, and view matched exactly. The standalone editor console was clear.
+
+Evidence: `artifacts/review-native-results.json`, `artifacts/review-native-verification.json`, `artifacts/review-project.mermaid-project.json`, and `artifacts/review-editor-preview.jpg`. A separate three-parallel-edge fixture shows the label improvement in `artifacts/review-labels-before.jpg` and `artifacts/review-labels-after.jpg`. Latest automated results are also retained in `artifacts/review-browser-results.json` and `artifacts/review-ui-results.json`.
+
+## Requirement coverage
+
+| Requirement in SPEC.md | Evidence |
+| --- | --- |
+| Mermaid starting point; canonical evolving model; stable IDs and generated source | `core.mjs` model/serializer; browser round-trip tests; UI source/property tests |
+| Explicit Apply/Discard; retain drafts and invalid/unsupported-source errors | UI draft, source-apply, and layout/history tests; adapter unsupported-feature tests |
+| Match IDs to retained manual centres; position new objects; remove deleted objects | Browser `mergeSource` test; UI source evolution and deletion tests |
+| Select/Shift-select, box selection, move selection/zone, zoom-correct movement, nudge/snap, Pan/Fit/Escape | Native gesture results; model union-of-descendants tests; UI alignment/grid/cancel tests; `app.mjs` Fit uses current scene bounds |
+| Add/edit/delete nodes; five shapes; label sizing; retain IDs/membership/connections | UI shape/property tests; browser five-shape round-trip; model sizing/deletion tests |
+| Nested zone create/rename/move/resize/expand/drop/reparent | Native node/zone adoption and release; UI drop-target/Undo/property tests; model cycle and spacing tests |
+| Zone removal retains contents; dragging updates containment; Group/Ungroup removed | Model deletion/reparent/drop tests; UI command-absence, hierarchy and zone-removal checks |
+| Create/edit/reconnect/delete edges; all directions and styles; parallel edges and loops | Native handle tests; UI edge-handler tests; browser style/ID round-trip and native routing tests |
+| Orthogonal rerouting around nodes; traversable nested zones and titles; straight edges; correct shape pins | libavoid routing tests, including obstacle movement, zone/title traversal, zone endpoints, self-loops, parallel routes and actual shape-outline pins |
+| Titles above connections, crossing lines subdued but visible, same appearance in exports | Browser layer-order and rasterized-image checks; UI computed-opacity and title-drag/Undo checks; native title drag |
+| Separate connections sharing a side; correct arrowheads and route-following edge labels | 12-unit pin/route spacing, with pin spacing reduced on crowded sides; node-shape outline and straight-segment tests; SVG `auto-start-reverse` marker; UI reconnection-handle checks; native parallel-edge preview and drag |
+| Common toolbar/properties and keyboard-accessible controls | Native buttons/selects/labelled fields in viewer.html; native UI operation; handlers and shortcuts in app.mjs |
+| Mermaid/ELK initial/explicit adaptive and hierarchical layouts, current structure only | Browser architecture/layout tests; UI explicit Auto layout after additions; libavoid is the sole route-finding engine |
+| Atomic undo/redo, cancelled/invalid actions excluded, navigation excluded | Model History tests; native whole-drag Undo; UI structural/layout/nudge Undo/Redo and gesture cancellation; cancellation/error handlers do not record history |
+| Versioned full project restore without relayout | Exact-model UI save/open test and native downloaded-project reopen |
+| Valid evolved Mermaid; complete standalone SVG/PNG arrangement without controls | Browser round-trip/export tests; UI all-export blob/signature tests; exports derive bounds from the current scene |
+| Local operation without CDN/services/accounts; locally shipped licences and sources | Asset graph/CSP checks; UI runtime resource origins and external-fetch rejection; vendor licence/source checks and bundled archives |
+| Deferred features remain deferred | No bend editor, layers, collaboration, or editing adapters for other diagram types |
+
+## Test-browser console control
+
+The in-app browser emits a MutationObserver message when it loads an iframe. The same message was reproduced by `frame-control.html`, whose parent and child contain only static HTML and load no application or library scripts. The standalone editor console was clear. The control observation is saved in `artifacts/console-control.json`; this distinguishes that browser instrumentation message from application errors.
+
+## Scope and reproducibility
+
+Supported diagram features are those in SPEC.md. Custom styles, callbacks, advanced shapes/assets, Markdown formatting, accessibility metadata, and other unsupported semantics fail explicitly instead of being discarded. The application uses a consistent appearance. The supplied project limits are 500 objects and 1,000 connections. Tests cover the supplied examples and focused edge cases; they do not claim every possible Mermaid source or every browser/device has been exercised.
+
+Run the commands and local test pages described in README.md to reproduce automated results. Native gesture measurements were recorded during manual browser automation and are evidence from that run.
+
+## Structural editing revision
+
+Built two diagrams from New using native toolbar actions, without automatic layout:
+
+- Order processing: five nodes, a nested fulfilment zone, six connections, three visible crossing bridges, a self-loop, and context fields on both a node and a zone.
+- Research pipeline: four nodes including a decision and database cylinder, two zones, and four flows including an evaluation loop. Dragging the research zone into Release review created a nested hierarchy while retaining all descendants and keeping the moved border clear of unrelated nodes.
+
+Native drops moved the event queue into Fulfilment and back to the top level, with Undo restoring membership. Dragging Fulfilment out released its parent and retained its worker. A property-based parent change visibly moved Order API from `(80,136)` to `(119,349)`; Undo restored both its old parent and coordinates. Reopened the nested research project through the native file chooser and verified its parent, description, notes, and clean save indicator. The order model was exported through the actual SVG and PNG buttons: the SVG includes three bridges and the PNG is 1259 × 806 pixels.
+
+Artifacts:
+
+- `artifacts/order-processing.mermaid-project.json`, `order-processing-preview.jpg`, `order-processing.svg`, and `order-processing.png`.
+- `artifacts/research-pipeline.mermaid-project.json` and `research-pipeline-preview.jpg` show the model before nesting; `research-pipeline-nested.mermaid-project.json` and `research-pipeline-nested-preview.jpg` show the revised containment.
+- `artifacts/structure-native-results.json` records native parenting, Undo, property placement, and recovery checks.
+- `artifacts/structure-browser-results.json` and `structure-ui-results.json` retain the final automated results.
+
+The revision removes Group/Ungroup from the interface. Legacy internal grouping helpers still have model regression coverage, but are not user commands. Diagrams keep a minimum 24-unit node gap; a dragged zone also stays clear of stationary unrelated nodes. The intended destination is chosen before collision correction, so spacing cannot inadvertently change a requested parent. Old crowded project files are corrected on open and marked for saving; correctly spaced saved projects retain their exact arrangement. Descriptions and notes are stored in project files and retained through matching-ID source edits and automatic layout; they are not encoded in Mermaid or image exports.
+
+## Resizing, guides, context, and appearance revision
+
+The final run passes **102 checks**: 48 Node tests, 16 browser/library/export tests, and 38 app-handler acceptance tests. New coverage includes every resized shape, opposite anchors, circle proportions, tiny label-fit limits, multilingual text, neighbour clearance, manual wrapping, child-preserving zone resize, guide comparisons/tolerance, version-1 compatibility, and invalid color/font/size/context fields. App checks cover cancellation, atomic Undo/Redo, constant eight-pixel resize targets, guide toggle/clearing/export exclusion, color swatch synchronization, edge context, source/layout persistence, 48px text, saved geometry, and standalone color/font rendering.
+
+Native review used two fresh diagrams:
+
+- **Incident response** was imported from new Mermaid with all five shapes, two zones, and five edges. A native 42px/25px southeast resize at 49% zoom grew Contact responder from 310 × 105 to approximately 396.160 × 156.286 diagram units while keeping its upper-left anchor, other nodes, and view fixed. Undo restored the complete gesture; Redo reapplied it. A northwest circle resize retained equal dimensions and the opposite corner. Applied node/zone colors, typed edge description/notes, changed 24px text to 28px without changing the view, reapplied source, saved, cleared through New, and reopened with exact geometry/view and edge context.
+- **Workshop agenda** was built from New through native Zone/Node/Connect actions with 32px text, a dark zone/light title, a rounded multilingual node, and a circle with emoji. Native dragging brought the node left sides within 0.454 diagram units, within the guide tolerance. Increasing to 48px preserved the view before explicitly choosing Fit. A height request of 1 was constrained to the 93-unit label minimum; Undo restored the chosen 110-unit height. Saved and reopened the project with font size, manual width, colors, and edge notes intact.
+
+The native review found and fixed a hierarchy click-away timing bug: committing a field could detach the connection button under the pointer before its click. Panel rebuilding is now suspended during that commit and the hierarchy refresh follows the click. A regression checks that the button and next property input remain connected, the intended edge is selected, and notes are saved on that edge. Standalone editor consoles were clear.
+
+Both diagrams were exported through the actual SVG and PNG controls; their PNGs were visually reviewed. Colors, all diagram text sizes, title opacity, and complete label bounds survive export. Handles and alignment guides are absent. Evidence is in `artifacts/appearance-native-results.json`, `incident-response.mermaid-project.json`, `incident-response-preview.jpg`, `incident-response.svg`, `incident-response.png`, and the corresponding `workshop-agenda` project/preview/SVG/PNG files. Previous native checks above document earlier revisions.

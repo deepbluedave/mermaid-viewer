@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Node1",
+      "label": "Receive requests",
+      "shape": "rounded",
+      "parentId": "Zone2",
+      "x": 182.218994140625,
+      "y": 236,
+      "width": 135.56201171875,
+      "height": 54
+    },
+    {
+      "id": "Node2",
+      "label": "Primary database",
+      "shape": "cylinder",
+      "parentId": "Zone3",
+      "x": 511.070068359375,
+      "y": 178,
+      "width": 137.85986328125,
+      "height": 70
+    },
+    {
+      "id": "Node3",
+      "label": "Process jobs",
+      "shape": "diamond",
+      "parentId": "Zone3",
+      "x": 460,
+      "y": 359,
+      "width": 240,
+      "height": 108
+    }
+  ],
+  "zones": [
+    {
+      "id": "Zone1",
+      "label": "Application",
+      "parentId": null,
+      "x": 110,
+      "y": 113,
+      "width": 320,
+      "height": 250
+    },
+    {
+      "id": "Zone2",
+      "label": "Request handling",
+      "parentId": "Zone1",
+      "x": 130,
+      "y": 163,
+      "width": 280,
+      "height": 180
+    },
+    {
+      "id": "Zone3",
+      "label": "Data services",
+      "parentId": null,
+      "x": 436,
+      "y": 130,
+      "width": 288,
+      "height": 361
+    }
+  ],
+  "edges": [
+    {
+      "id": "Edge1",
+      "source": "Node1",
+      "target": "Node2",
+      "label": "Read configuration",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": null
+    },
+    {
+      "id": "Edge2",
+      "source": "Node1",
+      "target": "Node2",
+      "label": "Update configuration",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": null
+    },
+    {
+      "id": "Edge3",
+      "source": "Node1",
+      "target": "Node3",
+      "label": "Queue jobs",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": null
+    },
+    {
+      "id": "Edge4",
+      "source": "Node1",
+      "target": "Node1",
+      "label": "Retry request",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": null
+    }
+  ],
+  "settings": {
+    "direction": "TD",
+    "layout": "adaptive",
+    "grid": false,
+    "view": {
+      "x": -56.53745928338762,
+      "y": -15.475570032573302,
+      "scale": 1.004885993485342
+    }
+  }
+}

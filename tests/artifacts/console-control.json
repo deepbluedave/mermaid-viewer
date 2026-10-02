@@ -1,0 +1,11 @@
+{
+  "page": "tests/frame-control.html",
+  "applicationScripts": 0,
+  "logs": [
+    {
+      "level": "error",
+      "message": "Uncaught TypeError: Failed to execute 'observe' on 'MutationObserver': parameter 1 is not of type 'Node'.",
+      "timestamp": "2026-10-01T11:18:21.280Z"
+    }
+  ]
+}

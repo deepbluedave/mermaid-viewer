@@ -1,0 +1,180 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Alert",
+      "label": "Alert",
+      "shape": "circle",
+      "parentId": "Response",
+      "x": 24.708498945895798,
+      "y": 47.208483687106735,
+      "width": 177.38566600095749,
+      "height": 177.38566600095749,
+      "description": "",
+      "notes": "",
+      "manualSize": {
+        "width": 177.38566600095749,
+        "height": 177.38566600095749
+      }
+    },
+    {
+      "id": "Triage",
+      "label": "Urgent?",
+      "shape": "diamond",
+      "parentId": "Response",
+      "x": 311.4939575195167,
+      "y": 85.28701782226562,
+      "width": 279.00390625,
+      "height": 132,
+      "description": "",
+      "notes": ""
+    },
+    {
+      "id": "Action",
+      "label": "Contact responder",
+      "shape": "rectangle",
+      "parentId": "Response",
+      "x": 614.4978637695167,
+      "y": 145.43702697753906,
+      "width": 396.1599263542088,
+      "height": 156.28567044893381,
+      "description": "",
+      "notes": "",
+      "backgroundColor": "#134e4a",
+      "fontColor": "#ffffff",
+      "manualSize": {
+        "width": 396.1599263542088,
+        "height": 156.28567044893381
+      }
+    },
+    {
+      "id": "Archive",
+      "label": "Archive",
+      "shape": "cylinder",
+      "parentId": "Evidence",
+      "x": 1106.7528076171875,
+      "y": 211.7991943359374,
+      "width": 133.486328125,
+      "height": 82,
+      "description": "",
+      "notes": ""
+    },
+    {
+      "id": "Closed",
+      "label": "Resolved",
+      "shape": "rounded",
+      "parentId": null,
+      "x": 1074.9725341796875,
+      "y": 66.72485351562501,
+      "width": 155.046875,
+      "height": 66,
+      "description": "",
+      "notes": ""
+    }
+  ],
+  "zones": [
+    {
+      "id": "Response",
+      "label": "Incident response",
+      "parentId": null,
+      "x": 4.708498945895798,
+      "y": -10.791516312893265,
+      "width": 1025.9492911778298,
+      "height": 332.51421373936614,
+      "description": "Operational response team and escalation steps.",
+      "notes": "Zone owner: Operations",
+      "backgroundColor": "#dbeafe",
+      "fontColor": "#1e40af"
+    },
+    {
+      "id": "Evidence",
+      "label": "Evidence store",
+      "parentId": null,
+      "x": 1077.4959716796875,
+      "y": 153.7991943359374,
+      "width": 232.484375,
+      "height": 164.82435607910168,
+      "description": "",
+      "notes": ""
+    }
+  ],
+  "edges": [
+    {
+      "id": "signal",
+      "source": "Alert",
+      "target": "Triage",
+      "label": "Incoming report",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null,
+      "description": "Initial report passed to the on-call responder.",
+      "notes": "Owner: operations\nEscalate within five minutes. 中文 🚀"
+    },
+    {
+      "id": "urgent",
+      "source": "Triage",
+      "target": "Action",
+      "label": "Escalate",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null,
+      "description": "",
+      "notes": ""
+    },
+    {
+      "id": "routine",
+      "source": "Triage",
+      "target": "Closed",
+      "label": "Routine",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null,
+      "description": "",
+      "notes": ""
+    },
+    {
+      "id": "record",
+      "source": "Action",
+      "target": "Archive",
+      "label": "Save evidence",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null,
+      "description": "",
+      "notes": ""
+    },
+    {
+      "id": "resolve",
+      "source": "Action",
+      "target": "Closed",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null,
+      "description": "",
+      "notes": ""
+    }
+  ],
+  "settings": {
+    "direction": "LR",
+    "layout": "adaptive",
+    "grid": false,
+    "guides": true,
+    "fontSize": 28,
+    "view": {
+      "x": 48.15041282732736,
+      "y": 207.41620040692985,
+      "scale": 0.4874655977227204
+    }
+  }
+}

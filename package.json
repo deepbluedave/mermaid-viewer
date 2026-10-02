@@ -1,0 +1,15 @@
+{
+  "name": "mermaid-diagram-studio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:vendor": "node tools/build-vendor.mjs",
+    "test": "node --test tests/core.test.mjs tests/routing.test.mjs tests/labels.test.mjs tests/structure.test.mjs tests/editing.test.mjs tests/assets.test.mjs"
+  },
+  "devDependencies": {
+    "mermaid": "12.0.0",
+    "@mermaid-js/layout-elk": "1.0.0",
+    "esbuild": "0.25.12"
+  }
+}

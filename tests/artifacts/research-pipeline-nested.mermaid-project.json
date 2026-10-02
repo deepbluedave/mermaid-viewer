@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Node1",
+      "label": "Collect samples",
+      "shape": "rounded",
+      "parentId": "Zone1",
+      "x": 706.169921875,
+      "y": 165.73945644879456,
+      "width": 128.3701171875,
+      "height": 54
+    },
+    {
+      "id": "Node2",
+      "label": "Evaluate evidence",
+      "shape": "diamond",
+      "parentId": "Zone1",
+      "x": 663.927734375,
+      "y": 253.73945644879456,
+      "width": 282.8544921875,
+      "height": 108
+    },
+    {
+      "id": "Node3",
+      "label": "Approve release",
+      "shape": "rounded",
+      "parentId": "Zone2",
+      "x": 490.072265625,
+      "y": 171,
+      "width": 129.85546875,
+      "height": 54
+    },
+    {
+      "id": "Node4",
+      "label": "Publish results",
+      "shape": "cylinder",
+      "parentId": "Zone2",
+      "x": 494.71875,
+      "y": 293,
+      "width": 120.5625,
+      "height": 70
+    }
+  ],
+  "zones": [
+    {
+      "id": "Zone1",
+      "label": "Research pipeline",
+      "parentId": "Zone2",
+      "x": 643.927734375,
+      "y": 107.73945644879457,
+      "width": 351.42724609375,
+      "height": 300,
+      "description": "Collect and evaluate evidence before release review.",
+      "notes": "Evidence must be reproducible.\nA failed evaluation returns to sample collection."
+    },
+    {
+      "id": "Zone2",
+      "label": "Release review",
+      "parentId": null,
+      "x": 440,
+      "y": 63.73945644879457,
+      "width": 575.35498046875,
+      "height": 369.26054355120544
+    }
+  ],
+  "edges": [
+    {
+      "id": "Edge1",
+      "source": "Node1",
+      "target": "Node2",
+      "label": "Evidence",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Edge2",
+      "source": "Node2",
+      "target": "Node3",
+      "label": "Ready for review",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Edge3",
+      "source": "Node3",
+      "target": "Node4",
+      "label": "Approved",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Edge4",
+      "source": "Node2",
+      "target": "Node1",
+      "label": "More samples",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    }
+  ],
+  "settings": {
+    "direction": "TD",
+    "layout": "adaptive",
+    "grid": false,
+    "view": {
+      "x": -390.2626599004926,
+      "y": 28.400617087691415,
+      "scale": 1.0452134281259435
+    }
+  }
+}

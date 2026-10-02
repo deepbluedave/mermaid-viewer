@@ -1,0 +1,69 @@
+[
+  {
+    "test": "Node drag at 30%",
+    "pass": true,
+    "from": [
+      298,
+      979
+    ],
+    "to": [
+      364.7180926983174,
+      1029.038569523738
+    ]
+  },
+  {
+    "test": "Node drag at 47%",
+    "pass": true,
+    "from": [
+      298,
+      979
+    ],
+    "to": [
+      340.6995793269231,
+      1011.0246844951923
+    ]
+  },
+  {
+    "test": "Node drag at 73%",
+    "pass": true,
+    "from": [
+      298,
+      979
+    ],
+    "to": [
+      325.3277307692307,
+      999.495798076923
+    ]
+  },
+  {
+    "test": "Nested zone with directly selected descendant moves once",
+    "pass": true,
+    "selection": "2 selected"
+  },
+  {
+    "test": "Native handle creation and endpoint reattachment",
+    "pass": true,
+    "edge": "Connection Cdn to Worker",
+    "status": "Connection reattached."
+  },
+  {
+    "test": "Native zone resizing leaves contained nodes in place",
+    "pass": true
+  },
+  {
+    "test": "Shift marquee selects nodes inside a zone",
+    "pass": true,
+    "selected": [
+      "Cdn",
+      "Waf"
+    ]
+  },
+  {
+    "test": "Native Pan changes view without editing node coordinates",
+    "pass": true
+  },
+  {
+    "test": "Native wheel zoom changes view without editing the diagram",
+    "pass": true
+  }
+]

@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Node1",
+      "label": "Plan 中文",
+      "shape": "rounded",
+      "parentId": "Zone1",
+      "x": 120.38851928710938,
+      "y": 144,
+      "width": 240,
+      "height": 110,
+      "manualSize": {
+        "width": 240,
+        "height": 110
+      },
+      "backgroundColor": "#fff7ed",
+      "fontColor": "#7c2d12"
+    },
+    {
+      "id": "Node2",
+      "label": "Review 🚀",
+      "shape": "circle",
+      "parentId": "Zone1",
+      "x": 85.84127105781764,
+      "y": 278,
+      "width": 266.3174578843647,
+      "height": 266.3174578843647,
+      "backgroundColor": "#d1fae5",
+      "fontColor": "#064e3b"
+    }
+  ],
+  "zones": [
+    {
+      "id": "Zone1",
+      "label": "Workshop agenda",
+      "parentId": null,
+      "x": 50,
+      "y": 60,
+      "width": 600,
+      "height": 504.3174578843648,
+      "backgroundColor": "#312e81",
+      "fontColor": "#f8fafc"
+    }
+  ],
+  "edges": [
+    {
+      "id": "Edge1",
+      "source": "Node1",
+      "target": "Node2",
+      "label": "Discuss results",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null,
+      "description": "Move from preparation to the review session.",
+      "notes": "Facilitator: Maya\nKeep the conversation to fifteen minutes."
+    }
+  ],
+  "settings": {
+    "direction": "TD",
+    "layout": "adaptive",
+    "grid": false,
+    "guides": true,
+    "fontSize": 48,
+    "view": {
+      "x": 17.495084711218027,
+      "y": 60.0934459903241,
+      "scale": 0.7300983057756395
+    }
+  }
+}

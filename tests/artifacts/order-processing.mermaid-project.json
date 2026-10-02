@@ -1,0 +1,157 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Node1",
+      "label": "Order API",
+      "shape": "rounded",
+      "parentId": "Zone1",
+      "x": 80,
+      "y": 136,
+      "width": 120,
+      "height": 54,
+      "description": "Accepts and validates customer orders.",
+      "notes": "Idempotency keys required.\nOnly publish events after durable storage."
+    },
+    {
+      "id": "Node2",
+      "label": "Payment adapter",
+      "shape": "rectangle",
+      "parentId": "Zone1",
+      "x": 277.593505859375,
+      "y": 136,
+      "width": 134.81298828125,
+      "height": 54
+    },
+    {
+      "id": "Node3",
+      "label": "Dispatch worker",
+      "shape": "rounded",
+      "parentId": "Zone2",
+      "x": 174.90087890625,
+      "y": 271,
+      "width": 130.1982421875,
+      "height": 54
+    },
+    {
+      "id": "Node4",
+      "label": "Orders database",
+      "shape": "cylinder",
+      "parentId": null,
+      "x": 503.60595703125,
+      "y": 128,
+      "width": 132.7880859375,
+      "height": 70
+    },
+    {
+      "id": "Node5",
+      "label": "Event queue",
+      "shape": "cylinder",
+      "parentId": null,
+      "x": 505,
+      "y": 348,
+      "width": 120,
+      "height": 70
+    }
+  ],
+  "zones": [
+    {
+      "id": "Zone1",
+      "label": "Order processing",
+      "parentId": null,
+      "x": 55,
+      "y": 78,
+      "width": 390,
+      "height": 355,
+      "description": "Services responsible for the order lifecycle.",
+      "notes": "Owner: Commerce team\nSLO: accepted orders processed within 30 seconds."
+    },
+    {
+      "id": "Zone2",
+      "label": "Fulfilment",
+      "parentId": "Zone1",
+      "x": 95,
+      "y": 227,
+      "width": 305,
+      "height": 141
+    }
+  ],
+  "edges": [
+    {
+      "id": "Edge1",
+      "source": "Node1",
+      "target": "Node2",
+      "label": "Authorize payment",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Edge2",
+      "source": "Node1",
+      "target": "Node4",
+      "label": "Store accepted order",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Edge3",
+      "source": "Node2",
+      "target": "Node5",
+      "label": "Payment accepted",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "straight",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Edge4",
+      "source": "Node3",
+      "target": "Node4",
+      "label": "Load order",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "straight",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Edge5",
+      "source": "Node5",
+      "target": "Node3",
+      "label": "Schedule dispatch",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Edge6",
+      "source": "Node3",
+      "target": "Node3",
+      "label": "Retry",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    }
+  ],
+  "settings": {
+    "direction": "TD",
+    "layout": "adaptive",
+    "grid": false,
+    "view": {
+      "x": -4.3683311007436885,
+      "y": 16.85257097745432,
+      "scale": 1.0612423836498852
+    }
+  }
+}

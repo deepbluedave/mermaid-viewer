@@ -1,0 +1,46 @@
+{
+  "nodeDropInto": {
+    "level": "30px",
+    "parent": "Zone2",
+    "transform": "translate(329.09912109375,265.07832126215555)"
+  },
+  "nodeDropOut": {
+    "level": "0px",
+    "parent": ""
+  },
+  "undoParent": "Zone2",
+  "zoneDropOut": {
+    "childLevel": "15px",
+    "level": "0px",
+    "parent": ""
+  },
+  "zoneUndo": "Zone1",
+  "zoneDropInto": {
+    "childLevel": "30px",
+    "level": "15px",
+    "parent": "Zone2"
+  },
+  "savedResearchReopen": {
+    "counts": "4 nodes \u00b7 4 edges \u00b7 2 zones",
+    "description": "Collect and evaluate evidence before release review.",
+    "notes": "Evidence must be reproducible.\nA failed evaluation returns to sample collection.",
+    "parent": "Zone2"
+  },
+  "propertyParentChange": {
+    "parent": "Zone2",
+    "transform": "translate(119,349)"
+  },
+  "propertyParentUndo": {
+    "parent": "Zone1",
+    "transform": "translate(80,136)"
+  },
+  "nativeExports": {
+    "svgBridges": 3,
+    "pngDimensions": [
+      1259,
+      806
+    ],
+    "pngBytes": 112236
+  },
+  "savedModelsNodeGapVerified": true
+}

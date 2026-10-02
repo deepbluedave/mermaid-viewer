@@ -1,0 +1,20 @@
+{
+  "snapPosition": [
+    220,
+    260
+  ],
+  "zoneDragPixels": [
+    -36,
+    24
+  ],
+  "zoneDragUnits": [
+    -35.824959481361425,
+    23.883306320907618
+  ],
+  "descendantsMoveOnce": true,
+  "unrelatedNodesFixed": true,
+  "moveAndResizeUndoExact": true,
+  "resizeLeavesNodesFixed": true,
+  "routesOrthogonal": true,
+  "reopenedGeometryRoutesAndViewExact": true
+}

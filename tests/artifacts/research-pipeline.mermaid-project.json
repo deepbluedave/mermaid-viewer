@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Node1",
+      "label": "Collect samples",
+      "shape": "rounded",
+      "parentId": "Zone1",
+      "x": 70.81494140625,
+      "y": 131,
+      "width": 128.3701171875,
+      "height": 54
+    },
+    {
+      "id": "Node2",
+      "label": "Evaluate evidence",
+      "shape": "diamond",
+      "parentId": "Zone1",
+      "x": 28.57275390625,
+      "y": 219,
+      "width": 282.8544921875,
+      "height": 108
+    },
+    {
+      "id": "Node3",
+      "label": "Approve release",
+      "shape": "rounded",
+      "parentId": "Zone2",
+      "x": 490.072265625,
+      "y": 171,
+      "width": 129.85546875,
+      "height": 54
+    },
+    {
+      "id": "Node4",
+      "label": "Publish results",
+      "shape": "cylinder",
+      "parentId": "Zone2",
+      "x": 494.71875,
+      "y": 293,
+      "width": 120.5625,
+      "height": 70
+    }
+  ],
+  "zones": [
+    {
+      "id": "Zone1",
+      "label": "Research pipeline",
+      "parentId": null,
+      "x": 8.57275390625,
+      "y": 73,
+      "width": 351.42724609375,
+      "height": 300
+    },
+    {
+      "id": "Zone2",
+      "label": "Release review",
+      "parentId": null,
+      "x": 440,
+      "y": 83,
+      "width": 260,
+      "height": 350
+    }
+  ],
+  "edges": [
+    {
+      "id": "Edge1",
+      "source": "Node1",
+      "target": "Node2",
+      "label": "Evidence",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Edge2",
+      "source": "Node2",
+      "target": "Node3",
+      "label": "Ready for review",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Edge3",
+      "source": "Node3",
+      "target": "Node4",
+      "label": "Approved",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Edge4",
+      "source": "Node2",
+      "target": "Node1",
+      "label": "More samples",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    }
+  ],
+  "settings": {
+    "direction": "TD",
+    "layout": "adaptive",
+    "grid": false,
+    "view": {
+      "x": 46.350042336284986,
+      "y": 62.23365815868587,
+      "scale": 0.8923570823767357
+    }
+  }
+}

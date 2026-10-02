@@ -1,0 +1,126 @@
+{
+  "passed": 30,
+  "total": 30,
+  "results": [
+    {
+      "name": "source import replaces structure and preserves nested hierarchy",
+      "pass": true
+    },
+    {
+      "name": "dragging the title overlay moves its whole zone once and undo restores it",
+      "pass": true
+    },
+    {
+      "name": "invalid drafts preserve diagram and history, and typing never relayouts",
+      "pass": true
+    },
+    {
+      "name": "adding and editing a node preserves ID and updates generated source",
+      "pass": true
+    },
+    {
+      "name": "shape labels fit measured text, including long and wide glyphs",
+      "pass": true
+    },
+    {
+      "name": "parent changes visibly relocate objects and deleting zones retains contents",
+      "pass": true
+    },
+    {
+      "name": "multi-selection alignment, distribution and grid nudges are undoable",
+      "pass": true
+    },
+    {
+      "name": "zone creation, resizing, naming and deletion retain contents and title bounds",
+      "pass": true
+    },
+    {
+      "name": "edge properties, endpoints, loops and parallel connections update without relayout",
+      "pass": true
+    },
+    {
+      "name": "source application retains manual centres and unsupported imports do not replace the diagram",
+      "pass": true
+    },
+    {
+      "name": "layout preferences and draft edits preserve positions; explicit layout is undoable",
+      "pass": true
+    },
+    {
+      "name": "cancelled node drag restores model and creates no history entry",
+      "pass": true
+    },
+    {
+      "name": "save/open restores exact geometry and settings without relayout",
+      "pass": true
+    },
+    {
+      "name": "SVG, PNG and Mermaid exports use the current model and exclude handles",
+      "pass": true
+    },
+    {
+      "name": "deleting nodes removes incident edges in one undoable action",
+      "pass": true
+    },
+    {
+      "name": "dragging handles creates parallel edges and self-loops, then reconnects an endpoint",
+      "pass": true
+    },
+    {
+      "name": "parallel edge attachments and reconnect handles remain separate after moving and reshaping nodes",
+      "pass": true
+    },
+    {
+      "name": "pending node, edge, and zone labels commit before canvas actions and saving",
+      "pass": true
+    },
+    {
+      "name": "New clears the canvas and source draft as one undoable action",
+      "pass": true
+    },
+    {
+      "name": "new objects inherit the innermost containing zone and move with it",
+      "pass": true
+    },
+    {
+      "name": "fresh source fits the viewport while edits to existing IDs preserve the view",
+      "pass": true
+    },
+    {
+      "name": "the dot grid follows world coordinates at different zooms and after panning",
+      "pass": true
+    },
+    {
+      "name": "Connect uses source/target clicks with contextual handles and a crosshair cursor",
+      "pass": true
+    },
+    {
+      "name": "dragging nodes into, between, and out of zones updates canvas and hierarchy atomically",
+      "pass": true
+    },
+    {
+      "name": "zone drops adopt their intended parent even when node clearance shifts the contents",
+      "pass": true
+    },
+    {
+      "name": "node dragging, creation and shape growth maintain minimum spacing",
+      "pass": true
+    },
+    {
+      "name": "descriptions, notes and size typing commit, survive source changes, Undo and project reopening",
+      "pass": true
+    },
+    {
+      "name": "older crowded projects are repaired on open and marked for saving",
+      "pass": true
+    },
+    {
+      "name": "hierarchy selection, collapse and connection rows stay synchronized with the diagram",
+      "pass": true
+    },
+    {
+      "name": "all loaded runtime resources are local; external access is blocked by policy",
+      "pass": true
+    }
+  ]
+}
