@@ -1,5 +1,5 @@
 {
-  "passed": 52,
+  "passed": 57,
   "results": [
     {
       "name": "source import replaces structure and preserves nested hierarchy",
@@ -208,7 +208,27 @@
     {
       "name": "original node dimensions survive source application and project reopening before final child release",
       "pass": true
+    },
+    {
+      "name": "zone body dragging moves nested contents once, preserves external objects and records one edit",
+      "pass": true
+    },
+    {
+      "name": "zone bodies retain Shift-marquee selection and cancel dragging without a history edit",
+      "pass": true
+    },
+    {
+      "name": "incomplete and invalid connection attempts keep Connect active until a valid handle drop",
+      "pass": true
+    },
+    {
+      "name": "zone-to-zone and node-to-zone arrows approach borders normally after connection, zone drag and attachment edits",
+      "pass": true
+    },
+    {
+      "name": "whole-word labels grow legacy circles, resize without fragments, and reopen stably",
+      "pass": true
     }
   ],
-  "total": 52
+  "total": 57
 }

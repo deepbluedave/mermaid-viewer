@@ -1,5 +1,5 @@
 {
-  "passed": 21,
+  "passed": 23,
   "results": [
     {
       "name": "starter import preserves nested memberships and all connections",
@@ -84,7 +84,15 @@
     {
       "name": "parent-node titles and colors survive standalone SVG and PNG",
       "pass": true
+    },
+    {
+      "name": "zone connection border approaches survive standalone SVG and PNG exports",
+      "pass": true
+    },
+    {
+      "name": "whole words fit every shape and remain intact in standalone SVG and PNG",
+      "pass": true
     }
   ],
-  "total": 21
+  "total": 23
 }

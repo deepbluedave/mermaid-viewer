@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Worker",
+      "label": "Worker",
+      "shape": "rectangle",
+      "parentId": null,
+      "x": 110,
+      "y": 400,
+      "width": 120,
+      "height": 54
+    }
+  ],
+  "zones": [
+    {
+      "id": "Source",
+      "label": "Source zone",
+      "parentId": null,
+      "x": 50,
+      "y": 100,
+      "width": 280,
+      "height": 180
+    },
+    {
+      "id": "Target",
+      "label": "Target zone",
+      "parentId": null,
+      "x": 590,
+      "y": 130,
+      "width": 280,
+      "height": 180
+    }
+  ],
+  "edges": [
+    {
+      "id": "Edge1",
+      "source": "Source",
+      "target": "Target",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Edge2",
+      "source": "Worker",
+      "target": "Target",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    }
+  ],
+  "settings": {
+    "direction": "LR",
+    "layout": "adaptive",
+    "grid": false,
+    "guides": true,
+    "fontSize": 13,
+    "view": {
+      "x": 30,
+      "y": 30,
+      "scale": 0.75
+    }
+  }
+}

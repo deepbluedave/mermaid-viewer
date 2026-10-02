@@ -1,0 +1,154 @@
+{
+  "passed": 8,
+  "total": 8,
+  "results": [
+    {
+      "name": "Native zone body drag moves nested node parent and child by 40px/20px, leaving external Courier and view fixed",
+      "pass": true
+    },
+    {
+      "name": "Single native Undo restores zone and both descendant positions",
+      "pass": true
+    },
+    {
+      "name": "Native Redo restores the whole zone body move",
+      "pass": true
+    },
+    {
+      "name": "Native source/target clicks add an edge, return to Select and keep the new edge selected",
+      "pass": true
+    },
+    {
+      "name": "Subsequent node clicks select normally without adding another connection",
+      "pass": true
+    },
+    {
+      "name": "Native handle drag creates one connection and returns to Select with Edge3 selected",
+      "pass": true
+    },
+    {
+      "name": "Native invalid handle drop adds no connection and keeps Connect armed",
+      "pass": true
+    },
+    {
+      "name": "Native child body drag moves only Prepare parcel, leaving its parent node and enclosing zone fixed",
+      "pass": true
+    }
+  ],
+  "initial": {
+    "counts": "3 nodes · 1 edges · 1 zones",
+    "handles": 0,
+    "objects": [
+      {
+        "height": 341.17987060546875,
+        "id": "Zone1",
+        "width": 404.0287780761719,
+        "x": 470.4856262207031,
+        "y": 297.82012939453125
+      },
+      {
+        "height": 269.3525085449219,
+        "id": "Node1",
+        "width": 359.1366882324219,
+        "x": 492.9316711425781,
+        "y": 347.2014465332031
+      },
+      {
+        "height": 60.60430908203125,
+        "id": "Node3",
+        "width": 134.67626953125,
+        "x": 588.327392578125,
+        "y": 171
+      },
+      {
+        "height": 60.604339599609375,
+        "id": "Node2",
+        "width": 134.88720703125,
+        "x": 605.056396484375,
+        "y": 451.5755310058594
+      }
+    ],
+    "preview": false,
+    "selection": "No selection",
+    "tool": "select",
+    "view": "translate(-260.37769784172656,-98.63309352517982) scale(1.1223021582733812)"
+  },
+  "zoneMoved": {
+    "counts": "3 nodes · 1 edges · 1 zones · Unsaved changes",
+    "handles": 0,
+    "identity": "Zone · Zone1",
+    "objects": [
+      {
+        "height": 341.1799011230469,
+        "id": "Zone1",
+        "width": 404.0287780761719,
+        "x": 510.4856262207031,
+        "y": 317.8201599121094
+      },
+      {
+        "height": 269.3525390625,
+        "id": "Node1",
+        "width": 359.13671875,
+        "x": 532.931640625,
+        "y": 367.2014770507813
+      },
+      {
+        "height": 60.60430908203125,
+        "id": "Node3",
+        "width": 134.67626953125,
+        "x": 588.327392578125,
+        "y": 171
+      },
+      {
+        "height": 60.60430908203125,
+        "id": "Node2",
+        "width": 134.88726806640625,
+        "x": 645.056396484375,
+        "y": 471.5755615234375
+      }
+    ],
+    "preview": false,
+    "selection": "1 selected",
+    "tool": "select",
+    "view": "translate(-260.37769784172656,-98.63309352517982) scale(1.1223021582733812)"
+  },
+  "final": {
+    "counts": "3 nodes · 3 edges · 1 zones · Unsaved changes",
+    "handles": 0,
+    "identity": "Zone · Zone1",
+    "objects": [
+      {
+        "height": 341.1799011230469,
+        "id": "Zone1",
+        "width": 404.0287780761719,
+        "x": 510.4856262207031,
+        "y": 317.8201599121094
+      },
+      {
+        "height": 269.3525390625,
+        "id": "Node1",
+        "width": 359.13671875,
+        "x": 532.931640625,
+        "y": 367.2014770507813
+      },
+      {
+        "height": 60.60430908203125,
+        "id": "Node3",
+        "width": 134.67626953125,
+        "x": 588.327392578125,
+        "y": 171
+      },
+      {
+        "height": 60.60430908203125,
+        "id": "Node2",
+        "width": 134.88726806640625,
+        "x": 645.056396484375,
+        "y": 471.5755615234375
+      }
+    ],
+    "preview": false,
+    "selection": "1 selected",
+    "tool": "select",
+    "view": "translate(-260.37769784172656,-98.63309352517982) scale(1.1223021582733812)"
+  }
+}

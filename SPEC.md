@@ -73,7 +73,7 @@ Users can edit a source draft and explicitly apply it. Draft typing does not rer
 - Edit its label and change its shape.
 - Initial shapes: rectangle, rounded rectangle, diamond, circle, and database cylinder.
 - Shape changes preserve the node ID, zone membership, and connections.
-- Node dimensions accommodate the label and selected shape. Resize manually through eight corner/side handles or Width/Height fields. Handles remain eight screen pixels at different zoom levels. Anchor the opposite corner/side; retain circles as circles. All shapes wrap text to the chosen dimensions. Circle and diamond labels use their actual interior geometry, wrap short text such as “New Node” as dimensions shrink, and unwrap as they grow. Enforce label/shape minimums and the node gap instead of clipping text or moving neighbouring nodes; show the accepted dimensions in Properties. Resizing updates connections and expands containing zones without changing membership.
+- Node dimensions accommodate the label and selected shape. Resize manually through eight corner/side handles or Width/Height fields. Handles remain eight screen pixels at different zoom levels. Anchor the opposite corner/side; retain circles as circles. All shapes wrap text to the chosen dimensions, breaking only at whitespace and retaining explicit line breaks. Never split a word, long identifier, or unspaced Unicode text into fragments; grow the minimum shape/title size to fit an oversized word. Circle and diamond labels use their actual interior geometry, wrap short text such as “New Node” as dimensions shrink, and unwrap as they grow. On opening older projects, grow undersized labels without shrinking existing dimensions or losing manual preferences, then enforce spacing and containing bounds. Enforce label/shape minimums and the node gap instead of clipping text or moving neighbouring nodes; show the accepted dimensions in Properties. Resizing updates connections and expands containing zones without changing membership.
 - Preserve manual size preferences through label/shape/font edits, source changes, and Auto layout. An explicit Fit to label command clears the manual size preference.
 - Drop a node or zone onto an ordinary node, enable Container node in Properties, or choose an ordinary node as a child’s Parent, to turn it into a parent. All five shapes support node/zone children, nested parents, and existing connections. Keep the parent ID, shape, and label.
 - Reserve a title band and shape-safe interior for children. Expand parents to contain descendants, without moving child coordinates during parent resize. Preserve containment through source edits, automatic layouts, save/open, and Undo/Redo.
@@ -85,7 +85,7 @@ Users can edit a source draft and explicitly apply it. Draft typing does not rer
 
 - Create and rename zones, including nested zones. Offer both click placement and dragging the Zone toolbar button onto the canvas.
 - A new zone placed inside a zone or parent node joins the innermost container; drawing a zone over existing objects does not automatically capture them.
-- Drag a zone by its title/header; move its full contents together.
+- Drag a zone from its body or title/header, with the same selection behavior as nodes; move its full contents together. Child objects drag independently. Shift-drag on a zone body retains marquee selection.
 - Resize zones through eight corner/side handles or Width/Height fields while keeping them large enough to contain their contents and title. Keep contained node coordinates fixed while resizing the zone.
 - Expand containing zones when moved children require more space.
 - Organize containment through Add zone and dragging; remove Group/Ungroup commands.
@@ -98,7 +98,7 @@ Users can edit a source draft and explicitly apply it. Draft typing does not rer
 
 ### Connections
 
-- Connect by clicking a source and then a target, or dragging between contextual node handles. Use a crosshair cursor. Show handles only for the hovered/source node, with a preview and clear source/target guidance. Escape cancels a pending source.
+- Connect by clicking a source and then a target, or dragging between contextual node handles. Use a crosshair cursor. Show handles only for the hovered/source node, with a preview and clear source/target guidance. Escape cancels a pending source. Each successfully created connection returns to Select with the edge selected; another connection requires activating Connect again. Incomplete or invalid connection attempts keep Connect available.
 - Edit its label, description, and notes, reconnect either endpoint, or delete it.
 - Support directed, undirected, and bidirectional connections.
 - Support normal, dashed, and thick line styles.
@@ -106,7 +106,7 @@ Users can edit a source draft and explicitly apply it. Draft typing does not rer
 - Draw small bridges at interior edge crossings to distinguish independent flows. Shared endpoints and overlapping/parallel segments are not crossings. Preserve actual libavoid routes and arrow terminal segments; include bridges in SVG and PNG exports.
 - Keep straight connections straight and reroute orthogonal connections with horizontal/vertical segments rather than deforming their previous paths.
 - Give connections sharing a node side distinct attachment points, ordered towards their opposite ends. Use a modest 12-unit spacing where room allows and reduce it on crowded sides. Keep parallel route segments separated through libavoid and attach arrow tips to the visible shape outline, including curved and diamond nodes.
-- Route around unrelated ordinary nodes. Zone and parent-node borders, interiors, and titles are traversable, including nested containers; adding or moving a zone must not introduce routing obstacles. Connections explicitly targeting zones attach to their borders.
+- Route around unrelated ordinary nodes. Zone and parent-node borders, interiors, and titles are traversable, including nested containers; adding or moving a zone must not introduce routing obstacles. Connections explicitly targeting zones or parent nodes attach to their visible outlines and approach the chosen side normally. External peers approach from outside; contained peers approach from inside. Use native libavoid directional pins at the attachment points, protecting only the immediate port vicinity while keeping the rest of the container traversable.
 - Draw zone and parent-node titles above connections with translucent backing: crossing lines remain visible but subdued beneath the title. Preserve this appearance in SVG and PNG exports.
 - Attach connections to the rendered node boundary, including nonrectangular shapes.
 - Arrowheads follow a clean terminal segment and point correctly at the destination boundary.

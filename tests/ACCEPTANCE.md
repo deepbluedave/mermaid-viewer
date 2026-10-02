@@ -4,9 +4,9 @@ Latest revision verified on 2 October 2026 against SPEC.md in the local Codex br
 
 ## Automated results
 
-- `npm test`: **68/68 passed** (model, native routing engine, label placement, local-asset/licence checks, and exact release binary/source-package provenance). Nested zones and title bands leave routes unchanged; contained nodes remain obstacles and zone endpoints remain attached after moving. Parallel attachments stay separate on all five shape outlines; straight connections stay outside their endpoint interiors; crowded sides and resize retain distinct pins. Long, short-link, multiline, crossing, and self-loop labels are checked without changing routes or geometry.
-- `tests/browser.html`: **21/21 passed** (Mermaid imports, shape/style/direction round-tripping, quoted/entity/Unicode/multiline/empty labels, unsupported features, both layouts, standalone SVG/PNG rendering, model serialization). A rasterized export verifies a crossing line is subdued but still visible beneath a title. Parallel long labels remain separate and included in exported image bounds, with leaders identifying displaced labels.
-- `tests/ui.html`: **52/52 passed** (real app event handlers for creation, properties, membership, alignment/distribution, history, source drafts/application, layouts, gesture cancellation, project open/save, connections, and all exports). New, pending label commits, creation inside nested zones, fresh-source fitting, and world-coordinate grid dots are covered. Opened saved projects start clean. Parallel arrow tips and reconnect handles remain separate after node movement, shape changes, and Undo.
+- `npm test`: **79/79 passed** (model, native routing engine, label placement, local-asset/licence checks, and exact release binary/source-package provenance). Nested zones and title bands leave routes unchanged; contained nodes remain obstacles and zone endpoints remain attached after moving. Parallel attachments stay separate on all five shape outlines; straight connections stay outside their endpoint interiors; crowded sides and resize retain distinct pins. Long, short-link, multiline, crossing, and self-loop labels are checked without changing routes or geometry.
+- `tests/browser.html`: **23/23 passed** (Mermaid imports, shape/style/direction round-tripping, quoted/entity/Unicode/multiline/empty labels, unsupported features, both layouts, standalone SVG/PNG rendering, model serialization). A rasterized export verifies a crossing line is subdued but still visible beneath a title. Parallel long labels remain separate and included in exported image bounds, with leaders identifying displaced labels.
+- `tests/ui.html`: **57/57 passed** (real app event handlers for creation, properties, membership, alignment/distribution, history, source drafts/application, layouts, gesture cancellation, project open/save, connections, and all exports). New, pending label commits, creation inside nested zones, fresh-source fitting, and world-coordinate grid dots are covered. Opened saved projects start clean. Parallel arrow tips and reconnect handles remain separate after node movement, shape changes, and Undo.
 
 The structural revision additionally checks click-to-connect and contextual cursors/handles, node and zone drop parenting, visible property-based placement, minimum spacing during editing and both layouts, legacy crowded-project recovery, hierarchy selection/collapse, descriptions/notes persistence, and crossing bridges in standalone exports.
 
@@ -129,7 +129,7 @@ Evidence: `artifacts/refinement-native-results.json`, `refinement-notification-s
 
 ## Drag adoption and toolbar placement revision
 
-The latest run passes **141 automated checks**: 68 model/routing tests, 21 browser/library/export tests, and 52 app-handler tests. Nine native interaction checks also pass on the local 1280 × 720 browser. The standalone editor console contains no warnings or errors.
+The preceding run passed **141 automated checks**: 68 model/routing tests, 21 browser/library/export tests, and 52 app-handler tests. Nine native interaction checks also pass on the local 1280 × 720 browser. The standalone editor console contains no warnings or errors.
 
 Dragging an existing node or zone onto an ordinary node now creates containment on the visible shape outline, choosing the deepest eligible target and rejecting self/descendant cycles. Preview membership is applied before collision correction so the child stays at its intended centre. When a parent's final child leaves or is deleted, it returns to an ordinary node; its ID, shape, colors, context, parent and incident edges remain. Original manual dimensions are retained in optional version-1 `containerSize` data, preserved through matching-ID source edits and Save/Open, then restored on demotion. Explicit empty container nodes remain available until they have children that leave. Empty zones are retained.
 
@@ -138,3 +138,38 @@ Node and Zone toolbar buttons now support drag placement as well as click placem
 Native review built Delivery service and Prepare parcel by dragging Node from the toolbar. Dropping Prepare parcel onto the ordinary rounded Delivery service promoted it while retaining the child's screen centre. Dragging its last child out demoted Delivery service; Undo restored both membership and parent type. Dragged Zone to a chosen centre, undid it, and released Node in Properties to verify cancellation. On the final build, placed Courier with another toolbar drag, connected Prepare parcel to it, then transferred the child to Courier: Courier became a parent, Delivery service returned to an ordinary node, and the connection remained. Undo restored the prior arrangement. Dragged another Zone onto the canvas, then moved Delivery service into it; both descendants moved by 345px/220px while Courier stayed fixed. Saved the completed diagram with its connection and nested zone/node hierarchy.
 
 Evidence: `artifacts/drag-native-results.json`, `drag-node-parent.mermaid-project.json`, `drag-zone-node-editor.mermaid-project.json`, and `drag-editor-preview.jpg`. Latest browser/app results remain in `artifacts/browser-results.json` and `artifacts/ui-results.json`.
+
+
+## Zone body dragging and one-connection mode revision
+
+The preceding run passed **144 automated checks**: 68 model/routing tests, 21 browser/library/export tests, and 55 app-handler tests. Eight native interaction checks pass; the standalone editor console has no warnings or errors.
+
+Zone bodies now use the same selection and drag behavior as nodes. Native dragging of the selected Fulfilment zone body moved its nested Delivery service parent and Prepare parcel child by exactly 40px/20px, with Courier and the view fixed. A single Undo restored all geometry; Redo reapplied the whole move. Dragging Prepare parcel independently moved only that child. App-handler checks also cover a selected ancestor and child moving once, first-drag selection from an unselected zone body, Escape cancellation without a history entry, and Shift-marquee selection inside zones. Title dragging remains covered by the existing acceptance cases.
+
+Each successfully created connection returns to Select with the new edge selected. Native source/target clicks and handle dragging both verify this behavior. Subsequent ordinary node clicks select without creating another edge. An invalid native handle drop creates no edge, removes its preview, and leaves Connect active. App-handler checks cover explicit rearming for parallel edges and self-loops, incomplete source selection, invalid targets, retrying a valid handle drop, and reattachment remaining in Select.
+
+The preceding completed improvements were committed as `419a0c4` before this revision. Evidence: `artifacts/interaction-polish-native-results.json`, `interaction-polish-preview.jpg`, and the latest `browser-results.json` / `ui-results.json`.
+
+
+## Directional container border connections revision
+
+The preceding run passed **153 automated checks**: 75 model/routing tests, 22 browser/library/export tests, and 56 app-handler tests. Seven native mouse checks pass, with no warnings or errors in the standalone editor console.
+
+Zone and parent-node endpoints now use native libavoid directional pins. Small anchors represent only the connected outline ports; container bodies and titles are not registered as obstacles. This prevents arrows ending tangentially along a zone border. External endpoints approach from outside; endpoints connected to contained objects approach from inside. Libavoid finds and separates the complete routes. The shipped routing library remains unmodified.
+
+Regression cases cover the supplied offset zone-to-zone geometry, moving either endpoint across horizontal/vertical arrangements, every combination of four explicit sides for node/zone connections, ordinary leaf obstacles, movement/resizing, all five parent-node shapes, inward approaches in nested zones, self-loops, distinct parallel and bidirectional attachments, and unrelated routes passing through connected zone bodies/title bands. Browser checks verify the exported arrow follows the final segment, border endpoints survive standalone SVG, and PNG rendering succeeds. App-handler checks create zone-to-zone and node-to-zone edges, drag the target zone, change its attachment to Top, and undo the edit.
+
+Native review created an offset Source zone → Target zone connection and Worker → Target zone connection through source/target clicks. Both arrows enter the target's left border horizontally at distinct points. A 25px/50px zone body drag rerouted both correctly, with Worker and the view fixed; one Undo restored exact routes and geometry. Width/Height edits retained correct border approaches. Choosing Top made the Worker arrow point downward into the top border. Dropping a native Worker left handle onto the target zone honored the node departure and zone approach, then returned to Select. The extra edge was undone and the completed two-edge diagram was saved.
+
+Evidence: `artifacts/zone-border-native-results.json`, `zone-border-routing.mermaid-project.json`, `zone-border-preview.jpg`, and the latest `browser-results.json` / `ui-results.json`.
+
+
+## Whole-word label wrapping revision
+
+The latest run passes **159 automated checks**: 79 model/routing tests, 23 browser/library/export tests, and 57 app-handler tests. Seven native UI checks pass; the standalone editor console has no warnings or errors.
+
+Automatic wrapping now breaks only at whitespace and retains explicit newlines. Words, identifiers, unspaced Unicode text, combining sequences and joined emoji stay intact. Shapes and parent-title minimum widths grow to fit a whole word rather than splitting it into fragments. Browser-measured checks cover all five shapes, circle/diamond outline fit and standalone SVG/PNG output. Opening an older project grows undersized geometry while retaining centres, manual size preferences, context, existing extra room and valid unrelated geometry; repeated opening is stable.
+
+Native review opened a Customer Browser circle connected to CDN over HTTPS. Its 20px label renders as whole Customer and Browser lines. Requesting Width 90 was constrained to about 143 units, keeping the words inside the circle. Width 300 unwrapped the label to one line; one Undo restored the wrapped circle and route. Typing CustomerBrowserIdentifier immediately grew the circle and kept the identifier whole. Increasing the diagram text size to 28px retained whole words and fitted the shape; Undo restored the prior font and geometry. The actual Save button and native file-picker reopen preserved exact circle bounds and connection route, with no unsaved adjustment.
+
+Evidence: `artifacts/whole-word-native-results.json`, `whole-word-labels.mermaid-project.json`, `whole-word-preview.jpg`, and the latest `browser-results.json` / `ui-results.json`.

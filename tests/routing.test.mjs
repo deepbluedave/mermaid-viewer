@@ -70,3 +70,43 @@ test('many connections fit on a short node side and stay attached after resize',
  const m=emptyModel();m.nodes=[node('A',0,0),node('B',500,0)];m.edges=Array.from({length:12},(_,i)=>edge('e'+i,'A','B'));
  for(const height of [54,100]){m.nodes[0].height=m.nodes[1].height=height;const routes=router.route(m),ys=[];for(const points of routes.values()){orthogonal(points);assert.equal(points[0].x,120);assert.equal(points.at(-1).x,500);assert.ok(points[0].y>=height*.2-.001&&points[0].y<=height*.8+.001);ys.push(points[0].y);}assert.equal(new Set(ys).size,12,'all attachment points are distinct');}
 });
+const zone=(id,x,y,width=280,height=180,parentId=null)=>({id,label:id,x,y,width,height,parentId});
+const normals={north:{x:0,y:-1},south:{x:0,y:1},west:{x:-1,y:0},east:{x:1,y:0}};
+function approach(points,end,n,side,inward=false){
+ const p=end==='source'?points[0]:points.at(-1),q=end==='source'?points[1]:points.at(-2),normal=normals[side],sign=inward?-1:1;
+ assert.ok(Math.abs((q.x-p.x)*normal.y-(q.y-p.y)*normal.x)<.001,'approach is perpendicular to '+n.id+' '+side);
+ assert.ok(((q.x-p.x)*normal.x+(q.y-p.y)*normal.y)*sign>0,'approach meets the correct side of the border of '+n.id);
+}
+test('offset zone-to-zone connections meet facing borders normally and reroute after either zone moves',()=>{
+ const m=emptyModel();m.zones=[zone('Left',50,80),zone('Right',620,110)];m.edges=[edge('E','Left','Right')];
+ for(const move of [()=>{},()=>{m.zones[1].y+=120;},()=>{m.zones[0].x=1100;m.zones[0].y=150;},()=>{m.zones[1].x=1100;m.zones[1].y=650;}]){
+  move();const [a,b]=m.zones,p=router.route(m).get('E');orthogonal(p);const dx=b.x+b.width/2-a.x-a.width/2,dy=b.y+b.height/2-a.y-a.height/2,side=Math.abs(dx)>Math.abs(dy)?dx>0?'east':'west':dy>0?'south':'north',opposite={east:'west',west:'east',north:'south',south:'north'}[side];approach(p,'source',a,side);approach(p,'target',b,opposite);
+ }
+});
+test('node-to-zone and zone-to-node connections respect all four explicit attachment sides',()=>{
+ for(const sourceSide of Object.keys(normals))for(const targetSide of Object.keys(normals))for(const reverse of [false,true]){
+  const m=emptyModel();m.zones=[zone('Z',430,160)];m.nodes=[node('N',50,70)];m.edges=[{...edge('E',reverse?'Z':'N',reverse?'N':'Z'),sourceSide,targetSide}];const p=router.route(m).get('E'),objects=new Map([...m.nodes,...m.zones].map(n=>[n.id,n]));orthogonal(p);approach(p,'source',objects.get(m.edges[0].source),sourceSide);approach(p,'target',objects.get(m.edges[0].target),targetSide);
+ }
+});
+test('zone endpoint constraints preserve leaf obstacle avoidance after moving and resizing endpoints',()=>{
+ const m=emptyModel();m.zones=[zone('Z',600,70)];m.nodes=[node('N',20,100),node('Obstacle',310,50)];m.edges=[edge('E','N','Z')];
+ for(const modify of [()=>{},()=>{m.zones[0].y=240;m.zones[0].height=220;},()=>{m.nodes[0].y=200;m.zones[0].width=340;}]){modify();const p=router.route(m).get('E');orthogonal(p);avoids(p,m.nodes[1]);approach(p,'source',m.nodes[0],'east');approach(p,'target',m.zones[0],'west');}
+});
+test('parent nodes in every shape use the same constrained outline approaches as zones',()=>{
+ for(const shape of ['rectangle','rounded','circle','diamond','cylinder'])for(const side of Object.keys(normals)){
+  const m=emptyModel();m.nodes=[{...node('Parent',20,40),container:true,shape,width:280,height:280},node('Leaf',650,150)];m.edges=[{...edge('E','Parent','Leaf'),sourceSide:side,targetSide:'west'},{...edge('R','Leaf','Parent'),sourceSide:'west',targetSide:side}];
+  for(const [id,p]of router.route(m)){orthogonal(p);approach(p,id==='E'?'source':'target',m.nodes[0],side);const end=id==='E'?p[0]:p.at(-1),n=m.nodes[0],dx=(end.x-n.x-n.width/2)/(n.width/2),dy=(end.y-n.y-n.height/2)/(n.height/2);if(shape==='circle')assert.ok(Math.abs(dx*dx+dy*dy-1)<.001);else if(shape==='diamond')assert.ok(Math.abs(Math.abs(dx)+Math.abs(dy)-1)<.001);}
+ }
+});
+test('connections within nested zones approach their containing borders from the interior and loops from outside',()=>{
+ const m=emptyModel();m.zones=[zone('Outer',0,0,700,500),zone('Inner',70,80,350,260,'Outer')];m.nodes=[{...node('Child',160,160),parentId:'Inner'}];m.edges=[{...edge('Out','Outer','Inner'),sourceSide:'west',targetSide:'west'},{...edge('In','Child','Inner'),sourceSide:'west',targetSide:'west'},edge('Loop','Outer','Outer')];const paths=router.route(m);for(const p of paths.values())orthogonal(p);
+ approach(paths.get('Out'),'source',m.zones[0],'west',true);approach(paths.get('Out'),'target',m.zones[1],'west');approach(paths.get('In'),'target',m.zones[1],'west',true);approach(paths.get('Loop'),'source',m.zones[0],'east');approach(paths.get('Loop'),'target',m.zones[0],'north');assert.ok(paths.get('Loop').length>=4);
+});
+test('parallel zone connections keep distinct border attachments and correct approaches on every edge',()=>{
+ const m=emptyModel();m.zones=[zone('Left',10,40),zone('Right',520,75)];m.edges=[edge('One','Left','Right'),edge('Two','Left','Right'),{...edge('Back','Right','Left'),direction:'both'}];const paths=router.route(m),left=[],right=[];
+ for(const e of m.edges){const p=paths.get(e.id);orthogonal(p);const from=m.zones.find(n=>n.id===e.source),to=m.zones.find(n=>n.id===e.target);approach(p,'source',from,from.id==='Left'?'east':'west');approach(p,'target',to,to.id==='Left'?'east':'west');left.push((e.source==='Left'?p[0]:p.at(-1)).y);right.push((e.source==='Right'?p[0]:p.at(-1)).y);}
+ for(const pins of [left,right]){pins.sort((a,b)=>a-b);assert.ok(pins[1]-pins[0]>=11.99&&pins[2]-pins[1]>=11.99);}
+});
+test('connections to a zone leave unrelated routes through its body and title unobstructed',()=>{
+ const m=emptyModel();m.nodes=[node('A',0,0),node('B',520,0),node('Outside',720,160)];m.edges=[edge('Crossing','A','B')];const original=router.route(m).get('Crossing');m.zones=[zone('Z',220,20,180,260)];m.edges.push(edge('ZoneEdge','Z','Outside'));assert.deepEqual(router.route(m).get('Crossing'),original,'connected zone body and title stay traversable away from its ports');
+});

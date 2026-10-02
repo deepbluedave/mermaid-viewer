@@ -1,0 +1,187 @@
+{
+  "date": "2026-10-02",
+  "url": "http://127.0.0.1:8000/viewer.html?v=whole-words",
+  "passed": 7,
+  "total": 7,
+  "checks": [
+    {
+      "name": "Native Open preserves whole Customer and Browser words within circle",
+      "pass": true,
+      "observed": {
+        "counts": "2 nodes · 1 edges · 0 zones",
+        "font": "20",
+        "lines": [
+          "Customer",
+          "Browser"
+        ],
+        "path": "M210,195 L305,195 L305,185 L400,185",
+        "shape": {
+          "height": 150,
+          "width": 150,
+          "x": 410,
+          "y": 267
+        },
+        "text": {
+          "height": 50,
+          "width": 85.953125,
+          "x": 442.0234375,
+          "y": 316.5
+        }
+      }
+    },
+    {
+      "name": "Native Width 90 grows to fit whole-word minimum",
+      "pass": true,
+      "observed": {
+        "counts": "2 nodes · 1 edges · 0 zones · Unsaved changes",
+        "font": "20",
+        "lines": [
+          "Customer",
+          "Browser"
+        ],
+        "path": "M202.80360530761834,191.40180265380917 L301.40180265380917,191.40180265380917 L301.40180265380917,185 L400,185",
+        "shape": {
+          "height": 142.8035888671875,
+          "width": 142.8035888671875,
+          "x": 410,
+          "y": 267
+        },
+        "text": {
+          "height": 50,
+          "width": 85.953125,
+          "x": 438.42523193359375,
+          "y": 312.90179443359375
+        },
+        "width": "143"
+      }
+    },
+    {
+      "name": "Native widening unwraps the label to one intact line",
+      "pass": true,
+      "observed": {
+        "counts": "2 nodes · 1 edges · 0 zones · Unsaved changes",
+        "font": "20",
+        "lines": [
+          "Customer Browser"
+        ],
+        "path": "M360,270 L380,270 L380,185 L400,185",
+        "shape": {
+          "height": 300,
+          "width": 300,
+          "x": 410,
+          "y": 267
+        },
+        "text": {
+          "height": 23,
+          "width": 162.28125,
+          "x": 478.859375,
+          "y": 405
+        },
+        "width": "300"
+      }
+    },
+    {
+      "name": "One native Undo restores wrapped circle and route",
+      "pass": true,
+      "observed": {
+        "counts": "2 nodes · 1 edges · 0 zones · Unsaved changes",
+        "font": "20",
+        "lines": [
+          "Customer",
+          "Browser"
+        ],
+        "path": "M202.80360530761834,191.40180265380917 L301.40180265380917,191.40180265380917 L301.40180265380917,185 L400,185",
+        "shape": {
+          "height": 142.8035888671875,
+          "width": 142.8035888671875,
+          "x": 410,
+          "y": 267
+        },
+        "text": {
+          "height": 50,
+          "width": 85.953125,
+          "x": 438.42523193359375,
+          "y": 312.90179443359375
+        },
+        "width": "143"
+      }
+    },
+    {
+      "name": "Native label typing grows circle for an unbroken identifier",
+      "pass": true,
+      "observed": {
+        "counts": "2 nodes · 1 edges · 0 zones · Unsaved changes",
+        "font": "20",
+        "lines": [
+          "CustomerBrowserIdentifier"
+        ],
+        "path": "M267.1472680135348,191.40180265380917 L333.5736340067674,191.40180265380917 L333.5736340067674,185 L400,185",
+        "shape": {
+          "height": 271.4909362792969,
+          "width": 271.4909362792969,
+          "x": 345.6563415527344,
+          "y": 202.6563415527344
+        },
+        "text": {
+          "height": 23,
+          "width": 234.515625,
+          "x": 364.14398193359375,
+          "y": 326.40179443359375
+        },
+        "width": "271"
+      }
+    },
+    {
+      "name": "Native font increase grows circle without fragmenting words",
+      "pass": true,
+      "observed": {
+        "counts": "2 nodes · 1 edges · 0 zones · Unsaved changes",
+        "font": "28",
+        "lines": [
+          "Customer",
+          "Browser"
+        ],
+        "path": "M222.40369200461782,191.40180265380917 L311.2018460023089,191.40180265380917 L311.2018460023089,185 L400,185",
+        "shape": {
+          "height": 182.0037841796875,
+          "width": 182.0037841796875,
+          "x": 390.39990234375,
+          "y": 247.39990234375
+        },
+        "text": {
+          "height": 71,
+          "width": 118.40625,
+          "x": 422.19866943359375,
+          "y": 302.2017822265625
+        },
+        "width": "182"
+      }
+    },
+    {
+      "name": "Actual Save and native file-picker reopen retain whole words and exact geometry/routes",
+      "pass": true,
+      "observed": {
+        "counts": "2 nodes · 1 edges · 0 zones",
+        "font": "20",
+        "lines": [
+          "Customer",
+          "Browser"
+        ],
+        "path": "M202.80360530761834,191.40180265380917 L301.40180265380917,191.40180265380917 L301.40180265380917,185 L400,185",
+        "shape": {
+          "height": 142.8035888671875,
+          "width": 142.8035888671875,
+          "x": 410,
+          "y": 267
+        },
+        "text": {
+          "height": 50,
+          "width": 85.953125,
+          "x": 438.42523193359375,
+          "y": 312.90179443359375
+        }
+      }
+    }
+  ],
+  "console": []
+}

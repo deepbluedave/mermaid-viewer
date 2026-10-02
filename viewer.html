@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'">
   <title>Mermaid Diagram Studio</title>
-  <link rel="stylesheet" href="studio.css?v=drag-final">
+  <link rel="stylesheet" href="studio.css?v=whole-words">
 </head>
 <body>
   <header class="topbar">
@@ -56,7 +56,7 @@
     </aside>
     <section id="viewport" aria-label="Diagram canvas" tabindex="0">
       <svg id="canvas" xmlns="http://www.w3.org/2000/svg" role="graphics-document" aria-label="Editable diagram"><g id="world"></g></svg>
-      <div id="canvas-help">Drag nodes or zone headers · Shift-drag background to select · Scroll to zoom</div>
+      <div id="canvas-help">Drag nodes or zones · Shift-drag to select · Scroll to zoom</div>
       <div id="loading" role="status">Starting local engines…</div>
       <div class="zoom-toolbar"><button disabled id="btn-zoom-out" aria-label="Zoom out">−</button><span id="zoom-text">100%</span><button disabled id="btn-zoom-in" aria-label="Zoom in">+</button><button disabled id="btn-fit">Fit</button><label class="grid-control"><input disabled id="snap-grid" type="checkbox"> Snap grid</label><label class="grid-control"><input disabled id="alignment-guides" type="checkbox" checked> Guides</label></div>
     </section>
@@ -66,6 +66,6 @@
   <div id="error-banner" role="alert" hidden><span id="error-message"></span><button disabled id="dismiss-error" aria-label="Dismiss error">×</button></div>
   <input disabled id="file-input" type="file" accept=".json,.mmd,.mermaid,.txt" hidden>
   <script src="./vendor/mermaid.min.js"></script>
-  <script type="module" src="./app.mjs?v=drag-final"></script>
+  <script type="module" src="./app.mjs?v=whole-words"></script>
 </body>
 </html>

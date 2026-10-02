@@ -1,7 +1,7 @@
-import { nodeMetrics, depth,diagramFontSize,zoneHeaderHeight,objectColors,containerTitleBox } from './core.mjs?v=drag-final';
-import { sidePoint } from './routing.mjs?v=drag-final';
-import { layoutEdgeLabels, zoneTitleBox } from './labels.mjs?v=drag-final';
-import { bridgedPaths } from './bridges.mjs?v=drag-final';
+import { nodeMetrics, depth,diagramFontSize,zoneHeaderHeight,objectColors,containerTitleBox } from './core.mjs?v=whole-words';
+import { sidePoint } from './routing.mjs?v=whole-words';
+import { layoutEdgeLabels, zoneTitleBox } from './labels.mjs?v=whole-words';
+import { bridgedPaths } from './bridges.mjs?v=whole-words';
 const ns='http://www.w3.org/2000/svg';
 export const svgElement=(tag,attributes={},text=null)=>{const element=document.createElementNS(ns,tag);for(const [key,value] of Object.entries(attributes))if(value!==null&&value!==undefined)element.setAttribute(key,String(value));if(text!==null)element.textContent=text;return element;};
 export const sceneStyle=`.diagram-zone>rect{fill:#eef2f6;fill-opacity:.8;stroke:#94a3b8;stroke-width:1;stroke-dasharray:3 3}.diagram-zone>.zone-header{fill:#e2e8f0;fill-opacity:.7;stroke:none}.zone-title>.zone-label-backing{fill:#e2e8f0;fill-opacity:.72;stroke:none}.zone-label{fill:#475569;font:12px system-ui,sans-serif}.diagram-node>.node-shape{fill:#fff;stroke:#64748b;stroke-width:1.3}.diagram-node text{fill:#1e293b;font:13px system-ui,sans-serif}.edge-line{fill:none;stroke:#64748b;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}.edge-label rect{fill:#fff;stroke:#e2e8f0;stroke-width:.7}.edge-label text{fill:#475569;font:11px system-ui,sans-serif}.node-container-title text{font-family:system-ui,sans-serif}`;

@@ -1,4 +1,4 @@
-import { emptyModel, resizeNode, expandZones, validateModel, configureTextMeasure, textWidth,ensureNodeSpacing,diagramFontSize,copy,shapes,ensureLayoutSpacing } from './core.mjs?v=drag-final';
+import { emptyModel, resizeNode, expandZones, validateModel, configureTextMeasure, textWidth,ensureNodeSpacing,diagramFontSize,copy,shapes,ensureLayoutSpacing } from './core.mjs?v=whole-words';
 let renderCount = 0;
 const shapeTypes = { square:'rectangle', rect:'rectangle', round:'rounded', rounded:'rounded', diamond:'diamond', circle:'circle', cylinder:'cylinder' };
 export function initializeMermaid() {
@@ -57,7 +57,7 @@ export async function importMermaid(source, { direction, layout = 'adaptive' } =
   return validateModel(model);
 }
 export async function layoutModel(model) {
-  const { toMermaid } = await import('./core.mjs?v=drag-final');
+  const { toMermaid } = await import('./core.mjs?v=whole-words');
   const source = `---\nconfig:\n  layout: ${model.settings.layout === 'hierarchical' ? 'elk.mrtree' : 'elk'}\n  themeVariables:\n    fontSize: ${diagramFontSize(model)}px\n---\n${toMermaid(model)}`;
   const id = `layout-${++renderCount}`;
   const { svg:markup } = await mermaid.render(id,source);

@@ -1,9 +1,9 @@
-import { emptyModel, copy, items, object, shapes, textWidth, resizeNode, moveSelection, movableIds, expandZones, reparent, deleteSelection, nextId, arrange, toMermaid, validateModel, History, depth,ensureNodeSpacing,separateSelection,dropSelection,dropParents,diagramFontSize,objectColors,containers,isContainer,containingParent,setNodeContainer,descendants } from './core.mjs?v=drag-final';
-import {resizeObject,resizeNodeTo,alignmentGuides} from './editing.mjs?v=drag-final';
-import { initializeMermaid, importMermaid, layoutModel, mergeSource } from './mermaid-adapter.mjs?v=drag-final';
+import { emptyModel, copy, items, object, shapes, textWidth, resizeNode, moveSelection, movableIds, expandZones, reparent, deleteSelection, nextId, arrange, toMermaid, validateModel, History, depth,ensureNodeSpacing,ensureLabelFit,separateSelection,dropSelection,dropParents,diagramFontSize,objectColors,containers,isContainer,containingParent,setNodeContainer,descendants } from './core.mjs?v=whole-words';
+import {resizeObject,resizeNodeTo,alignmentGuides} from './editing.mjs?v=whole-words';
+import { initializeMermaid, importMermaid, layoutModel, mergeSource } from './mermaid-adapter.mjs?v=whole-words';
 import { AvoidLib } from './vendor/libavoid/dist/index.js';
-import { DiagramRouter, sidePoint } from './routing.mjs?v=drag-final';
-import { createScene, svgElement, exportSvg } from './scene.mjs?v=drag-final';
+import { DiagramRouter, sidePoint } from './routing.mjs?v=whole-words';
+import { createScene, svgElement, exportSvg } from './scene.mjs?v=whole-words';
 const $=id=>document.getElementById(id);
 const canvas=$('canvas'),world=$('world'),viewport=$('viewport'),editor=$('editor'),properties=$('properties');
 let model=emptyModel(),selection=new Set(),tool='select',gesture=null,busy=true,sourceDirty=false,spaceHeld=false,router=null,routes=new Map(),frame=null,dirty=false;
@@ -161,7 +161,7 @@ document.addEventListener('pointermove',event=>{
 document.addEventListener('pointerup',()=>{paletteStart=null;setTimeout(()=>{blockedPaletteClick=null;},0);});
 document.addEventListener('pointercancel',()=>{paletteStart=null;blockedPaletteClick=null;});
 document.addEventListener('click',event=>{if(blockedPaletteClick&&event.target.closest('[data-tool]')?.dataset.tool===blockedPaletteClick){event.preventDefault();event.stopImmediatePropagation();}blockedPaletteClick=null;},true);
-function addConnection(source,target,sourceSide=null,targetSide=null){mutate('Connection added. Choose another source, or press V to select.',()=>{const edge={id:nextId(model,'Edge'),source,target,label:'',direction:'forward',style:'normal',routing:'orthogonal',sourceSide,targetSide};model.edges.push(edge);selection=new Set([edge.id]);});connectSource=null;safeDraw({reroute:false});}
+function addConnection(source,target,sourceSide=null,targetSide=null){let edge;mutate('Connection added.',()=>{edge={id:nextId(model,'Edge'),source,target,label:'',direction:'forward',style:'normal',routing:'orthogonal',sourceSide,targetSide};model.edges.push(edge);selection=new Set([edge.id]);});connectSource=null;if(edge&&model.edges.includes(edge))setTool('select');else safeDraw({reroute:false});}
 viewport.addEventListener('pointerdown',event=>{
   if(busy||gesture||!event.isPrimary||event.button!==0||event.target.closest('.zoom-toolbar'))return;
   $('error-banner').hidden=true;
@@ -177,7 +177,6 @@ viewport.addEventListener('pointerdown',event=>{
     if(event.shiftKey&&model.zones.includes(item)&&!target.closest('[data-zone-header]')){capture(event,{type:'marquee',extend:new Set(selection),zoneId:id});viewport.focus();return;}
     if(event.shiftKey){select(id,true);if(!selection.has(id))return;}else if(!selection.has(id))select(id);
     if(model.edges.includes(item)){viewport.focus();return;}
-    if(model.zones.includes(item)&&!target.closest('[data-zone-header]')){viewport.focus();return;}
     capture(event,{type:'move',id,selected:new Set(selection)});viewport.focus();return;
   }
   if(event.shiftKey){capture(event,{type:'marquee',extend:new Set(selection)});}else{selection.clear();safeDraw({reroute:false});capture(event,{type:'pan',view:{...model.settings.view}});}
@@ -232,7 +231,7 @@ function finishGesture(event){
     if(target&&items(model).some(n=>n.id===target)){
       if(g.edgeId){const edge=object(model,g.edgeId);edge[g.end]=target;edge[g.end+'Side']=side;selection=new Set([edge.id]);}
       else{const edge={id:nextId(model,'Edge'),source:g.source,target,label:'',direction:'forward',style:'normal',routing:'orthogonal',sourceSide:g.side,targetSide:side};model.edges.push(edge);selection=new Set([edge.id]);}
-      releaseCapture();connectSource=null;commit(g.before,g.edgeId?'Connection reattached.':'Connection added.');return;
+      releaseCapture();connectSource=null;if(!g.edgeId){tool='select';hoverId=null;}commit(g.before,g.edgeId?'Connection reattached.':'Connection added.');return;
     }
     status('Connection cancelled: drop onto a node or its handle.');
   }
@@ -264,7 +263,7 @@ async function exportDiagram(){if(busy||gesture)return;flushPropertyEdit();try{
   if(type==='svg'){download(blob,'diagram.svg');status('SVG exported with the current arrangement.');return;}
   const url=URL.createObjectURL(blob);try{const image=new Image();image.src=url;await image.decode();const output=document.createElement('canvas'),factor=Math.min(2,16000/Math.max(svg.width,svg.height));output.width=Math.ceil(svg.width*factor);output.height=Math.ceil(svg.height*factor);const context=output.getContext('2d');context.fillStyle='#fff';context.fillRect(0,0,output.width,output.height);context.drawImage(image,0,0,output.width,output.height);const png=await new Promise(resolve=>output.toBlob(resolve,'image/png'));if(!png)throw new Error('PNG generation failed.');download(png,'diagram.png');status('PNG exported with the current arrangement.');}finally{URL.revokeObjectURL(url);}
 }catch(e){error(e)}}
-$('file-input').addEventListener('change',async event=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;let repaired=false;const project=file.name.endsWith('.json'),opened=await runAsync('File opened.',async()=>{const text=await file.text();if(project){model=validateModel(JSON.parse(text));const before=JSON.stringify(model.nodes);ensureNodeSpacing(model);expandZones(model);repaired=JSON.stringify(model.nodes)!==before;}else{editor.value=text;sourceDirty=true;model=await importMermaid(text);}selection.clear();connectSource=null;hoverId=null;},{forceSource:true});if(opened){if(project){dirty=repaired;updateControls();if(repaired)status('Project opened. Crowded nodes were separated to keep a 24-unit gap; save to retain the adjustment.');}else fit();}});
+$('file-input').addEventListener('change',async event=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;let repaired=false;const project=file.name.endsWith('.json'),opened=await runAsync('File opened.',async()=>{const text=await file.text();if(project){model=validateModel(JSON.parse(text));const before=JSON.stringify(model.nodes);ensureLabelFit(model);ensureNodeSpacing(model);expandZones(model);repaired=JSON.stringify(model.nodes)!==before;}else{editor.value=text;sourceDirty=true;model=await importMermaid(text);}selection.clear();connectSource=null;hoverId=null;},{forceSource:true});if(opened){if(project){dirty=repaired;updateControls();if(repaired)status('Project opened. Labels were fitted and the 24-unit gap checked; save to retain the adjustments.');}else fit();}});
 editor.addEventListener('input',()=>{sourceDirty=true;syncSource();status('Source draft edited. Apply it when ready.');});
 $('btn-apply').addEventListener('click',applySource);$('btn-discard').addEventListener('click',()=>{syncSource(true);status('Source draft discarded.');});
 $('btn-new').addEventListener('click',newDiagram);$('btn-open').addEventListener('click',()=>$('file-input').click());$('btn-save').addEventListener('click',saveProject);$('btn-export').addEventListener('click',exportDiagram);

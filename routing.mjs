@@ -1,6 +1,6 @@
 // Adapter only: route finding is performed by libavoid, never by application code.
-import { items } from './core.mjs?v=drag-final';
-const sides = { north:{dir:1}, south:{dir:2}, west:{dir:4}, east:{dir:8} };
+import { items } from './core.mjs?v=whole-words';
+const sides = { north:{dir:1,opposite:2}, south:{dir:2,opposite:1}, west:{dir:4,opposite:8}, east:{dir:8,opposite:4} };
 const edgeSpacing=12;
 export function sidePoint(n, side, fraction=.5) {
   const horizontal=side==='north'||side==='south',positive=side==='east'||side==='south';
@@ -55,7 +55,12 @@ function connectionAttachments(model,objects) {
     // Order pins towards their opposite ends to avoid needless crossings at the node.
     group.sort((a,b)=>(a.other[axis]+a.other[dimension]/2)-(b.other[axis]+b.other[dimension]/2)||a.edgeId.localeCompare(b.edgeId)||a.end.localeCompare(b.end));
     const length=group[0].n[dimension],spacing=group.length>1?Math.min(edgeSpacing,length*.6/(group.length-1)):0;
-    group.forEach((entry,index)=>{const fraction=.5+(index-(group.length-1)/2)*spacing/length;entry.ends[entry.end]={side:entry.side,classId:entry.classId,point:sidePoint(entry.n,entry.side,fraction)};});
+    group.forEach((entry,index)=>{
+      const fraction=.5+(index-(group.length-1)/2)*spacing/length,{n,other,side}=entry;
+      // A connection to a contained object approaches this container from its interior.
+      const inward=(!n.shape||n.container)&&n.id!==other.id&&other.x>=n.x&&other.y>=n.y&&other.x+other.width<=n.x+n.width&&other.y+other.height<=n.y+n.height;
+      entry.ends[entry.end]={side,classId:entry.classId,point:sidePoint(n,side,fraction),inward};
+    });
   }
   return attachments;
 }
@@ -74,12 +79,17 @@ export class DiagramRouter {
     for(const n of model.nodes.filter(n=>!n.container)) {
       const poly=rectangle(n),shape=new a.ShapeRef(router,poly);poly.delete();shapes.set(n.id,shape);
     }
-    // Zones, including their titles, are traversable containers. Only leaf nodes are obstacles; parent node interiors are traversable too.
+    // Container bodies and titles remain traversable. Only leaf nodes and the
+    // immediate vicinity of connected outline ports participate as obstacles.
     const connections=new Map();
     function endpoint(id,attachment) {
       const n=objects.get(id),shape=shapes.get(id),{point,side,classId}=attachment;
       if(shape){new a.ShapeConnectionPin(shape,classId,point.x-n.x,point.y-n.y,false,0,sides[side].dir);return new a.ConnEnd(shape,classId);}
-      const p=new a.Point(point.x,point.y),end=new a.ConnEnd(p);p.delete();return end;
+      // The JS binding lacks directional point endpoints. Give each container
+      // port a tiny native pin anchor, rather than registering its whole body.
+      // Libavoid now controls the border approach exactly as it does for nodes.
+      const radius=.01,poly=rectangle({x:point.x-radius,y:point.y-radius,width:radius*2,height:radius*2}),anchor=new a.ShapeRef(router,poly);poly.delete();
+      new a.ShapeConnectionPin(anchor,classId,radius,radius,false,0,attachment.inward?sides[side].opposite:sides[side].dir);return new a.ConnEnd(anchor,classId);
     }
     for(const e of model.edges) {
       if(e.routing==='straight' && e.source!==e.target) continue;

@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Browser",
+      "label": "Customer Browser",
+      "shape": "circle",
+      "parentId": null,
+      "x": 60,
+      "y": 120,
+      "width": 142.80360530761834,
+      "height": 142.80360530761834,
+      "manualSize": {
+        "width": 90,
+        "height": 90
+      }
+    },
+    {
+      "id": "CDN",
+      "label": "CDN",
+      "shape": "rectangle",
+      "parentId": null,
+      "x": 400,
+      "y": 150,
+      "width": 160,
+      "height": 70,
+      "manualSize": {
+        "width": 160,
+        "height": 70
+      }
+    }
+  ],
+  "zones": [],
+  "edges": [
+    {
+      "id": "HTTPS",
+      "source": "Browser",
+      "target": "CDN",
+      "label": "HTTPS",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    }
+  ],
+  "settings": {
+    "direction": "LR",
+    "layout": "adaptive",
+    "grid": false,
+    "guides": true,
+    "fontSize": 20,
+    "view": {
+      "x": 40,
+      "y": 30,
+      "scale": 1
+    }
+  }
+}

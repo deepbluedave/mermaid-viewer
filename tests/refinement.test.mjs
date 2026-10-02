@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {emptyModel,copy,objectColors,darkenColor,nodeMetrics,textWidth,resizeNode,setNodeContainer,reparent,moveSelection,expandZones,containers,containerContentBox,containerTitleBox,ensureNodeSpacing,ensureLayoutSpacing,dropSelection,dropParents,separateSelection,deleteSelection,validateModel,toMermaid,shapes} from '../core.mjs';
+import {emptyModel,copy,labelLines,wrapText,ensureLabelFit,objectColors,darkenColor,nodeMetrics,textWidth,resizeNode,setNodeContainer,reparent,moveSelection,expandZones,containers,containerContentBox,containerTitleBox,ensureNodeSpacing,ensureLayoutSpacing,dropSelection,dropParents,separateSelection,deleteSelection,validateModel,toMermaid,shapes} from '../core.mjs';
 import {resizeObject} from '../editing.mjs';import {overlapsWithGap} from '../geometry.mjs';
 import {AvoidLib} from '../vendor/libavoid/dist/index-node.mjs';import {DiagramRouter} from '../routing.mjs';
 const node=(id,x=100,y=100,shape='rectangle')=>({id,label:'New Node',shape,parentId:null,x,y,width:120,height:54});
@@ -66,4 +66,31 @@ test('moving the only child container to another ordinary node demotes only the 
 });
 test('deleting the last child collapses its node parent without removing parent connections',()=>{
  const m=fixture();reparent(m,'Child','Parent');m.edges=[{id:'E',source:'Parent',target:'Outside',label:'',style:'normal',direction:'forward',routing:'orthogonal'}];deleteSelection(m,new Set(['Child']));assert.ok(!m.nodes[0].container);assert.equal(m.edges.length,1);assert.equal(m.nodes[0].id,'Parent');
+});
+
+test('wrapping preserves whole words, identifiers, Unicode sequences and explicit line breaks',()=>{
+ for(const wrap of [label=>labelLines(label,3),label=>wrapText(label,10,13)]){
+  assert.deepEqual(wrap('Customer Browser'),['Customer','Browser']);
+  assert.deepEqual(wrap('Customer\n\nBrowser'),['Customer','','Browser']);
+  for(const word of ['VeryLongUnbrokenWordWithoutSpaces','中文没有空格','Café','👩‍💻'])assert.deepEqual(wrap(word),[word]);
+ }
+});
+test('every shape keeps Customer and Browser intact as labels wrap and dimensions grow',()=>{
+ for(const shape of shapes)for(const font of [10,20,48])for(const width of [80,150,300]){
+  const n={...node('N',100,100,shape),label:'Customer Browser',manualSize:{width,height:shape==='circle'?width:100}},m=nodeMetrics(n,font);
+  assert.deepEqual(m.lines.flatMap(line=>line.split(/\s+/)),['Customer','Browser']);assert.ok(m.width>=width);
+  if(shape==='circle')assert.equal(m.width,m.height);
+ }
+});
+test('long unbroken labels grow ordinary shapes and container titles instead of splitting words',()=>{
+ const word='VeryLongUnbrokenWordWithoutSpaces';
+ for(const shape of shapes){
+  const n={...node('N',100,100,shape),label:word,manualSize:{width:80,height:60}};
+  for(const font of [13,48]){const m=nodeMetrics(n,font);assert.deepEqual(m.lines,[word]);assert.ok(m.width>=textWidth(word,font)+24);}
+  const m=emptyModel();m.settings.fontSize=48;m.nodes=[{...n,container:true,width:160,height:100}];expandZones(m);const metrics=nodeMetrics(m.nodes[0],48),box=containerTitleBox(m,m.nodes[0]);assert.deepEqual(metrics.lines,[word]);assert.ok(textWidth(word,48)<=box.width-32+.001);const stable=copy(m);expandZones(m);assert.deepEqual(m,stable,'title growth is stable');
+ }
+});
+test('legacy label fitting grows undersized geometry without shrinking valid layouts or losing preferences',()=>{
+ const m=emptyModel();m.nodes=[{...node('Small',100,100,'circle'),label:'Customer Browser',width:60,height:60,manualSize:{width:60,height:60},notes:'Keep this'}, {...node('Roomy',500,100,'circle'),label:'A',width:120,height:120}, {...node('Tall',800,100),label:'A',width:400,height:500,manualSize:{width:120,height:54}}];
+ const before=copy(m),cx=m.nodes[0].x+30,cy=m.nodes[0].y+30;ensureLabelFit(m);assert.ok(m.nodes[0].width>60);assert.equal(m.nodes[0].x+m.nodes[0].width/2,cx);assert.equal(m.nodes[0].y+m.nodes[0].height/2,cy);assert.deepEqual(m.nodes[0].manualSize,before.nodes[0].manualSize);assert.equal(m.nodes[0].notes,'Keep this');assert.deepEqual(m.nodes.slice(1),before.nodes.slice(1));const once=copy(m);ensureLabelFit(m);assert.deepEqual(m,once,'repair is idempotent');
 });

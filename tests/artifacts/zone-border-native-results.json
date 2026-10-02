@@ -1,0 +1,73 @@
+{
+  "passed": 7,
+  "total": 7,
+  "results": [
+    {
+      "name": "Mouse-created offset zone-to-zone edge approaches the west border horizontally and returns to Select",
+      "pass": true
+    },
+    {
+      "name": "Mouse-created node-to-zone edge and existing zone edge retain distinct correctly oriented border approaches",
+      "pass": true
+    },
+    {
+      "name": "Native zone body drag reroutes both edges with normal border approaches while Worker and view remain fixed",
+      "pass": true
+    },
+    {
+      "name": "One native Undo restores both routes and all endpoint geometry",
+      "pass": true
+    },
+    {
+      "name": "Native Width/Height edits reroute both border connections with correct horizontal arrow approaches",
+      "pass": true
+    },
+    {
+      "name": "Native Top attachment selection points the node-to-zone arrow downward into the top border",
+      "pass": true
+    },
+    {
+      "name": "Native node handle drop onto a zone honors the left-side node departure and approaches the zone normally, then returns to Select",
+      "pass": true
+    }
+  ],
+  "final": {
+    "counts": "1 nodes · 2 edges · 2 zones",
+    "objects": [
+      {
+        "height": 135,
+        "id": "Source",
+        "width": 210,
+        "x": 377.5,
+        "y": 222
+      },
+      {
+        "height": 135,
+        "id": "Target",
+        "width": 210,
+        "x": 782.5,
+        "y": 244.5
+      },
+      {
+        "height": 40.5,
+        "id": "Worker",
+        "width": 90,
+        "x": 422.5,
+        "y": 447
+      }
+    ],
+    "paths": [
+      {
+        "d": "M330,190 L460.00000000000006,190 L460.00000000000006,214 L590,214",
+        "id": "Edge1"
+      },
+      {
+        "d": "M230,427 L409.995,427 L409.995,226 L590,226",
+        "id": "Edge2"
+      }
+    ],
+    "tool": "select",
+    "view": "translate(30,30) scale(0.75)"
+  },
+  "console": []
+}

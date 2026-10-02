@@ -1,5 +1,5 @@
-import { labelLines, textWidth,diagramFontSize,containers,containerTitleBox } from './core.mjs?v=drag-final';
-import { labelAnchor } from './routing.mjs?v=drag-final';
+import { labelLines, textWidth,diagramFontSize,containers,containerTitleBox } from './core.mjs?v=whole-words';
+import { labelAnchor } from './routing.mjs?v=whole-words';
 
 const overlaps=(a,b,padding=4)=>a.x+a.width>b.x-padding&&a.x<b.x+b.width+padding&&a.y+a.height>b.y-padding&&a.y<b.y+b.height+padding;
 function segmentIntersectsBox(a,b,box,padding=0) {
