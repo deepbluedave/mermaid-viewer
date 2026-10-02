@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Inbox",
+      "label": "Inbox",
+      "shape": "cylinder",
+      "parentId": "Service",
+      "x": 112,
+      "y": 200.07435607910145,
+      "width": 120,
+      "height": 70
+    },
+    {
+      "id": "Worker",
+      "label": "Send notification",
+      "shape": "rectangle",
+      "parentId": "Service",
+      "x": 266.83984375001455,
+      "y": 208.07435607910156,
+      "width": 154.3203125,
+      "height": 54
+    },
+    {
+      "id": "Client",
+      "label": "Client",
+      "shape": "rectangle",
+      "parentId": null,
+      "x": 669.015625,
+      "y": 80.75,
+      "width": 120,
+      "height": 54
+    },
+    {
+      "id": "Service",
+      "label": "Notification delivery",
+      "parentId": "Platform",
+      "x": 76,
+      "y": 128,
+      "width": 368,
+      "height": 175.14869689941406,
+      "shape": "rounded",
+      "container": true,
+      "backgroundColor": "#dbeafe"
+    }
+  ],
+  "zones": [
+    {
+      "id": "Platform",
+      "label": "Platform",
+      "parentId": null,
+      "x": 52,
+      "y": 77,
+      "width": 416,
+      "height": 250.14869689941406,
+      "backgroundColor": "#e0e7ff"
+    }
+  ],
+  "edges": [
+    {
+      "id": "incoming",
+      "source": "Client",
+      "target": "Inbox",
+      "label": "New message",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "dispatch",
+      "source": "Inbox",
+      "target": "Worker",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "health",
+      "source": "Service",
+      "target": "Client",
+      "label": "Health check",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    }
+  ],
+  "settings": {
+    "direction": "LR",
+    "layout": "adaptive",
+    "grid": false,
+    "guides": true,
+    "fontSize": 16,
+    "view": {
+      "x": 10.467680044096753,
+      "y": 118.83144501022917,
+      "scale": 0.8371599991519855
+    }
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "passed": 10,
+  "total": 10,
+  "results": [
+    {
+      "name": "native parent title drag carries child nodes once, keeps external node fixed",
+      "pass": true
+    },
+    {
+      "name": "native short diamond label wraps when narrowed and unwraps when widened",
+      "pass": true,
+      "smallDiamond": {
+        "h": "180",
+        "lines": 2,
+        "w": "100"
+      },
+      "largeDiamond": {
+        "lines": 1
+      }
+    },
+    {
+      "name": "native creation inside enabled node joins the parent",
+      "pass": true
+    },
+    {
+      "name": "native title and background update while property field remains focused",
+      "pass": true,
+      "evidence": {
+        "active": "property-label",
+        "fill": "rgb(219, 234, 254)",
+        "label": "Review pipeline 中文"
+      }
+    },
+    {
+      "name": "native child drop outside releases membership and clears the former parent",
+      "pass": true,
+      "evidence": {
+        "child": {
+          "bottom": 652.5,
+          "height": 67.5,
+          "left": 868.3489990234375,
+          "right": 1024.01123046875,
+          "top": 585,
+          "width": 155.6622314453125,
+          "x": 868.3489990234375,
+          "y": 585
+        },
+        "parent": {
+          "bottom": 555,
+          "height": 300,
+          "left": 472.5,
+          "right": 872.5,
+          "top": 255,
+          "width": 400,
+          "x": 472.5,
+          "y": 255
+        },
+        "parentId": ""
+      }
+    },
+    {
+      "name": "native drop into a node preserves pointer location and avoids unnecessary parent growth",
+      "pass": true,
+      "evidence": {
+        "child": {
+          "bottom": 434.5,
+          "height": 67.5,
+          "left": 598.3489990234375,
+          "right": 754.01123046875,
+          "top": 367,
+          "width": 155.6622314453125,
+          "x": 598.3489990234375,
+          "y": 367
+        },
+        "parent": {
+          "bottom": 555,
+          "height": 300,
+          "left": 472.5,
+          "right": 872.5,
+          "top": 255,
+          "width": 400,
+          "x": 472.5,
+          "y": 255
+        },
+        "parentId": "Node1"
+      }
+    },
+    {
+      "name": "native short circle label wraps at 90 and unwraps at 240, keeping equal dimensions",
+      "pass": true,
+      "evidence": {
+        "circleSmall": {
+          "h": "90",
+          "lines": 2,
+          "w": "90"
+        },
+        "circleBig": 1
+      }
+    },
+    {
+      "name": "native LR automatic layout clears Public Edge from Customer Browser and darkens nested zones/title bars",
+      "pass": true,
+      "evidence": {
+        "browser": {
+          "left": 53.999996185302734,
+          "right": 121.45859909057616
+        },
+        "colors": [
+          {
+            "body": "rgb(238, 242, 246)",
+            "header": "rgb(217, 220, 224)",
+            "id": "PublicZone"
+          },
+          {
+            "body": "rgb(238, 242, 246)",
+            "header": "rgb(217, 220, 224)",
+            "id": "AppZone"
+          },
+          {
+            "body": "rgb(238, 242, 246)",
+            "header": "rgb(217, 220, 224)",
+            "id": "DataZone"
+          },
+          {
+            "body": "rgb(225, 229, 232)",
+            "header": "rgb(205, 208, 211)",
+            "id": "Dmz"
+          },
+          {
+            "body": "rgb(225, 229, 232)",
+            "header": "rgb(205, 208, 211)",
+            "id": "AppSubnet"
+          },
+          {
+            "body": "rgb(225, 229, 232)",
+            "header": "rgb(205, 208, 211)",
+            "id": "DataSubnet"
+          }
+        ],
+        "gap": 136.6677068522001,
+        "zone": {
+          "left": 185.5453186035156,
+          "right": 522.721923828125
+        }
+      }
+    },
+    {
+      "name": "native Save/Open/Save restores the complete container project exactly",
+      "pass": true,
+      "evidence": "Downloaded JSON comparison matched the saved model including geometry, view, node parent flag, memberships and font size 16."
+    },
+    {
+      "name": "native SVG and PNG exports render the refined parent title, child nodes and connections without editing handles",
+      "pass": true,
+      "evidence": {
+        "svg": "/Users/dallen/Downloads/mermaid_viewer/tests/artifacts/refinement-notification-service.svg",
+        "png": "/Users/dallen/Downloads/mermaid_viewer/tests/artifacts/refinement-notification-service.png",
+        "visuallyReviewed": true
+      }
+    }
+  ],
+  "colorPanelLimit": "Verified browser color-input events and native hex previews; the macOS color panel was outside browser screenshot capture and Computer Use disallows Codex."
+}

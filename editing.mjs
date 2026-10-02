@@ -1,5 +1,5 @@
-import {copy,items,object,movableIds,diagramFontSize,setNodeSize,expandZones}from'./core.mjs?v=appearance-final';
-import{overlapsWithGap}from'./geometry.mjs?v=appearance-final';
+import {copy,items,object,movableIds,diagramFontSize,setNodeSize,expandZones,related,descendants}from'./core.mjs?v=drag-final';
+import{overlapsWithGap}from'./geometry.mjs?v=drag-final';
 
 export function resizeObject(model,id,handle,dx,dy) {
   const before=copy(object(model,id)),node=model.nodes.some(n=>n.id===id),font=diagramFontSize(model);
@@ -12,7 +12,7 @@ export function resizeObject(model,id,handle,dx,dy) {
     n.y=handle.includes('n')?before.y+before.height-n.height:handle.includes('s')?before.y:before.y+(before.height-n.height)/2;
     return n;
   };
-  const fixed=model.nodes.filter(n=>n.id!==id),valid=n=>!fixed.some(other=>overlapsWithGap(n,other));let resized=candidate(1);
+  const current=object(model,id),fixed=model.nodes.filter(n=>!related(model,current,n)),valid=n=>!fixed.some(other=>overlapsWithGap(n,other));let resized=candidate(1);
   if(node&&!valid(resized)){let low=0,high=1;for(let i=0;i<32;i++){const t=(low+high)/2;valid(candidate(t))?low=t:high=t;}resized=candidate(low);}
   Object.assign(object(model,id),resized);expandZones(model);return object(model,id);
 }

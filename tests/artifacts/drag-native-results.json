@@ -1,0 +1,142 @@
+{
+  "passed": 9,
+  "total": 9,
+  "results": [
+    {
+      "name": "native drag onto ordinary rounded node creates containment, at the pointer location",
+      "pass": true,
+      "evidence": {
+        "child": {
+          "bottom": 337,
+          "height": 54,
+          "left": 459.906005859375,
+          "right": 580.093994140625,
+          "top": 283,
+          "width": 120.18798828125,
+          "x": 459.906005859375,
+          "y": 283
+        },
+        "parentFlag": true,
+        "parentId": "Node1",
+        "treeIndent": "15px"
+      }
+    },
+    {
+      "name": "native final-child drag out demotes the parent and releases the child",
+      "pass": true,
+      "evidence": {
+        "child": {
+          "bottom": 537,
+          "height": 54,
+          "left": 839.906005859375,
+          "right": 960.093994140625,
+          "top": 483,
+          "width": 120.18798828125,
+          "x": 839.906005859375,
+          "y": 483
+        },
+        "parent": {
+          "bottom": 337,
+          "height": 54,
+          "left": 455.8466796875,
+          "right": 584.1533203125,
+          "top": 283,
+          "width": 128.306640625,
+          "x": 455.8466796875,
+          "y": 283
+        },
+        "parentFlag": false,
+        "parentId": ""
+      }
+    },
+    {
+      "name": "native Undo restores the parent and its last child together",
+      "pass": true
+    },
+    {
+      "name": "native drag from Zone toolbar creates one centered zone and returns to Select",
+      "pass": true,
+      "evidence": {
+        "cx": 865,
+        "cy": 530,
+        "ghost": false,
+        "nodeCount": 2,
+        "selectedTool": "select",
+        "zoneCount": 1
+      }
+    },
+    {
+      "name": "native palette zone creation is undone in one action",
+      "pass": true
+    },
+    {
+      "name": "native palette release in Properties creates nothing and clears its preview",
+      "pass": true
+    },
+    {
+      "name": "native Node toolbar drag on the final build creates exactly one node at the drop centre",
+      "pass": true,
+      "evidence": {
+        "cx": 850,
+        "cy": 280,
+        "ghost": false,
+        "nodes": 3,
+        "tool": "select"
+      }
+    },
+    {
+      "name": "native connected child transfer between nodes promotes its target, demotes the former parent and retains its edge",
+      "pass": true,
+      "evidence": {
+        "edges": 1,
+        "error": true,
+        "newContainer": true,
+        "oldContainer": false,
+        "parentId": "Node3"
+      }
+    },
+    {
+      "name": "native node-container drag into a palette-created zone preserves descendant offsets and the external node",
+      "pass": true,
+      "evidence": {
+        "rigidBefore": [
+          {
+            "id": "Node1",
+            "x": 360,
+            "y": 190
+          },
+          {
+            "id": "Node2",
+            "x": 459.906005859375,
+            "y": 283
+          },
+          {
+            "id": "Node3",
+            "x": 790,
+            "y": 253
+          }
+        ],
+        "rigidAfter": {
+          "nodes": [
+            {
+              "id": "Node1",
+              "x": 705,
+              "y": 410
+            },
+            {
+              "id": "Node2",
+              "x": 804.906005859375,
+              "y": 503
+            },
+            {
+              "id": "Node3",
+              "x": 790,
+              "y": 253
+            }
+          ],
+          "parent": "Zone1"
+        }
+      }
+    }
+  ]
+}

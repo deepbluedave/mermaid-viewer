@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Node1",
+      "label": "Review pipeline 中文",
+      "shape": "rounded",
+      "parentId": null,
+      "x": 167.055908203125,
+      "y": 156,
+      "width": 320,
+      "height": 240,
+      "container": true,
+      "backgroundColor": "#dbeafe"
+    },
+    {
+      "id": "Node2",
+      "label": "Review request",
+      "shape": "rectangle",
+      "parentId": "Node1",
+      "x": 227.735107421875,
+      "y": 246,
+      "width": 124.52978515625,
+      "height": 54
+    }
+  ],
+  "zones": [],
+  "edges": [],
+  "settings": {
+    "direction": "TD",
+    "layout": "adaptive",
+    "grid": false,
+    "guides": true,
+    "fontSize": 13,
+    "view": {
+      "x": -46.31988525390625,
+      "y": -57,
+      "scale": 1.25
+    }
+  }
+}

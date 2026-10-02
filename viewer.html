@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'">
   <title>Mermaid Diagram Studio</title>
-  <link rel="stylesheet" href="studio.css?v=appearance-final">
+  <link rel="stylesheet" href="studio.css?v=drag-final">
 </head>
 <body>
   <header class="topbar">
@@ -25,9 +25,9 @@
     <div class="tool-group" role="group" aria-label="Editing tools">
       <button disabled data-tool="select" aria-pressed="true" title="Select and move (V)">↖ Select</button>
       <button disabled data-tool="pan" aria-pressed="false" title="Pan (H or hold Space)">✥ Pan</button>
-      <button disabled data-tool="node" aria-pressed="false" title="Add node (N)">□ Node</button>
+      <button disabled data-tool="node" aria-pressed="false" title="Add node (N): click then place, or drag onto the canvas">□ Node</button>
       <button disabled data-tool="connect" aria-pressed="false" title="Connect (C)">↗ Connect</button>
-      <button disabled data-tool="zone" aria-pressed="false" title="Add zone (Z)">▧ Zone</button>
+      <button disabled data-tool="zone" aria-pressed="false" title="Add zone (Z): click then place, or drag onto the canvas">▧ Zone</button>
     </div>
     <div class="tool-group"><button id="btn-undo" title="Undo (Ctrl/Cmd+Z)" disabled>Undo</button><button id="btn-redo" title="Redo (Ctrl/Cmd+Shift+Z)" disabled>Redo</button><button id="btn-delete" disabled>Delete</button></div>
     <div class="tool-group">
@@ -40,7 +40,7 @@
     <aside id="source-panel" class="source-panel">
       <div id="hierarchy-content">
         <div class="panel-heading"><h2>Hierarchy</h2><span id="hierarchy-count"></span></div>
-        <p class="panel-description">Zones contain nodes and other zones. Drag objects in or out on the canvas.</p>
+        <p class="panel-description">Zones and container nodes hold other objects. Drag objects in or out on the canvas.</p>
         <div id="hierarchy-tree" role="group" aria-label="Diagram hierarchy"></div>
         <h3>Connections</h3><div id="hierarchy-flows" aria-label="Diagram connections"></div>
       </div>
@@ -66,6 +66,6 @@
   <div id="error-banner" role="alert" hidden><span id="error-message"></span><button disabled id="dismiss-error" aria-label="Dismiss error">×</button></div>
   <input disabled id="file-input" type="file" accept=".json,.mmd,.mermaid,.txt" hidden>
   <script src="./vendor/mermaid.min.js"></script>
-  <script type="module" src="./app.mjs?v=appearance-final"></script>
+  <script type="module" src="./app.mjs?v=drag-final"></script>
 </body>
 </html>

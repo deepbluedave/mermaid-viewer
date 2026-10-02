@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Node1",
+      "label": "Delivery service",
+      "shape": "rounded",
+      "parentId": "Zone1",
+      "x": 395,
+      "y": 293,
+      "width": 320,
+      "height": 240,
+      "container": true,
+      "backgroundColor": "#dbeafe"
+    },
+    {
+      "id": "Node2",
+      "label": "Prepare parcel",
+      "shape": "rectangle",
+      "parentId": "Node1",
+      "x": 494.906005859375,
+      "y": 386,
+      "width": 120.18798828125,
+      "height": 54
+    },
+    {
+      "id": "Node3",
+      "label": "Courier",
+      "shape": "rectangle",
+      "parentId": null,
+      "x": 480,
+      "y": 136,
+      "width": 120,
+      "height": 54
+    }
+  ],
+  "zones": [
+    {
+      "id": "Zone1",
+      "label": "Fulfilment",
+      "parentId": null,
+      "x": 375,
+      "y": 249,
+      "width": 360,
+      "height": 304
+    }
+  ],
+  "edges": [
+    {
+      "id": "Edge1",
+      "source": "Node2",
+      "target": "Node3",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    }
+  ],
+  "settings": {
+    "direction": "TD",
+    "layout": "adaptive",
+    "grid": false,
+    "guides": true,
+    "fontSize": 13,
+    "view": {
+      "x": -260.37769784172656,
+      "y": -98.63309352517982,
+      "scale": 1.1223021582733812
+    }
+  }
+}

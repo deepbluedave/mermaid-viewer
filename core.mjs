@@ -1,5 +1,5 @@
-import {clearanceTranslation,NODE_GAP,containingZone} from './geometry.mjs?v=appearance-final';
-export {NODE_GAP} from './geometry.mjs?v=appearance-final';
+import {clearanceTranslation,NODE_GAP,containingZone} from './geometry.mjs?v=drag-final';
+export {NODE_GAP} from './geometry.mjs?v=drag-final';
 export const shapes = ['rectangle', 'rounded', 'diamond', 'circle', 'cylinder'];
 export const directions = ['TD', 'LR', 'BT', 'RL'];
 export const copy = value => structuredClone(value);
@@ -8,7 +8,13 @@ export function emptyModel() {
 }
 export const diagramFontSize = model => model.settings.fontSize ?? 13;
 export const zoneHeaderHeight = model => Math.max(30,diagramFontSize(model)+16);
-export const objectColors = (model,n) => ({background:n.backgroundColor||(model.zones.includes(n)?'#eef2f6':'#ffffff'),font:n.fontColor||(model.zones.includes(n)?'#475569':'#1e293b')});
+export function darkenColor(hex,amount=.08){return '#'+hex.slice(1).match(/../g).map(channel=>Math.round(parseInt(channel,16)*(1-amount)).toString(16).padStart(2,'0')).join('');}
+export function objectColors(model,n,seen=new Set()) {
+  const zone=model.zones.includes(n),parent=object(model,n.parentId);seen.add(n.id);
+  const inherited=zone&&parent&&!seen.has(parent.id)?objectColors(model,parent,seen):null;
+  const background=n.backgroundColor||(zone?(inherited?darkenColor(inherited.background,.055):'#eef2f6'):'#ffffff');
+  return{background,font:n.fontColor||(zone?(inherited?.font||'#475569'):'#1e293b'),header:darkenColor(background,.09)};
+}
 export function items(model) { return [...model.zones, ...model.nodes]; }
 export function object(model, id) { return items(model).find(n => n.id === id) || model.edges.find(e => e.id === id); }
 export function labelLines(label, width = 24) {
@@ -42,28 +48,66 @@ export function wrapText(text,maxWidth,fontSize=13) {
     if(current)out.push(current);return out.length?out:[''];
   });
 }
+function shapeTextCandidates(label,fontSize,requestedWidth) {
+  const paragraphs=String(label).split('\n'),words=paragraphs.flatMap(line=>line.split(/\s+/)).filter(Boolean),natural=Math.max(fontSize,...paragraphs.map(line=>textWidth(line,fontSize)));
+  const widths=new Set([natural,Math.max(fontSize,requestedWidth),...words.slice(0,32).map(word=>textWidth(word,fontSize))]);
+  for(let i=0;i<=16;i++)widths.add(fontSize*Math.pow(natural/fontSize,i/16));
+  const candidates=new Map();for(const width of widths){const lines=wrapText(label,Math.max(fontSize,width),fontSize);candidates.set(lines.join('\n'),{lines,textW:Math.max(0,...lines.map(line=>textWidth(line,fontSize))),textH:lines.length*Math.ceil(fontSize*1.35)});}
+  return[...candidates.values()];
+}
 export function nodeMetrics(node,fontSize=13) {
-  const manual=node.manualSize,wrap=manual&&!['circle','diamond'].includes(node.shape);
-  const lines=wrap?wrapText(node.label,Math.max(48,manual.width-32),fontSize):labelLines(node.label);
-  const lineHeight=Math.ceil(fontSize*1.35),textW=Math.max(0,...lines.map(l=>textWidth(l,fontSize))),textH=lines.length*lineHeight;
+  if(node.container){const width=Math.max(160,node.width,node.manualSize?.width||0),height=Math.max(100,node.height,node.manualSize?.height||0),n={...node,width,height};if(node.shape==='circle')n.width=n.height=Math.max(width,height);return{...containerTitleMetrics(n,fontSize),width:n.width,height:n.height};}
+  const manual=node.manualSize,lineHeight=Math.ceil(fontSize*1.35);
+  if(manual&&['circle','diamond'].includes(node.shape)){
+    const w=Math.max(80,manual.width),h=Math.max(60,manual.height),diameter=Math.max(w,h);
+    const candidates=shapeTextCandidates(node.label,fontSize,node.shape==='circle'?diameter*.72-24:w*.6-24).map(c=>{
+      if(node.shape==='circle'){const required=Math.max(80,Math.hypot(c.textW+24,c.textH+24)+8);return{...c,width:Math.max(diameter,required),height:Math.max(diameter,required),growth:required/diameter};}
+      const width=Math.max(w,(c.textW+24)/.7),height=Math.max(h,(c.textH+20)/(.94-(c.textW+24)/width));return{...c,width,height,growth:Math.max(width/w,height/h)};
+    });
+    const fits=candidates.filter(c=>c.growth<=1+1e-7),narrow=node.shape==='diamond'?candidates.filter(c=>c.width<=w+1e-7):[],options=narrow.length?narrow:candidates,best=(fits.length?fits.sort((a,b)=>a.lines.length-b.lines.length||a.growth-b.growth):options.sort((a,b)=>a.growth-b.growth||a.lines.length-b.lines.length))[0];return{lines:best.lines,lineHeight,width:best.width,height:best.height};
+  }
+  const lines=manual?wrapText(node.label,Math.max(48,manual.width-32),fontSize):labelLines(node.label),textW=Math.max(0,...lines.map(l=>textWidth(l,fontSize))),textH=lines.length*lineHeight;
   const w=Math.max(120,textW+32),h=Math.max(54,textH+28);let width=w,height=h;
   if(node.shape==='circle')width=height=Math.hypot(w,h)+12;
   else if(node.shape==='diamond'){width=w*2;height=h*2;}
   else if(node.shape==='cylinder')height+=16;
-  if(manual){
-    if(node.shape==='circle')width=height=Math.max(width,manual.width,manual.height);
-    else if(node.shape==='diamond'){width=Math.max(width,manual.width);height=Math.max(height,manual.height);}
-    else{width=Math.max(80,manual.width,textW+32);height=Math.max(node.shape==='cylinder'?56:40,manual.height,textH+28+(node.shape==='cylinder'?16:0));}
-  }
+  if(manual){width=Math.max(80,manual.width,textW+32);height=Math.max(node.shape==='cylinder'?56:40,manual.height,textH+28+(node.shape==='cylinder'?16:0));}
   return{lines,lineHeight,width,height};
 }
+export const containers=model=>items(model).filter(n=>model.zones.includes(n)||n.container);
+export const isContainer=(model,n)=>Boolean(n&&(model.zones.includes(n)||n.container));
+export function isAncestor(model,id,childId){let parent=object(model,childId)?.parentId;const seen=new Set();while(parent&&!seen.has(parent)){if(parent===id)return true;seen.add(parent);parent=object(model,parent)?.parentId;}return false;}
+export const related=(model,a,b)=>a.id===b.id||isAncestor(model,a.id,b.id)||isAncestor(model,b.id,a.id);
+const insetRatio=n=>n.shape==='circle'?.2:n.shape==='diamond'?.26:0;
+export function containerTitleMetrics(n,fontSize=13){const ratio=insetRatio(n),lines=wrapText(n.label,Math.max(fontSize,n.width*(1-2*ratio)-32),fontSize),lineHeight=Math.ceil(fontSize*1.35);return{lines,lineHeight,height:Math.max(30,lines.length*lineHeight+14)};}
+export function containerTitleBox(model,n){const ratio=insetRatio(n),height=model.zones.includes(n)?zoneHeaderHeight(model):containerTitleMetrics(n,diagramFontSize(model)).height;return{x:n.x+n.width*ratio,y:n.y+n.height*ratio+(n.shape==='cylinder'?12:0),width:n.width*(1-2*ratio),height};}
+export function containerContentBox(model,n){const ratio=insetRatio(n),title=containerTitleBox(model,n),bottom=n.shape==='cylinder'?30:20;return{x:n.x+n.width*ratio+20,y:title.y+title.height+14,width:Math.max(1,n.width*(1-2*ratio)-40),height:Math.max(1,n.y+n.height*(1-ratio)-bottom-title.y-title.height-14)};}
+function insideNode(n,x,y){
+  const dx=(x-n.x-n.width/2)/(n.width/2),dy=(y-n.y-n.height/2)/(n.height/2);
+  if(Math.abs(dx)>1||Math.abs(dy)>1)return false;
+  if(n.shape==='circle')return dx*dx+dy*dy<=1;
+  if(n.shape==='diamond')return Math.abs(dx)+Math.abs(dy)<=1;
+  if(n.shape==='cylinder'&&(y<n.y+10||y>n.y+n.height-10)){const cy=y<n.y+10?n.y+10:n.y+n.height-10;return dx*dx+((y-cy)/10)**2<=1;}
+  return true;
+}
+export function containingParent(model,item,excluded=new Set(),reference=containers(model),{allowNodes=false}={}){
+  const x=item.x+item.width/2,y=item.y+item.height/2;
+  return reference.filter(n=>{if(excluded.has(n.id))return false;if(!n.shape)return x>=n.x&&x<=n.x+n.width&&y>=n.y+zoneHeaderHeight(model)&&y<=n.y+n.height;if(!n.container)return allowNodes&&insideNode(n,x,y);const b=containerContentBox(model,n);return x>=b.x&&x<=b.x+b.width&&y>=b.y&&y<=b.y+b.height;}).sort((a,b)=>depth(model,b)-depth(model,a)||a.width*a.height-b.width*b.height)[0]?.id||null;
+}
+export function setNodeContainer(model,id,enabled,{expand=true,centred=false}={}){
+  const n=object(model,id);if(!model.nodes.includes(n))throw new Error('Choose a node.');
+  if(enabled){const cx=n.x+n.width/2,cy=n.y+n.height/2;if(!n.container&&n.manualSize)n.containerSize=copy(n.manualSize);n.container=true;n.width=Math.max(n.width,320);n.height=Math.max(n.height,240);if(n.shape==='circle')n.width=n.height=Math.max(n.width,n.height);if(n.manualSize)n.manualSize={width:n.width,height:n.height};if(centred){n.x=cx-n.width/2;n.y=cy-n.height/2;}}
+  else{for(const child of items(model).filter(c=>c.parentId===id))child.parentId=n.parentId;delete n.container;if(n.containerSize)n.manualSize=copy(n.containerSize);else delete n.manualSize;delete n.containerSize;resizeNode(n,diagramFontSize(model));}
+  if(expand)expandZones(model);
+}
+function collapseEmptyParents(model,ids){for(const id of ids){const n=model.nodes.find(n=>n.id===id);if(n?.container&&!items(model).some(child=>child.parentId===id))setNodeContainer(model,id,false,{expand:false});}}
 export function resizeNode(node,fontSize=13) {
   const cx = node.x + node.width / 2, cy = node.y + node.height / 2;
   const metrics=nodeMetrics(node,fontSize);node.width=metrics.width;node.height=metrics.height;
   node.x = cx - node.width / 2; node.y = cy - node.height / 2;
 }
 export function setNodeSize(node,width,height,fontSize=13) {
-  node.manualSize={width,height};const metrics=nodeMetrics(node,fontSize);node.width=metrics.width;node.height=metrics.height;
+  node.manualSize={width,height};if(node.container){node.width=width;node.height=height;}const metrics=nodeMetrics(node,fontSize);node.width=metrics.width;node.height=metrics.height;
 }
 export function descendants(model, id) {
   const result = new Set([id]); let changed = true;
@@ -81,62 +125,63 @@ export function moveSelection(model, selection, dx, dy, {expand=true,spacing=fal
   if(expand)expandZones(model);
 }
 export function separateSelection(model,selection) {
-  const ids=movableIds(model,selection),zoneRoots=model.zones.filter(z=>selection.has(z.id)&&!ids.has(z.parentId));
-  const moving=[...zoneRoots,...model.nodes.filter(n=>ids.has(n.id))],fixed=model.nodes.filter(n=>!ids.has(n.id));
-  const delta=clearanceTranslation(moving,fixed);
-  for(const n of items(model))if(ids.has(n.id)){n.x+=delta.x;n.y+=delta.y;}
-  return delta;
+  const ids=movableIds(model,selection),roots=items(model).filter(n=>selection.has(n.id)&&!ids.has(n.parentId));
+  const moving=[...roots.filter(n=>isContainer(model,n)),...model.nodes.filter(n=>ids.has(n.id)&&!roots.some(root=>root.id!==n.id&&isAncestor(model,root.id,n.id)))],fixed=model.nodes.filter(n=>!ids.has(n.id)&&!roots.some(root=>related(model,root,n)));
+  const delta=clearanceTranslation(moving,fixed);for(const n of items(model))if(ids.has(n.id)){n.x+=delta.x;n.y+=delta.y;}return delta;
 }
 export function ensureNodeSpacing(model,{preferredIds=new Set(model.nodes.map(n=>n.id)),axis=null}={}) {
   const fixed=model.nodes.filter(n=>!preferredIds.has(n.id));
-  for(const n of model.nodes.filter(n=>preferredIds.has(n.id))){const delta=clearanceTranslation([n],fixed,{axis});n.x+=delta.x;n.y+=delta.y;fixed.push(n);}
-  return model;
+  for(const n of model.nodes.filter(n=>preferredIds.has(n.id))){const delta=clearanceTranslation([n],fixed.filter(other=>!related(model,n,other)),{axis});moveSelection(model,new Set([n.id]),delta.x,delta.y,{expand:false});fixed.push(n);}return model;
 }
-export function dropParents(model,selection,referenceZones=model.zones) {
-  const ids=movableIds(model,selection),roots=items(model).filter(n=>selection.has(n.id)&&!ids.has(n.parentId));
-  return new Map(roots.map(n=>[n.id,containingZone(referenceZones,n,ids,zoneHeaderHeight(model))]));
+export function ensureLayoutSpacing(model){
+  expandZones(model);const parents=[...containers(model).sort((a,b)=>depth(model,b)-depth(model,a)).map(n=>n.id),null];
+  for(const parent of parents){const fixed=[];for(const n of items(model).filter(n=>n.parentId===parent).sort((a,b)=>Number(isContainer(model,b))-Number(isContainer(model,a)))){const delta=clearanceTranslation([n],fixed,{axis:['LR','RL'].includes(model.settings.direction)?'x':'y'});moveSelection(model,new Set([n.id]),delta.x,delta.y,{expand:false});fixed.push(n);}expandZones(model);}return model;
 }
-export function dropSelection(model,selection,referenceZones=model.zones,parents=dropParents(model,selection,referenceZones)) {
-  for(const [id,parent]of parents)object(model,id).parentId=parent;
-  expandZones(model);
+export function dropParents(model,selection,referenceZones=items(model)) {
+  const ids=movableIds(model,selection),roots=items(model).filter(n=>selection.has(n.id)&&!ids.has(n.parentId));return new Map(roots.map(n=>[n.id,containingParent(model,n,ids,referenceZones,{allowNodes:true})]));
+}
+export function dropSelection(model,selection,referenceZones=items(model),parents=dropParents(model,selection,referenceZones),{expand=true}={}) {
+  const previous=new Set();
+  for(const [id,parent]of parents){const n=object(model,id);if(!n||model.edges.includes(n)||parent&&(!object(model,parent)||model.edges.includes(object(model,parent))||descendants(model,id).has(parent)))throw new Error('Invalid drop parent.');previous.add(n.parentId);}
+  for(const [id,parent]of parents){const n=object(model,parent);if(n&&model.nodes.includes(n)&&!n.container)setNodeContainer(model,parent,true,{expand:false,centred:true});object(model,id).parentId=parent;}
+  collapseEmptyParents(model,previous);
+  if(expand)expandZones(model);
 }
 export function depth(model, item) {
   let count = 0, parent = item.parentId; const seen = new Set();
-  while (parent && !seen.has(parent)) { seen.add(parent); count++; parent = model.zones.find(z => z.id === parent)?.parentId; }
+  while (parent && !seen.has(parent)) { seen.add(parent); count++; parent = object(model,parent)?.parentId; }
   return count;
 }
 export function expandZones(model) {
-  for (const zone of [...model.zones].sort((a, b) => depth(model, b) - depth(model, a))) {
-    zone.width = Math.max(zone.width,160,textWidth(zone.label,diagramFontSize(model))+32);
-    zone.height = Math.max(zone.height,100);
-    const children = items(model).filter(n => n.parentId === zone.id);
-    if (!children.length) continue;
-    const x = Math.min(zone.x, ...children.map(n => n.x - 20));
-    const y = Math.min(zone.y, ...children.map(n => n.y - Math.max(44,zoneHeaderHeight(model)+14)));
-    const right = Math.max(zone.x + zone.width, ...children.map(n => n.x + n.width + 20));
-    const bottom = Math.max(zone.y + zone.height, ...children.map(n => n.y + n.height + 20));
-    zone.x = x; zone.y = y; zone.width = right - x; zone.height = bottom - y;
+  for(const n of [...containers(model)].sort((a,b)=>depth(model,b)-depth(model,a))){
+    const zone=model.zones.includes(n),ratio=insetRatio(n),font=diagramFontSize(model);n.width=Math.max(n.width,160,zone?textWidth(n.label,font)+32:160);n.height=Math.max(n.height,100);
+    if(n.shape==='circle')n.width=n.height=Math.max(n.width,n.height);
+    const title=containerTitleBox(model,n),minimum=(title.height+60+(n.shape==='cylinder'?12:0))/(1-2*ratio);n.height=Math.max(n.height,minimum);if(n.shape==='circle')n.width=n.height=Math.max(n.width,n.height);
+    const box=containerContentBox(model,n),children=items(model).filter(c=>c.parentId===n.id);if(!children.length||children.every(c=>c.x>=box.x-1e-7&&c.y>=box.y-1e-7&&c.x+c.width<=box.x+box.width+1e-7&&c.y+c.height<=box.y+box.height+1e-7))continue;
+    const left=Math.min(box.x,...children.map(c=>c.x)),top=Math.min(box.y,...children.map(c=>c.y)),right=Math.max(box.x+box.width,...children.map(c=>c.x+c.width)),bottom=Math.max(box.y+box.height,...children.map(c=>c.y+c.height));
+    const header=containerTitleBox(model,n).height+(n.shape==='cylinder'?12:0),bottomPad=n.shape==='cylinder'?30:20;
+    let width=(right-left+40)/(1-2*ratio),height=(bottom-top+header+14+bottomPad)/(1-2*ratio);if(n.shape==='circle')width=height=Math.max(width,height);
+    n.x=left-20-width*ratio;n.y=top-header-14-height*ratio;n.width=width;n.height=height;
   }
 }
-export function reparent(model, id, parentId) {
-  const n = object(model, id); if (!n || model.edges.includes(n)) throw new Error('Choose a node or zone.');
-  if (parentId && (!model.zones.some(z => z.id === parentId) || descendants(model, id).has(parentId))) throw new Error('A zone cannot contain itself or its ancestors.');
-  parentId ||= null;if(n.parentId===parentId)return;
-  const oldParent=model.zones.find(z=>z.id===n.parentId),parent=model.zones.find(z=>z.id===parentId);let oldRoot=oldParent;
-  while(oldRoot?.parentId)oldRoot=model.zones.find(z=>z.id===oldRoot.parentId);
-  const x=parent?parent.x+24:oldRoot?oldRoot.x+oldRoot.width+NODE_GAP:n.x;
-  const y=parent?parent.y+Math.max(48,zoneHeaderHeight(model)+18):n.y;
-  n.parentId=parentId;
-  moveSelection(model,new Set([id]),x-n.x,y-n.y,{expand:false,spacing:true});expandZones(model);
+export function reparent(model,id,parentId){
+  const n=object(model,id);if(!n||model.edges.includes(n))throw new Error('Choose a node or zone.');parentId||=null;
+  const parent=object(model,parentId);if(parentId&&(!parent||model.edges.includes(parent)||descendants(model,id).has(parentId)))throw new Error('A container cannot contain itself or its ancestors.');if(n.parentId===parentId)return;
+  const previousParent=n.parentId;let oldRoot=object(model,n.parentId);while(oldRoot?.parentId)oldRoot=object(model,oldRoot.parentId);
+  if(parent&&model.nodes.includes(parent)&&!parent.container)setNodeContainer(model,parent.id,true);
+  const box=parent?containerContentBox(model,parent):null,x=box?box.x+4:oldRoot?oldRoot.x+oldRoot.width+NODE_GAP:n.x,y=box?box.y+4:n.y;n.parentId=parentId;
+  moveSelection(model,new Set([id]),x-n.x,y-n.y,{expand:false,spacing:true});collapseEmptyParents(model,new Set([previousParent]));expandZones(model);
 }
 export function deleteSelection(model, selection) {
   const selected = new Set(selection);
-  for (const z of [...model.zones].sort((a, b) => depth(model, b) - depth(model, a))) if (selected.has(z.id)) {
+  const previousParents=new Set(items(model).filter(n=>selected.has(n.id)).map(n=>n.parentId));
+  for (const z of [...containers(model)].sort((a, b) => depth(model, b) - depth(model, a))) if (selected.has(z.id)) {
     for (const n of items(model)) if (n.parentId === z.id) n.parentId = z.parentId;
   }
   model.zones = model.zones.filter(z => !selected.has(z.id));
   model.nodes = model.nodes.filter(n => !selected.has(n.id));
   model.edges = model.edges.filter(e => !selected.has(e.id) && !selected.has(e.source) && !selected.has(e.target));
+  collapseEmptyParents(model,previousParents);
 }
 export function nextId(model, prefix) {
   const used = new Set([...items(model), ...model.edges].map(n => n.id)); let i = 1;
@@ -147,7 +192,7 @@ export function groupSelection(model, selection, label = 'New zone') {
   const selected = items(model).filter(n => selection.has(n.id));
   const roots = selected.filter(n => !selected.some(other => other.id !== n.id && descendants(model, other.id).has(n.id)));
   if (!roots.length) throw new Error('Select nodes or zones to group.');
-  const ancestors = n => { const parents = []; let id = n.parentId; while(id){parents.push(id);id=model.zones.find(z=>z.id===id)?.parentId;} parents.push(null);return parents; };
+  const ancestors = n => { const parents = []; let id = n.parentId; while(id){parents.push(id);id=object(model,id)?.parentId;} parents.push(null);return parents; };
   const parentId = ancestors(roots[0]).find(id=>roots.every(n=>ancestors(n).includes(id)));
   const x = Math.min(...roots.map(n => n.x)) - 24, y = Math.min(...roots.map(n => n.y)) - 48;
   const zone = { id: nextId(model, 'Zone'), label, parentId, x, y,
@@ -182,12 +227,11 @@ export function arrange(model, selection, command) {
 const encodeLabel = text => String(text).replace(/[&"#<>ﬂ°¶ß]/g, c => ({ '&': '#38;', '"': '#quot;', '#': '#35;', '<': '#60;', '>': '#62;' }[c] || `#${c.codePointAt(0)};`)).replace(/\n/g, '<br/>') || '#8203;';
 export function toMermaid(model) {
   const source = [`flowchart ${model.settings.direction}`];
-  function emit(parentId, indent) {
-    for (const z of model.zones.filter(n => n.parentId === parentId)) { source.push(`${indent}subgraph ${z.id}["${encodeLabel(z.label)}"]`); emit(z.id, indent + '  '); source.push(`${indent}end`); }
-    for (const n of model.nodes.filter(n => n.parentId === parentId)) {
-      const label = `"${encodeLabel(n.label)}"`;
-      const wrappers = { rectangle: ['[', ']'], rounded: ['(', ')'], diamond: ['{', '}'], circle: ['((', '))'], cylinder: ['[(', ')]'] }[n.shape];
-      source.push(`${indent}${n.id}${wrappers[0]}${label}${wrappers[1]}`);
+  for(const n of model.nodes.filter(n=>n.container))source.push('  %% diagram-studio-container '+JSON.stringify({id:n.id,shape:n.shape}));
+  function emit(parentId,indent){
+    for(const n of items(model).filter(n=>n.parentId===parentId)){
+      if(isContainer(model,n)){source.push(`${indent}subgraph ${n.id}["${encodeLabel(n.label)}"]`);emit(n.id,indent+'  ');source.push(`${indent}end`);continue;}
+      const label=`"${encodeLabel(n.label)}"`,wrappers={rectangle:['[',']'],rounded:['(',')'],diamond:['{','}'],circle:['((', '))'],cylinder:['[(',')]']}[n.shape];source.push(`${indent}${n.id}${wrappers[0]}${label}${wrappers[1]}`);
     }
   }
   emit(null, '  ');
@@ -212,11 +256,11 @@ export function validateModel(input) {
     for (const field of ['x', 'y', 'width', 'height']) if (!Number.isFinite(n[field]) || Math.abs(n[field]) > 1e6) throw new Error('Invalid object geometry.');
     if (n.width <= 0 || n.height <= 0) throw new Error('Object sizes must be positive.');
     n.parentId ||= null;
-    if (n.parentId && !model.zones.some(z => z.id === n.parentId)) throw new Error('A parent zone is missing.');
+    if(n.parentId&&!isContainer(model,object(model,n.parentId)))throw new Error('A parent container is missing or is not enabled.');
     const seen = new Set([n.id]); let parent = n.parentId;
-    while (parent) { if (seen.has(parent)) throw new Error('Zone membership contains a cycle.'); seen.add(parent); parent = model.zones.find(z => z.id === parent)?.parentId; }
+    while (parent) { if (seen.has(parent)) throw new Error('Containment contains a cycle.'); seen.add(parent); parent = object(model,parent)?.parentId; }
   }
-  for (const n of model.nodes){if (!shapes.includes(n.shape)) throw new Error(`Unsupported node shape: ${n.shape}`);if(n.manualSize!==undefined&&(!n.manualSize||typeof n.manualSize!=='object'||![n.manualSize.width,n.manualSize.height].every(v=>Number.isFinite(v)&&v>0&&v<=1e6)))throw new Error('Invalid manual node size.');}
+  for (const n of model.nodes){if(n.container!==undefined&&typeof n.container!=='boolean')throw new Error('Invalid node container setting.');if (!shapes.includes(n.shape)) throw new Error(`Unsupported node shape: ${n.shape}`);for(const key of ['manualSize','containerSize'])if(n[key]!==undefined&&(!n[key]||typeof n[key]!=='object'||![n[key].width,n[key].height].every(v=>Number.isFinite(v)&&v>0&&v<=1e6)))throw new Error('Invalid manual node size.');}
   for (const e of model.edges) {
     if (!items(model).some(n => n.id === e.source) || !items(model).some(n => n.id === e.target)) throw new Error('An edge endpoint is missing.');
     if (!['normal', 'dashed', 'thick'].includes(e.style) || !['forward', 'both', 'none'].includes(e.direction) || !['orthogonal', 'straight'].includes(e.routing)) throw new Error('Unsupported edge style.');

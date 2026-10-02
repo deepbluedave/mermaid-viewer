@@ -1,6 +1,5 @@
 {
-  "passed": 16,
-  "total": 16,
+  "passed": 21,
   "results": [
     {
       "name": "starter import preserves nested memberships and all connections",
@@ -65,6 +64,27 @@
     {
       "name": "large-font colored SVG and PNG include all label bounds and preserve pixels",
       "pass": true
+    },
+    {
+      "name": "automatic layouts leave clearance between expanded zones and unrelated root nodes in every direction",
+      "pass": true
+    },
+    {
+      "name": "node containers roundtrip all shapes, nested zones, empty containers and parent connections through both layout engines",
+      "pass": true
+    },
+    {
+      "name": "malformed or contradictory container annotations fail explicitly",
+      "pass": true
+    },
+    {
+      "name": "live label metrics fit circle and diamond outlines at browser-measured font sizes and unwrap short labels",
+      "pass": true
+    },
+    {
+      "name": "parent-node titles and colors survive standalone SVG and PNG",
+      "pass": true
     }
-  ]
+  ],
+  "total": 21
 }

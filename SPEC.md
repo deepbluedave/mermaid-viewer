@@ -1,6 +1,6 @@
 # Mermaid Diagram Editor — Requirements
 
-Status: first-version requirements, revised for resizing, alignment guides, context, and appearance on 2 October 2026.
+Status: first-version requirements, revised for live previews, node containment, shape-aware wrapping, and zone clearance on 2 October 2026.
 
 ## Purpose and workflow
 
@@ -23,13 +23,14 @@ After import, the editable diagram model is the source of truth. The initial Mer
 
 Source fidelity means preserving the supported meaning and structure of the current diagram. Preserving the original Mermaid text is not a requirement.
 
-- Nodes have stable IDs, labels, shapes, descriptions, notes, positions, automatic or manual sizes, background/font colors, and optional zone membership.
+- Nodes have stable IDs, labels, shapes, descriptions, notes, positions, automatic or manual sizes, background/font colors, and optional container membership. Nodes can also be parents, using an optional `container` flag.
 - Edges have stable IDs, source and target references, labels, descriptions, notes, direction, and line style.
 - Zones have stable IDs, titles, descriptions, notes, positions, sizes, background/font colors, and parent/child relationships.
 - Project settings include flow direction, layout preferences, global diagram font size, and canvas settings.
 - Canvas commands, the properties panel, and source application all update this same model.
 - Mermaid source is generated from the current model using consistent formatting. Original comments, whitespace, declaration order, and shorthand do not need to survive visual edits.
 - Visual edits must appear in generated Mermaid, including added or removed objects, label and shape changes, connection changes, and zone membership changes.
+- Parent nodes serialize as nested subgraphs, with reserved `%% diagram-studio-container {"id":"ID","shape":"rounded"}` comments retaining their node type and shape on editor reimport. Standard Mermaid displays these as subgraphs. Reject malformed or contradictory annotations.
 - Generated Mermaid must describe the supported diagram structure. Manual coordinates and other editor layout settings belong to the project file.
 - Unsupported imported Mermaid features must be identified before accepting an import or source application that would discard them. No silent loss of diagram content or unsupported semantics.
 
@@ -54,41 +55,45 @@ Users can edit a source draft and explicitly apply it. Draft typing does not rer
 
 - Click to select an object; Shift-click to extend or reduce the selection.
 - Drag a selection box to select several objects.
-- Move a node, a multiple selection, or a whole zone.
-- Moving a zone carries all nested zones and nodes. An object selected both directly and through an ancestor must move only once.
+- Move a node, a multiple selection, or a whole container.
+- Moving a zone or parent node carries all nested zones and nodes. An object selected both directly and through an ancestor must move only once.
 - Support keyboard nudging and optional grid snapping.
 - Grid dots track diagram coordinates through pan and zoom. At distant zoom levels, show coarser multiples of the snapping grid to keep the dots readable.
 - Preserve correct movement at every zoom level.
-- Show subtle guides when the sides of moved or resized nodes and zones align with other nodes/zones. Use a tolerance below one screen pixel at every zoom. Guides are visual only; grid snapping remains a separate option. Exclude the moved selection, its descendants, and enclosing parents from comparison. Clear guides when a gesture ends or is cancelled, and exclude them from exports. Provide a Guides toggle, enabled by default.
+- Show stronger dark purple guides when the sides of moved or resized nodes and zones align with other nodes/zones. Use a tolerance below one screen pixel at every zoom. Guides are visual only; grid snapping remains a separate option. Exclude the moved selection, its descendants, and enclosing parents from comparison. Clear guides when a gesture ends or is cancelled, and exclude them from exports. Provide a Guides toggle, enabled by default.
 - Provide distinct Select and Pan tools, with background dragging available for panning.
 - Scroll to zoom; provide zoom controls and Fit. Fit includes all current diagram content, even when it lies outside the initial layout bounds.
 - Escape cancels the active gesture or tool operation.
 
 ### Nodes
 
-- Add a node at a chosen canvas location.
-- Keep at least 24 diagram units between node bounds during creation, movement, shape/label growth, alignment/distribution, initial import, and both automatic layouts. Constrain the edited selection rather than moving unrelated nodes. Distribution may expand its extent to preserve the minimum gap.
-- A new node inside a zone joins the innermost containing zone.
+- Add a node at a chosen canvas location by clicking the Node tool and canvas, or dragging the toolbar button onto the canvas.
+- Keep at least 24 diagram units between unrelated node bounds (exclude ancestor/descendant pairs) during creation, movement, shape/label growth, alignment/distribution, initial import, and both automatic layouts. Constrain the edited selection rather than moving unrelated nodes. Distribution may expand its extent to preserve the minimum gap.
+- A new node inside a zone or enabled parent node joins the innermost containing object.
 - Edit its label and change its shape.
 - Initial shapes: rectangle, rounded rectangle, diamond, circle, and database cylinder.
 - Shape changes preserve the node ID, zone membership, and connections.
-- Node dimensions accommodate the label and selected shape. Resize manually through eight corner/side handles or Width/Height fields. Handles remain eight screen pixels at different zoom levels. Anchor the opposite corner/side; retain circles as circles. Rectangles, rounded rectangles, and cylinders wrap text to the chosen width. Enforce label/shape minimums and the node gap instead of clipping text or moving neighbouring nodes; show the accepted dimensions in Properties. Resizing updates connections and expands containing zones without changing membership.
+- Node dimensions accommodate the label and selected shape. Resize manually through eight corner/side handles or Width/Height fields. Handles remain eight screen pixels at different zoom levels. Anchor the opposite corner/side; retain circles as circles. All shapes wrap text to the chosen dimensions. Circle and diamond labels use their actual interior geometry, wrap short text such as “New Node” as dimensions shrink, and unwrap as they grow. Enforce label/shape minimums and the node gap instead of clipping text or moving neighbouring nodes; show the accepted dimensions in Properties. Resizing updates connections and expands containing zones without changing membership.
 - Preserve manual size preferences through label/shape/font edits, source changes, and Auto layout. An explicit Fit to label command clears the manual size preference.
+- Drop a node or zone onto an ordinary node, enable Container node in Properties, or choose an ordinary node as a child’s Parent, to turn it into a parent. All five shapes support node/zone children, nested parents, and existing connections. Keep the parent ID, shape, and label.
+- Reserve a title band and shape-safe interior for children. Expand parents to contain descendants, without moving child coordinates during parent resize. Preserve containment through source edits, automatic layouts, save/open, and Undo/Redo.
+- When the final child leaves or is deleted, return the node parent to an ordinary node, restoring its prior manual dimensions while retaining its ID, shape, context, colors, membership, and incident connections. Preserve this size preference through project save/open and matching-ID source application. Explicit empty container nodes remain enabled until they have children that leave; empty zones remain zones.
+- Deleting or disabling a parent node retains its children and promotes them to its enclosing parent or top level. Reject cycles. Hierarchy selection/collapse includes parent nodes.
 - Delete selected nodes and their incident edges as one undoable action.
 
 ### Zones
 
-- Create and rename zones, including nested zones.
-- A new zone placed inside another zone joins the innermost containing zone; drawing a zone over existing objects does not automatically capture them.
+- Create and rename zones, including nested zones. Offer both click placement and dragging the Zone toolbar button onto the canvas.
+- A new zone placed inside a zone or parent node joins the innermost container; drawing a zone over existing objects does not automatically capture them.
 - Drag a zone by its title/header; move its full contents together.
 - Resize zones through eight corner/side handles or Width/Height fields while keeping them large enough to contain their contents and title. Keep contained node coordinates fixed while resizing the zone.
 - Expand containing zones when moved children require more space.
 - Organize containment through Add zone and dragging; remove Group/Ungroup commands.
 - Remove a zone while retaining its contents and promoting them to its parent, or to the top level.
-- Dropping a node or zone uses its intended centre to choose the innermost destination zone. Show that destination while dragging. Dropping out releases it to an enclosing zone or the top level. Prevent cycles and preserve the moved zone's descendants.
+- Dropping a node or zone uses its intended centre to choose the innermost destination container. Show that destination while dragging. Dropping out releases it to an enclosing zone or the top level. Prevent cycles and preserve the moved zone's descendants.
 - Do not expand the previous parent while a child is being dragged out. Apply movement and membership changes together as one undoable action.
-- Keep a moved zone's border clear of unrelated nodes so its visible contents agree with the hierarchy. Minimum-spacing corrections retain the intended drop parent and can expand the new parent.
-- Changing Parent in Properties visibly places the object inside the target zone. Choosing Top level places it outside its former root zone; reveal the moved object if offscreen.
+- Keep a moved zone's border clear of unrelated nodes so its visible contents agree with the hierarchy. Minimum-spacing corrections retain the intended drop parent and can expand the new parent. Apply the intended membership before clearance so a destination parent body never pushes an entering child outside; a released child treats its former parent body as unrelated.
+- Changing Parent in Properties visibly places the object inside the target container. Choosing Top level places it outside its former root container; reveal the moved object if offscreen.
 - Connections between a moved zone and external objects reroute; internal connections remain attached to their moved contents.
 
 ### Connections
@@ -101,11 +106,11 @@ Users can edit a source draft and explicitly apply it. Draft typing does not rer
 - Draw small bridges at interior edge crossings to distinguish independent flows. Shared endpoints and overlapping/parallel segments are not crossings. Preserve actual libavoid routes and arrow terminal segments; include bridges in SVG and PNG exports.
 - Keep straight connections straight and reroute orthogonal connections with horizontal/vertical segments rather than deforming their previous paths.
 - Give connections sharing a node side distinct attachment points, ordered towards their opposite ends. Use a modest 12-unit spacing where room allows and reduce it on crowded sides. Keep parallel route segments separated through libavoid and attach arrow tips to the visible shape outline, including curved and diamond nodes.
-- Route around unrelated nodes. Zone borders, interiors, and titles are traversable, including nested zones; adding or moving a zone must not introduce routing obstacles. Connections explicitly targeting zones attach to their borders.
-- Draw zone titles above connections with translucent backing: crossing lines remain visible but subdued beneath the title. Preserve this appearance in SVG and PNG exports.
+- Route around unrelated ordinary nodes. Zone and parent-node borders, interiors, and titles are traversable, including nested containers; adding or moving a zone must not introduce routing obstacles. Connections explicitly targeting zones attach to their borders.
+- Draw zone and parent-node titles above connections with translucent backing: crossing lines remain visible but subdued beneath the title. Preserve this appearance in SVG and PNG exports.
 - Attach connections to the rendered node boundary, including nonrectangular shapes.
 - Arrowheads follow a clean terminal segment and point correctly at the destination boundary.
-- Edge labels follow their routes and use suitable segments where possible. Separate parallel labels and avoid covering nodes, zone titles, arrowheads, other connections, or other labels. Where a label needs to sit beside its route, use a subtle leader to identify the corresponding connection without changing the route.
+- Edge labels follow their routes and use suitable segments where possible. Separate parallel labels and avoid covering nodes, zone titles, arrowheads, other connections, or other labels. Where a label needs to sit beside its route, use a stronger dotted leader with constant screen stroke weight to identify the corresponding connection without changing the route.
 - Moving or resizing an object does not move unrelated objects to repair its connections.
 
 ## Toolbar and properties
@@ -122,17 +127,17 @@ Provide one consistent main toolbar with:
 - Open/import, Save project, and Export.
 - New, to start with an empty diagram as one undoable action.
 
-A properties panel exposes relevant fields for the current selection: labels, node shape, edge direction and line style, zone title, descriptions, notes, and zone membership. Users must not need to edit Mermaid syntax to perform the supported visual operations.
+A properties panel exposes relevant fields for the current selection: labels, node shape, edge direction and line style, zone title, descriptions, notes, and parent membership. Users must not need to edit Mermaid syntax to perform the supported visual operations.
 
-Label, description, notes, and size typing must commit before leaving the field, changing selection/tools, or saving/exporting. Disable editing controls while the local engines are starting or an asynchronous layout/import is running.
+Labels preview immediately for nodes, zones, and edges while retaining field focus/caret. Coalesce the continuous input session into one Undo action on commit. Label, description, notes, and size typing must commit before leaving the field, changing selection/tools, or saving/exporting. Disable editing controls while the local engines are starting or an asynchronous layout/import is running.
 
-Provide a default Hierarchy view showing nested containment and a connection list. Selecting a tree or connection item synchronizes canvas selection and Properties and reveals it if offscreen. Support zone collapse/expand and show selected objects in the tree. Keep Source available as another panel view.
+Provide a default Hierarchy view showing nested containment and a connection list. Selecting a tree or connection item synchronizes canvas selection and Properties and reveals it if offscreen. Support container collapse/expand and show selected objects in the tree. Keep Source available as another panel view.
 
 Use familiar shortcuts for Delete, Escape, Undo/Redo, and arrow-key nudging. Toolbar controls and properties must also be keyboard accessible.
 
 ### Appearance and text
 
-- Provide background and font color pickers and six-digit hex fields for nodes and zones in Properties. Typed valid hex values immediately update their swatches. Apply a zone's background to its body/header/title backing and its font color to the title. Preserve the translucent title backing above routes.
+- Provide background and font color pickers and six-digit hex fields for nodes and zones in Properties. Valid picker input and hex values preview immediately in the diagram while retaining the focused control; a continuous input session commits as one Undo action. Partial invalid hex text keeps the last valid preview, and an invalid final value restores the original state. Child zones derive a slightly darker default background from their parent and inherit its title font color, unless explicitly overridden. Header/title backing is always a darker shade of the selected background. Apply the font color to the title. Preserve the translucent title backing above routes.
 - Provide a global Text size control in the toolbar, from 10 to 48 pixels, defaulting to 13. Apply it to node labels, zone titles, and edge labels while leaving interface text unchanged.
 - Accommodate larger labels through wrapping, label/shape minimums, title bounds, label placement, zone expansion, and rerouting. Retain manual size preferences and current pan/zoom so increasing text size does not immediately shrink the view. Fit remains an explicit command.
 - Appearance edits are undoable and survive Save/Open, matching-ID source application, and Auto layout. SVG and PNG reflect the current font size and colors. Mermaid export contains the supported structure; the project file retains editor appearance.
@@ -145,7 +150,7 @@ Use an existing routing engine for connections around manually positioned object
 
 Do not implement a custom route-finding algorithm. Integration code may translate the diagram model into routing inputs and apply routes, attachment points, arrowheads, and label positions to the rendered diagram.
 
-Auto layout operates on the current diagram structure, including additions and deletions. It is one undoable action. Changing automatic layout preferences must not silently discard manual arrangements; those preferences are applied through Auto layout.
+Auto layout operates on the current diagram structure, including additions, deletions, zones, and node containers. After shape/title sizing and container expansion, enforce at least 24 units between unrelated siblings, including expanded container borders. Move compound groups rigidly during this correction; preserve free routing across zones. It is one undoable action. Changing automatic layout preferences must not silently discard manual arrangements; those preferences are applied through Auto layout.
 
 ## Undo and redo
 
@@ -162,7 +167,7 @@ Every completed model edit is undoable, including moves and their membership cha
 - Save a versioned project file containing the canonical diagram model and layout settings needed to restore the editable diagram.
 - Reopening a project restores its nodes, edges, nested zones, labels, shapes, manual positions, sizes, and diagram settings without running a new automatic layout.
 - An opened saved project starts with a clean save indicator. Legacy geometry violating minimum node clearance is corrected and marked for saving; valid saved geometry remains exact.
-- Descriptions and notes on all objects, node/zone colors, manual node size preferences, global font size, and guide preference are optional fields in version 1 projects; older projects remain readable. Missing font size defaults to 13 pixels and missing guide preference to enabled; missing colors retain the standard appearance. Preserve these fields through save/open, Undo/Redo, Auto layout, and matching-ID source application. Mermaid and image exports do not encode these context fields.
+- Descriptions and notes on all objects, node/zone colors, manual node size preferences, global font size, guide preference, node container flag, and original node manual dimensions (`containerSize`) are optional fields in version 1 projects; older projects remain readable. Missing font size defaults to 13 pixels and missing guide preference to enabled; missing colors retain the standard appearance. Preserve these fields through save/open, Undo/Redo, Auto layout, and matching-ID source application. Mermaid and image exports do not encode these context fields.
 - The project saves the evolved diagram; restoring the original import is not required to reopen or continue editing it.
 - Export a valid Mermaid definition for the supported structure. Clearly indicate that Mermaid export does not preserve the editor's manual coordinates.
 - Importing that Mermaid export starts a new editable diagram with an automatic layout. Reopening the project file restores the saved manual arrangement.
@@ -200,5 +205,13 @@ The following are outside the first version:
 11. Build diagrams from New using the toolbar: click-to-connect is clear, crossings have bridges, node gaps persist, and hierarchy selection follows the diagram. Add node/zone descriptions and notes, then save/open and apply matching-ID source changes without losing them.
 
 12. Resize every node shape from corners/sides and through numeric fields. Check opposite anchors, label-fit limits, circle proportions, neighbour clearance, rerouting, Undo/Redo, and cancellation.
-13. Move/resize aligned nodes and zones at different zoom levels: subtle side guides appear, clear on release/cancellation, respect the toggle, and do not export.
+13. Move/resize aligned nodes and zones at different zoom levels: stronger dark purple side guides appear, clear on release/cancellation, respect the toggle, and do not export.
 14. Set node/zone background and font colors and add edge context. Increase global text size through 48 pixels, retaining the view, label fit, manual size preferences, and readable exported content. Save/reopen and apply matching-ID source without losing these properties.
+
+15. Preview a label and continuously change a picker while keeping its field focused; node/edge/zone rendering updates before click-away. One Undo restores the input session. Default nested zone colors track their parent while explicit child overrides remain unchanged; darker translucent headers and stronger leaders appear in exports.
+16. Enable or select a node as a parent, create/drop children, nest another parent and a zone, change its shape, move/resize/delete/disable it, and verify descendant positions, hierarchy, routing, Undo, source roundtrip, and exact project restore. Entering children retain their intended drop position; exiting children regain clearance from the former parent body.
+17. Resize “New Node” circles and diamonds smaller and larger, using different fonts and multilingual/long labels: text fits the actual outline and wraps/unwraps responsively.
+18. Run both layout engines in all four directions on diagrams containing expanded zones; unrelated root nodes and sibling containers retain at least 24 units of clearance.
+
+19. Drag nodes onto ordinary nodes of every supported shape, into/out of zones, and between parents: adopt the intended target, reject cycles and corners outside curved outlines, preserve the drop centre, demote a node whose final child leaves, and undo the gesture as one edit.
+20. Drag Node/Zone toolbar buttons onto the canvas at different zoom/pan/grid/font settings, into existing containers or onto ordinary nodes. Show a placement preview and target, create one object on release, preserve click placement, and cancel on Escape, lost capture, or release outside the canvas without recording an edit.

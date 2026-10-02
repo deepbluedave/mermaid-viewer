@@ -1,4 +1,4 @@
-import { emptyModel, resizeNode, expandZones, validateModel, configureTextMeasure, textWidth,ensureNodeSpacing,diagramFontSize,copy } from './core.mjs?v=appearance-final';
+import { emptyModel, resizeNode, expandZones, validateModel, configureTextMeasure, textWidth,ensureNodeSpacing,diagramFontSize,copy,shapes,ensureLayoutSpacing } from './core.mjs?v=drag-final';
 let renderCount = 0;
 const shapeTypes = { square:'rectangle', rect:'rectangle', round:'rounded', rounded:'rounded', diamond:'diamond', circle:'circle', cylinder:'cylinder' };
 export function initializeMermaid() {
@@ -51,11 +51,13 @@ export async function importMermaid(source, { direction, layout = 'adaptive' } =
   model.zones = subgraphs.map(s=>({id:s.id,label:textLabel(s.title),parentId:parent.get(s.id)||null,x:0,y:0,width:200,height:140}));
   model.nodes = vertices.filter(v=>!groupIds.has(v.id)).map(v=>({id:v.id,label:textLabel(v.text ?? v.id),shape:shapeTypes[v.type || 'square'],parentId:parent.get(v.id)||null,x:0,y:0,width:120,height:54}));
   model.edges = parsedEdges.map(e=>({id:e.id,source:e.start,target:e.end,label:textLabel(e.text),direction:e.type==='double_arrow_point'?'both':e.type==='arrow_open'?'none':'forward',style:e.stroke==='dotted'?'dashed':e.stroke==='thick'?'thick':'normal',routing:'orthogonal',sourceSide:null,targetSide:null}));
+  const annotations=[...source.matchAll(/^\s*%% diagram-studio-container (.+)$/gm)].map(match=>{try{return JSON.parse(match[1]);}catch{throw new Error('Invalid node container annotation.');}}),seen=new Set();
+  for(const annotation of annotations){const zone=model.zones.find(z=>z.id===annotation.id);if(!zone||seen.has(annotation.id)||!shapes.includes(annotation.shape))throw new Error('Invalid node container annotation.');seen.add(annotation.id);model.zones=model.zones.filter(z=>z!==zone);model.nodes.push({...zone,shape:annotation.shape,container:true});}
   await layoutModel(model);
   return validateModel(model);
 }
 export async function layoutModel(model) {
-  const { toMermaid } = await import('./core.mjs?v=appearance-final');
+  const { toMermaid } = await import('./core.mjs?v=drag-final');
   const source = `---\nconfig:\n  layout: ${model.settings.layout === 'hierarchical' ? 'elk.mrtree' : 'elk'}\n  themeVariables:\n    fontSize: ${diagramFontSize(model)}px\n---\n${toMermaid(model)}`;
   const id = `layout-${++renderCount}`;
   const { svg:markup } = await mermaid.render(id,source);
@@ -74,7 +76,7 @@ export async function layoutModel(model) {
       if (model.nodes.includes(n)) resizeNode(n,diagramFontSize(model));
       else { n.width=Math.max(n.width,160,textWidth(n.label,diagramFontSize(model))+32); n.height=Math.max(n.height,100); }
     }
-    ensureNodeSpacing(model);expandZones(model);
+    ensureNodeSpacing(model);expandZones(model);ensureLayoutSpacing(model);
   } finally { host.remove(); }
   return model;
 }
@@ -85,6 +87,7 @@ export function mergeSource(previous, incoming) {
     if (old) {
       n.description=old.description||'';n.notes=old.notes||'';
       for(const key of ['backgroundColor','fontColor','manualSize'])if(old[key]!==undefined)n[key]=copy(old[key]);
+      if(n.container&&old.containerSize)n.containerSize=copy(old.containerSize);
       const cx=old.x+old.width/2,cy=old.y+old.height/2;
       if (incoming.zones.includes(n)) Object.assign(n,{x:old.x,y:old.y,width:old.width,height:old.height});
       else { n.x=cx-n.width/2; n.y=cy-n.height/2; }

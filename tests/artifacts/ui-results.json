@@ -1,6 +1,5 @@
 {
-  "passed": 38,
-  "total": 38,
+  "passed": 52,
   "results": [
     {
       "name": "source import replaces structure and preserves nested hierarchy",
@@ -135,7 +134,7 @@
       "pass": true
     },
     {
-      "name": "subtle side guides appear for move and resize, disappear on release and never export",
+      "name": "dark purple side guides appear for move and resize, disappear on release and never export",
       "pass": true
     },
     {
@@ -153,6 +152,63 @@
     {
       "name": "global text size updates all labels and fit limits while preserving view and manual widths",
       "pass": true
+    },
+    {
+      "name": "live label typing previews immediately, keeps the field/caret and commits as one undoable edit",
+      "pass": true
+    },
+    {
+      "name": "color picker input previews continuously, updates descendant zones and commits one undoable session",
+      "pass": true
+    },
+    {
+      "name": "node parents support creating children, nested hierarchy, moves, resizing, deletion and undo",
+      "pass": true
+    },
+    {
+      "name": "new child creation and native-style drops use enabled node interiors and release on exit",
+      "pass": true
+    },
+    {
+      "name": "parent node source and project restore keep shape, parent links, contexts, colors and view",
+      "pass": true
+    },
+    {
+      "name": "circle and diamond short-label wrapping responds to shrinking and growing dimensions",
+      "pass": true
+    },
+    {
+      "name": "zone and edge labels preview while typing, preserve focus and undo an entire label session",
+      "pass": true
+    },
+    {
+      "name": "dropping onto an ordinary node enables a parent in every shape, preserves the drop centre and undoes atomically",
+      "pass": true
+    },
+    {
+      "name": "moving the final child out demotes the node parent and preserves manual size, connection and Undo",
+      "pass": true
+    },
+    {
+      "name": "toolbar Node and Zone drag into the canvas at zoomed and panned coordinates, with one Undo and no active placement tool",
+      "pass": true
+    },
+    {
+      "name": "toolbar drags adopt existing zones and ordinary nodes, and new zones can be children of nodes",
+      "pass": true
+    },
+    {
+      "name": "outside palette drops, Escape and lost capture leave no object or edit and no stale preview",
+      "pass": true
+    },
+    {
+      "name": "toolbar drag respects snapping, label size and clean exports and commits pending field edits",
+      "pass": true
+    },
+    {
+      "name": "original node dimensions survive source application and project reopening before final child release",
+      "pass": true
     }
-  ]
+  ],
+  "total": 52
 }

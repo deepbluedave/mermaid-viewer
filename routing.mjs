@@ -1,5 +1,5 @@
 // Adapter only: route finding is performed by libavoid, never by application code.
-import { items } from './core.mjs?v=appearance-final';
+import { items } from './core.mjs?v=drag-final';
 const sides = { north:{dir:1}, south:{dir:2}, west:{dir:4}, east:{dir:8} };
 const edgeSpacing=12;
 export function sidePoint(n, side, fraction=.5) {
@@ -71,10 +71,10 @@ export class DiagramRouter {
     router.setRoutingOption(a.RoutingOption.nudgeOrthogonalSegmentsConnectedToShapes,false);
     const shapes=new Map(), objects=new Map(items(model).map(n=>[n.id,n])),attachments=connectionAttachments(model,objects);
     function rectangle(n) {const p=new a.Point(n.x,n.y),q=new a.Point(n.x+n.width,n.y+n.height);const rect=new a.Rectangle(p,q);p.delete();q.delete();return rect;}
-    for(const n of model.nodes) {
+    for(const n of model.nodes.filter(n=>!n.container)) {
       const poly=rectangle(n),shape=new a.ShapeRef(router,poly);poly.delete();shapes.set(n.id,shape);
     }
-    // Zones, including their titles, are traversable containers. Only nodes are obstacles.
+    // Zones, including their titles, are traversable containers. Only leaf nodes are obstacles; parent node interiors are traversable too.
     const connections=new Map();
     function endpoint(id,attachment) {
       const n=objects.get(id),shape=shapes.get(id),{point,side,classId}=attachment;

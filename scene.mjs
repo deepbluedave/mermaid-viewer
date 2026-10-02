@@ -1,10 +1,10 @@
-import { nodeMetrics, depth,diagramFontSize,zoneHeaderHeight,objectColors } from './core.mjs?v=appearance-final';
-import { sidePoint } from './routing.mjs?v=appearance-final';
-import { layoutEdgeLabels, zoneTitleBox } from './labels.mjs?v=appearance-final';
-import { bridgedPaths } from './bridges.mjs?v=appearance-final';
+import { nodeMetrics, depth,diagramFontSize,zoneHeaderHeight,objectColors,containerTitleBox } from './core.mjs?v=drag-final';
+import { sidePoint } from './routing.mjs?v=drag-final';
+import { layoutEdgeLabels, zoneTitleBox } from './labels.mjs?v=drag-final';
+import { bridgedPaths } from './bridges.mjs?v=drag-final';
 const ns='http://www.w3.org/2000/svg';
 export const svgElement=(tag,attributes={},text=null)=>{const element=document.createElementNS(ns,tag);for(const [key,value] of Object.entries(attributes))if(value!==null&&value!==undefined)element.setAttribute(key,String(value));if(text!==null)element.textContent=text;return element;};
-export const sceneStyle=`.diagram-zone>rect{fill:#eef2f6;fill-opacity:.8;stroke:#94a3b8;stroke-width:1;stroke-dasharray:3 3}.diagram-zone>.zone-header{fill:#e2e8f0;fill-opacity:.7;stroke:none}.zone-title>.zone-label-backing{fill:#e2e8f0;fill-opacity:.72;stroke:none}.zone-label{fill:#475569;font:12px system-ui,sans-serif}.diagram-node>.node-shape{fill:#fff;stroke:#64748b;stroke-width:1.3}.diagram-node text{fill:#1e293b;font:13px system-ui,sans-serif}.edge-line{fill:none;stroke:#64748b;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}.edge-label rect{fill:#fff;stroke:#e2e8f0;stroke-width:.7}.edge-label text{fill:#475569;font:11px system-ui,sans-serif}`;
+export const sceneStyle=`.diagram-zone>rect{fill:#eef2f6;fill-opacity:.8;stroke:#94a3b8;stroke-width:1;stroke-dasharray:3 3}.diagram-zone>.zone-header{fill:#e2e8f0;fill-opacity:.7;stroke:none}.zone-title>.zone-label-backing{fill:#e2e8f0;fill-opacity:.72;stroke:none}.zone-label{fill:#475569;font:12px system-ui,sans-serif}.diagram-node>.node-shape{fill:#fff;stroke:#64748b;stroke-width:1.3}.diagram-node text{fill:#1e293b;font:13px system-ui,sans-serif}.edge-line{fill:none;stroke:#64748b;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}.edge-label rect{fill:#fff;stroke:#e2e8f0;stroke-width:.7}.edge-label text{fill:#475569;font:11px system-ui,sans-serif}.node-container-title text{font-family:system-ui,sans-serif}`;
 export function createScene(model,routes,selection=new Set(),{controls=true,tool='select',connectSource=null,hoverId=null,dropTarget=null}={}) {
   const fontSize=diagramFontSize(model),headerHeight=zoneHeaderHeight(model);
   const scene=svgElement('g',{id:'diagram-scene'});
@@ -15,11 +15,11 @@ export function createScene(model,routes,selection=new Set(),{controls=true,tool
     const colors=objectColors(model,z);
     const group=svgElement('g',{class:`diagram-zone${selection.has(z.id)?' selected':''}${dropTarget===z.id?' drop-target':''}`,'data-object-id':z.id,'data-kind':'zone',tabindex:controls?0:null,role:controls?'graphics-symbol':null,'aria-label':`Zone: ${z.label}`});
     group.append(svgElement('rect',{x:z.x,y:z.y,width:z.width,height:z.height,rx:4,style:`fill:${colors.background}`}));
-    group.append(svgElement('rect',{class:'zone-header',x:z.x,y:z.y,width:z.width,height:headerHeight,rx:4,'data-zone-header':z.id,style:`fill:${colors.background}`}));
+    group.append(svgElement('rect',{class:'zone-header',x:z.x,y:z.y,width:z.width,height:headerHeight,rx:4,'data-zone-header':z.id,style:`fill:${colors.header}`}));
     zoneLayer.append(group);
     // Titles sit over routes; translucent backing softens a crossing line without rerouting it.
     const title=svgElement('g',{class:'zone-title','data-object-id':z.id,'data-kind':'zone','data-zone-header':z.id});
-    const box=zoneTitleBox(z,fontSize);title.append(svgElement('rect',{class:'zone-label-backing',...box,rx:3,style:`fill:${colors.background}`}));
+    const box=zoneTitleBox(z,fontSize);title.append(svgElement('rect',{class:'zone-label-backing',...box,rx:3,style:`fill:${colors.header}`}));
     title.append(svgElement('text',{class:'zone-label',x:z.x+z.width/2,y:box.y+box.height/2+fontSize*.35,'text-anchor':'middle',style:`fill:${colors.font};font-size:${fontSize}px`},z.label));zoneTitleLayer.append(title);
     if(controls&&tool==='select'&&selection.has(z.id))appendResizeHandles(controlLayer,z,model.settings.view.scale);
   }
@@ -34,14 +34,14 @@ export function createScene(model,routes,selection=new Set(),{controls=true,tool
     if(e.label) {
       const {lines,width,height,anchor,leader}=edgeLabels.get(e.id);
       const label=svgElement('g',{class:'edge-label','data-object-id':e.id,'data-kind':'edge',transform:`translate(${anchor.x},${anchor.y})`});
-      if(leader){label.append(svgElement('line',{class:'edge-label-leader',x1:leader.start.x-anchor.x,y1:leader.start.y-anchor.y,x2:leader.end.x-anchor.x,y2:leader.end.y-anchor.y,stroke:'#94a3b8','stroke-width':.8,'stroke-dasharray':'2 2'}));label.append(svgElement('circle',{class:'edge-label-leader',cx:leader.start.x-anchor.x,cy:leader.start.y-anchor.y,r:1.7,fill:'#64748b'}));}
+      if(leader){label.append(svgElement('line',{class:'edge-label-leader',x1:leader.start.x-anchor.x,y1:leader.start.y-anchor.y,x2:leader.end.x-anchor.x,y2:leader.end.y-anchor.y,stroke:'#64748b','stroke-width':1.4,'vector-effect':'non-scaling-stroke','stroke-dasharray':'2 2'}));label.append(svgElement('circle',{class:'edge-label-leader',cx:leader.start.x-anchor.x,cy:leader.start.y-anchor.y,r:2,fill:'#64748b'}));}
       label.append(svgElement('rect',{x:-width/2,y:-height/2,width,height,rx:3}));
       const lineHeight=Math.ceil(fontSize*1.35),text=svgElement('text',{'text-anchor':'middle',style:`font-size:${fontSize}px`});lines.forEach((line,i)=>text.append(svgElement('tspan',{x:0,y:-(lines.length-1)*lineHeight/2+fontSize*.35+i*lineHeight},line)));label.append(text);labelLayer.append(label);
     }
     if(controls&&selection.has(e.id))for(const [end,p]of[['source',points[0]],['target',points.at(-1)]])controlLayer.append(svgElement('circle',{class:'connection-handle',cx:p.x,cy:p.y,r:6,'data-reconnect':e.id,'data-end':end}));
   }
-  for(const n of model.nodes) {
-    const group=svgElement('g',{class:`diagram-node${selection.has(n.id)?' selected':''}${connectSource===n.id?' connect-source':''}`,'data-object-id':n.id,'data-kind':'node',transform:`translate(${n.x},${n.y})`,tabindex:controls?0:null,role:controls?'graphics-symbol':null,'aria-label':n.label});
+  for(const n of [...model.nodes].sort((a,b)=>depth(model,a)-depth(model,b))) {
+    const group=svgElement('g',{class:`diagram-node${n.container?' container-node':''}${selection.has(n.id)?' selected':''}${connectSource===n.id?' connect-source':''}${dropTarget===n.id?' drop-target':''}`,'data-object-id':n.id,'data-kind':'node',transform:`translate(${n.x},${n.y})`,tabindex:controls?0:null,role:controls?'graphics-symbol':null,'aria-label':n.label});
     const w=n.width,h=n.height,colors=objectColors(model,n);
     if(n.shape==='diamond')group.append(svgElement('polygon',{class:'node-shape',points:`${w/2},0 ${w},${h/2} ${w/2},${h} 0,${h/2}`}));
     else if(n.shape==='circle')group.append(svgElement('ellipse',{class:'node-shape',cx:w/2,cy:h/2,rx:w/2,ry:h/2}));
@@ -49,9 +49,15 @@ export function createScene(model,routes,selection=new Set(),{controls=true,tool
       const ry=10;group.append(svgElement('path',{class:'node-shape',d:`M0,${ry} A${w/2},${ry} 0 0 1 ${w},${ry} L${w},${h-ry} A${w/2},${ry} 0 0 1 0,${h-ry} Z`}));
       group.append(svgElement('ellipse',{class:'node-shape',cx:w/2,cy:ry,rx:w/2,ry}));
     } else group.append(svgElement('rect',{class:'node-shape',width:w,height:h,rx:n.shape==='rounded'?14:3}));
-    group.querySelectorAll('.node-shape').forEach(shape=>shape.setAttribute('style',`fill:${colors.background}`));
+    group.querySelectorAll('.node-shape').forEach(shape=>shape.setAttribute('style',`fill:${colors.background}${n.container?';fill-opacity:.85':''}`));
     const {lines,lineHeight}=nodeMetrics(n,fontSize),text=svgElement('text',{'text-anchor':'middle',style:`fill:${colors.font};font-size:${fontSize}px`});
-    lines.forEach((line,i)=>text.append(svgElement('tspan',{x:w/2,y:h/2-(lines.length-1)*lineHeight/2+fontSize*.35+i*lineHeight},line)));group.append(text);nodeLayer.append(group);
+    if(n.container){
+      const box=containerTitleBox(model,n),title=svgElement('g',{class:'node-container-title','data-object-id':n.id,'data-kind':'node',transform:`translate(${n.x},${n.y})`});
+      const clip=svgElement('clipPath',{id:`container-outline-${n.id}`,clipPathUnits:'userSpaceOnUse'});for(const shape of group.querySelectorAll('.node-shape')){const outline=shape.cloneNode(true);outline.removeAttribute('class');outline.removeAttribute('style');outline.setAttribute('fill','#000');outline.setAttribute('stroke','none');clip.append(outline);}defs.append(clip);title.setAttribute('clip-path',`url(#container-outline-${n.id})`);
+      title.append(svgElement('rect',{class:'node-title-backing',x:box.x-n.x,y:box.y-n.y,width:box.width,height:box.height,rx:3,style:`fill:${colors.header};fill-opacity:.78;stroke:none`}));
+      lines.forEach((line,i)=>text.append(svgElement('tspan',{x:w/2,y:box.y-n.y+box.height/2-(lines.length-1)*lineHeight/2+fontSize*.35+i*lineHeight},line)));title.append(text);zoneTitleLayer.append(title);
+      const next=[...zoneLayer.children].find(g=>{const other=[...model.zones,...model.nodes].find(n=>n.id===g.dataset.objectId);return other&&depth(model,other)>depth(model,n);});zoneLayer.insertBefore(group,next||null);
+    }else{lines.forEach((line,i)=>text.append(svgElement('tspan',{x:w/2,y:h/2-(lines.length-1)*lineHeight/2+fontSize*.35+i*lineHeight},line)));group.append(text);nodeLayer.append(group);}
     if(controls&&tool==='select'&&selection.has(n.id)){controlLayer.append(svgElement('rect',{class:'resize-outline',x:n.x,y:n.y,width:w,height:h}));appendResizeHandles(controlLayer,n,model.settings.view.scale);}
     if(controls&&tool==='connect'&&(hoverId===n.id||connectSource===n.id))for(const side of ['north','south','west','east']){const p=sidePoint(n,side);controlLayer.append(svgElement('circle',{class:'connection-handle',cx:p.x,cy:p.y,r:5,'data-connect':n.id,'data-side':side}));}
   }

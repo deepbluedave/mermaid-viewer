@@ -1,5 +1,5 @@
-import { labelLines, textWidth,diagramFontSize } from './core.mjs?v=appearance-final';
-import { labelAnchor } from './routing.mjs?v=appearance-final';
+import { labelLines, textWidth,diagramFontSize,containers,containerTitleBox } from './core.mjs?v=drag-final';
+import { labelAnchor } from './routing.mjs?v=drag-final';
 
 const overlaps=(a,b,padding=4)=>a.x+a.width>b.x-padding&&a.x<b.x+b.width+padding&&a.y+a.height>b.y-padding&&a.y<b.y+b.height+padding;
 function segmentIntersectsBox(a,b,box,padding=0) {
@@ -39,7 +39,7 @@ export function layoutEdgeLabels(model,routes) {
     const shift=(group[0].base[axis]+group.at(-1).base[axis]-position)/2;
     group.forEach(r=>r.preferredOffset=r.desired+shift-r.base[axis]);
   }
-  const occupied=[],titleBoxes=model.zones.map(z=>zoneTitleBox(z,fontSize)),fixed=[...model.nodes,...titleBoxes,...arrowBoxes],result=new Map();
+  const occupied=[],titleBoxes=containers(model).map(z=>z.container?containerTitleBox(model,z):zoneTitleBox(z,fontSize)),leafNodes=model.nodes.filter(n=>!n.container),fixed=[...leafNodes,...titleBoxes,...arrowBoxes],result=new Map();
   for(const record of records) {
     const {edge,parts,width,height}=record;let chosen;
     const fractions=[.5,.25,.75,.125,.875,.375,.625,.0625,.9375];
@@ -55,7 +55,7 @@ export function layoutEdgeLabels(model,routes) {
         if(segments.some(s=>s.id!==edge.id&&segmentIntersectsBox(s.a,s.b,box)))continue;
         const end={x:Math.max(box.x,Math.min(box.x+width,origin.x)),y:Math.max(box.y,Math.min(box.y+height,origin.y))};
         const leader=Math.hypot(end.x-origin.x,end.y-origin.y)>.01?{start:origin,end}:null;
-        if(leader&&[...model.nodes,...titleBoxes,...occupied].some(b=>segmentIntersectsBox(origin,end,b,2)))continue;
+        if(leader&&[...leafNodes,...titleBoxes,...occupied].some(b=>segmentIntersectsBox(origin,end,b,2)))continue;
         chosen={...record,anchor,box,leader};break search;
       }
     }
