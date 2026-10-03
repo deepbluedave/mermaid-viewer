@@ -9,3 +9,7 @@
 .toolbar [data-tool=node],.toolbar [data-tool=zone]{touch-action:none}.placement-preview{fill:#dbeafe;fill-opacity:.55;stroke:#581c87;stroke-width:1.5;stroke-dasharray:5 4;pointer-events:none;vector-effect:non-scaling-stroke}
 
 .diagram-node.drop-target>.node-shape{stroke:#7c3aed;stroke-width:2.5;stroke-dasharray:6 3}
+.waypoint-handle{fill:#fff;stroke:#0284c7;stroke-width:2;vector-effect:non-scaling-stroke;cursor:move}.waypoint-handle.active{fill:#38bdf8}.waypoint-handle.conflict{fill:#fee2e2;stroke:#dc2626}.route-segment-handle{cursor:move}.route-segment-handle circle{fill:#eff6ff;stroke:#0284c7;stroke-width:1;vector-effect:non-scaling-stroke}.route-segment-handle path{stroke:#0284c7;stroke-width:1;vector-effect:non-scaling-stroke;pointer-events:none}.waypoint-row{display:flex;gap:4px}.waypoint-row button:first-child{flex:1;min-width:0;text-align:left;font-size:11px;white-space:normal}.waypoint-warning{color:#fca5a5;font-size:11px;line-height:1.6;margin:0}#viewport[data-tool=waypoint]{cursor:crosshair}
+.edge-label{cursor:grab}.edge-label.selected>rect{stroke:#0284c7;stroke-width:1.5}.edge-label-leader{pointer-events:none}#viewport[data-gesture=label]{cursor:grabbing}
+.attachment-order{display:flex;flex-direction:column;gap:6px;padding:9px 0;border-top:1px solid var(--line)}.attachment-order-buttons{display:flex;gap:6px}.attachment-order-buttons button{flex:1;min-width:0}.attachment-order button{min-height:36px;white-space:normal}.attachment-order .small-note{margin:0}
+@media(pointer:coarse){.attachment-order button{min-height:44px}}

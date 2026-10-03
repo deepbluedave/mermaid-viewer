@@ -14,6 +14,42 @@ function segmentIntersectsBox(a,b,box,padding=0) {
 }
 export function zoneTitleBox(z,fontSize=13) {const width=textWidth(z.label,fontSize)+12;return{x:z.x+(z.width-width)/2,y:z.y+5,width,height:fontSize+8};}
 
+export function routeFrame(points, fraction) {
+  const lengths=points.slice(1).map((p,i)=>Math.hypot(p.x-points[i].x,p.y-points[i].y));
+  const total=lengths.reduce((sum,n)=>sum+n,0),distance=total*fraction;
+  const sample=distance=>{
+    for(let i=0;i<lengths.length;i++)if(lengths[i]){
+      if(distance<=lengths[i]){const t=distance/lengths[i],a=points[i],b=points[i+1];return{point:{x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t},tangent:{x:(b.x-a.x)/lengths[i],y:(b.y-a.y)/lengths[i]}};}
+      distance-=lengths[i];
+    }
+    return {point:{...points.at(-1)},tangent:{x:1,y:0}};
+  };
+  const frame=sample(distance);
+  // Use the nearby route direction, rather than a tiny segment's orientation.
+  // This prevents a small orthogonal jog from flipping an offset by 90 degrees.
+  const a=sample(Math.max(0,distance-64)).point,b=sample(Math.min(total,distance+64)).point,size=Math.hypot(b.x-a.x,b.y-a.y);
+  if(size>.001)frame.tangent={x:(b.x-a.x)/size,y:(b.y-a.y)/size};
+  return frame;
+}
+export const routePoint=(points,fraction)=>routeFrame(points,fraction).point;
+
+export function manualLabelPosition(points, center) {
+  let length=0,best={distance:Infinity,along:0,point:points[0]};
+  for(let i=1;i<points.length;i++){
+    const a=points[i-1],b=points[i],dx=b.x-a.x,dy=b.y-a.y,size=Math.hypot(dx,dy);
+    const t=size?Math.max(0,Math.min(1,((center.x-a.x)*dx+(center.y-a.y)*dy)/(size*size))):0;
+    const point={x:a.x+dx*t,y:a.y+dy*t},distance=Math.hypot(center.x-point.x,center.y-point.y);
+    if(distance<best.distance)best={distance,along:length+size*t,point};length+=size;
+  }
+  const fraction=length?best.along/length:0,{point,tangent}=routeFrame(points,fraction),dx=center.x-point.x,dy=center.y-point.y;
+  return {fraction,offsetAlong:dx*tangent.x+dy*tangent.y,offsetNormal:-dx*tangent.y+dy*tangent.x};
+}
+
+export function labelLeader(origin, box) {
+  const end={x:Math.max(box.x,Math.min(box.x+box.width,origin.x)),y:Math.max(box.y,Math.min(box.y+box.height,origin.y))};
+  return Math.hypot(end.x-origin.x,end.y-origin.y)>.01?{start:origin,end}:null;
+}
+
 // Label placement changes only text and its optional callout, never a routed edge.
 export function layoutEdgeLabels(model,routes) {
   const records=[],groups=new Map(),segments=[],arrowBoxes=[],fontSize=diagramFontSize(model);
@@ -29,7 +65,8 @@ export function layoutEdgeLabels(model,routes) {
       const horizontal=Math.abs(a.y-b.y)<.001;parts.push({a,b,length,horizontal,score:length+(horizontal?30:0)});
     }
     parts.sort((a,b)=>b.score-a.score);
-    const record={edge,lines,width,height,parts,base:labelAnchor(points),horizontal:parts[0]?.horizontal??true,preferredOffset:0};records.push(record);
+    const record={edge,lines,width,height,parts,points,base:labelAnchor(points),horizontal:parts[0]?.horizontal??true,preferredOffset:0};records.push(record);
+    if(edge.labelPosition)continue;
     const key=JSON.stringify([...[edge.source,edge.target].sort(),edge.routing]);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(record);
   }
   for(const group of groups.values())if(group.length>1){
@@ -40,7 +77,15 @@ export function layoutEdgeLabels(model,routes) {
     group.forEach(r=>r.preferredOffset=r.desired+shift-r.base[axis]);
   }
   const occupied=[],titleBoxes=containers(model).map(z=>z.container?containerTitleBox(model,z):zoneTitleBox(z,fontSize)),leafNodes=model.nodes.filter(n=>!n.container),fixed=[...leafNodes,...titleBoxes,...arrowBoxes],result=new Map();
+  // Reserve all manual labels first, regardless of edge order. Their positions
+  // are authoritative; only automatic labels participate in collision search.
+  for(const record of records.filter(r=>r.edge.labelPosition)){
+    const {fraction,offsetAlong,offsetNormal}=record.edge.labelPosition,{point:origin,tangent}=routeFrame(record.points,fraction);
+    const anchor={x:origin.x+tangent.x*offsetAlong-tangent.y*offsetNormal,y:origin.y+tangent.y*offsetAlong+tangent.x*offsetNormal},box={x:anchor.x-record.width/2,y:anchor.y-record.height/2,width:record.width,height:record.height};
+    const chosen={...record,anchor,box,leader:labelLeader(origin,box)};occupied.push(box);result.set(record.edge.id,chosen);
+  }
   for(const record of records) {
+    if(record.edge.labelPosition)continue;
     const {edge,parts,width,height}=record;let chosen;
     const fractions=[.5,.25,.75,.125,.875,.375,.625,.0625,.9375];
     search:for(let ring=-2;ring<8;ring++)for(const part of parts){
@@ -53,8 +98,7 @@ export function layoutEdgeLabels(model,routes) {
         const box={x:anchor.x-width/2,y:anchor.y-height/2,width,height};
         if([...fixed,...occupied].some(b=>overlaps(box,b)))continue;
         if(segments.some(s=>s.id!==edge.id&&segmentIntersectsBox(s.a,s.b,box)))continue;
-        const end={x:Math.max(box.x,Math.min(box.x+width,origin.x)),y:Math.max(box.y,Math.min(box.y+height,origin.y))};
-        const leader=Math.hypot(end.x-origin.x,end.y-origin.y)>.01?{start:origin,end}:null;
+        const leader=labelLeader(origin,box),end=leader?.end;
         if(leader&&[...leafNodes,...titleBoxes,...occupied].some(b=>segmentIntersectsBox(origin,end,b,2)))continue;
         chosen={...record,anchor,box,leader};break search;
       }

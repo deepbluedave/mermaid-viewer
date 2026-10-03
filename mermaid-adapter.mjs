@@ -1,3 +1,4 @@
+import {pruneAttachmentOrders} from './attachments.mjs?v=whole-words';
 import { emptyModel, resizeNode, expandZones, validateModel, configureTextMeasure, textWidth,ensureNodeSpacing,diagramFontSize,copy,shapes,ensureLayoutSpacing } from './core.mjs?v=whole-words';
 let renderCount = 0;
 const shapeTypes = { square:'rectangle', rect:'rectangle', round:'rounded', rounded:'rounded', diamond:'diamond', circle:'circle', cylinder:'cylinder' };
@@ -57,6 +58,7 @@ export async function importMermaid(source, { direction, layout = 'adaptive' } =
   return validateModel(model);
 }
 export async function layoutModel(model) {
+  const manualRoutes=new Map(model.edges.filter(e=>e.waypoints).map(e=>[e.id,copy(e.waypoints)]));
   const { toMermaid } = await import('./core.mjs?v=whole-words');
   const source = `---\nconfig:\n  layout: ${model.settings.layout === 'hierarchical' ? 'elk.mrtree' : 'elk'}\n  themeVariables:\n    fontSize: ${diagramFontSize(model)}px\n---\n${toMermaid(model)}`;
   const id = `layout-${++renderCount}`;
@@ -77,7 +79,7 @@ export async function layoutModel(model) {
       else { n.width=Math.max(n.width,160,textWidth(n.label,diagramFontSize(model))+32); n.height=Math.max(n.height,100); }
     }
     ensureNodeSpacing(model);expandZones(model);ensureLayoutSpacing(model);
-  } finally { host.remove(); }
+  } finally { host.remove();for(const e of model.edges)if(manualRoutes.has(e.id))e.waypoints=manualRoutes.get(e.id); }
   return model;
 }
 export function mergeSource(previous, incoming) {
@@ -86,7 +88,7 @@ export function mergeSource(previous, incoming) {
     const old = [...previous.nodes,...previous.zones].find(o=>o.id===n.id);
     if (old) {
       n.description=old.description||'';n.notes=old.notes||'';
-      for(const key of ['backgroundColor','fontColor','manualSize'])if(old[key]!==undefined)n[key]=copy(old[key]);
+      for(const key of ['backgroundColor','fontColor','manualSize','attachmentOrder'])if(old[key]!==undefined)n[key]=copy(old[key]);
       if(n.container&&old.containerSize)n.containerSize=copy(old.containerSize);
       const cx=old.x+old.width/2,cy=old.y+old.height/2;
       if (incoming.zones.includes(n)) Object.assign(n,{x:old.x,y:old.y,width:old.width,height:old.height});
@@ -94,7 +96,8 @@ export function mergeSource(previous, incoming) {
     }
     if(incoming.nodes.includes(n))resizeNode(n,diagramFontSize(incoming));
   }
-  for (const e of incoming.edges) { const old=previous.edges.find(o=>o.id===e.id); if(old) {e.routing=old.routing;e.sourceSide=old.sourceSide;e.targetSide=old.targetSide;e.description=old.description||'';e.notes=old.notes||'';} }
+  for (const e of incoming.edges) { const old=previous.edges.find(o=>o.id===e.id); if(old) {e.routing=old.routing;e.sourceSide=old.sourceSide;e.targetSide=old.targetSide;e.description=old.description||'';e.notes=old.notes||'';if(e.source===old.source&&e.target===old.target){if(old.waypoints)e.waypoints=copy(old.waypoints);if(old.labelPosition)e.labelPosition=copy(old.labelPosition);}} }
+  pruneAttachmentOrders(incoming);
   incoming.settings.grid=previous.settings.grid; incoming.settings.view={...previous.settings.view};
   ensureNodeSpacing(incoming,{preferredIds:new Set(incoming.nodes.filter(n=>!previous.nodes.some(old=>old.id===n.id&&old.width===n.width&&old.height===n.height)).map(n=>n.id))});expandZones(incoming); return incoming;
 }

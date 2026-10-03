@@ -1,0 +1,396 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Node1",
+      "label": "Scout",
+      "shape": "circle",
+      "parentId": "Zone1",
+      "x": 238.20486340161608,
+      "y": 118.20486340161607,
+      "width": 100,
+      "height": 100,
+      "backgroundColor": "#dbeafe",
+      "manualSize": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "id": "Node2",
+      "label": "Distress?",
+      "shape": "diamond",
+      "parentId": "Zone1",
+      "x": 190,
+      "y": 321,
+      "width": 240,
+      "height": 108,
+      "backgroundColor": "#fef3c7"
+    },
+    {
+      "id": "Node3",
+      "label": "Star map",
+      "shape": "cylinder",
+      "parentId": "Zone1",
+      "x": 65,
+      "y": 525,
+      "width": 120,
+      "height": 70,
+      "backgroundColor": "#cffafe"
+    },
+    {
+      "id": "Node4",
+      "label": "Mission plan",
+      "shape": "rounded",
+      "parentId": "Zone1",
+      "x": 360.75633239746094,
+      "y": 688,
+      "width": 138.48733520507812,
+      "height": 54,
+      "backgroundColor": "#ddd6fe"
+    },
+    {
+      "id": "Node5",
+      "label": "Launch drones",
+      "shape": "rectangle",
+      "parentId": "Zone2",
+      "x": 836.4233779907227,
+      "y": 163,
+      "width": 157.1532440185547,
+      "height": 54,
+      "backgroundColor": "#dbeafe",
+      "attachmentOrder": {
+        "west": [
+          "Edge5:target",
+          "Edge7:source"
+        ]
+      }
+    },
+    {
+      "id": "Node6",
+      "label": "Storm clear?",
+      "shape": "diamond",
+      "parentId": "Zone2",
+      "x": 778.0066375732422,
+      "y": 326,
+      "width": 273.9867248535156,
+      "height": 108,
+      "backgroundColor": "#fef3c7"
+    },
+    {
+      "id": "Node7",
+      "label": "Shelter",
+      "shape": "rounded",
+      "parentId": "Zone2",
+      "x": 1120,
+      "y": 473,
+      "width": 120,
+      "height": 54,
+      "backgroundColor": "#ffedd5"
+    },
+    {
+      "id": "Node8",
+      "label": "Crew pickup",
+      "shape": "rounded",
+      "parentId": "Zone2",
+      "x": 847.3853149414062,
+      "y": 583,
+      "width": 135.2293701171875,
+      "height": 54,
+      "backgroundColor": "#dcfce7"
+    },
+    {
+      "id": "Node9",
+      "label": "Safe habitat",
+      "shape": "cylinder",
+      "parentId": "Zone2",
+      "x": 848.4833297729492,
+      "y": 735,
+      "width": 133.03334045410156,
+      "height": 70,
+      "backgroundColor": "#bbf7d0"
+    }
+  ],
+  "zones": [
+    {
+      "id": "Zone1",
+      "label": "ORBIT · Detection & planning",
+      "parentId": null,
+      "x": 40,
+      "y": 70.20486340161607,
+      "width": 540,
+      "height": 769.7951365983839,
+      "backgroundColor": "#e0e7ff"
+    },
+    {
+      "id": "Zone2",
+      "label": "LUNAR OUTPOST · Rescue & recovery",
+      "parentId": null,
+      "x": 680,
+      "y": 80,
+      "width": 610,
+      "height": 760,
+      "backgroundColor": "#d1fae5"
+    }
+  ],
+  "edges": [
+    {
+      "id": "Edge1",
+      "source": "Node1",
+      "target": "Node2",
+      "label": "Crew beacon",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "north",
+      "labelPosition": {
+        "fraction": 0.5874672478001651,
+        "offsetAlong": 22.73125334134305,
+        "offsetNormal": -117.91724171541154
+      }
+    },
+    {
+      "id": "Edge2",
+      "source": "Node2",
+      "target": "Node1",
+      "label": "Keep scanning",
+      "direction": "forward",
+      "style": "dashed",
+      "routing": "orthogonal",
+      "sourceSide": "west",
+      "targetSide": "west",
+      "waypoints": [
+        {
+          "x": 20,
+          "y": 375
+        },
+        {
+          "x": 20,
+          "y": 190
+        }
+      ],
+      "labelPosition": {
+        "fraction": 0.10924369840364455,
+        "offsetAlong": 1.4210854715202004e-14,
+        "offsetNormal": 50.000001100337045
+      }
+    },
+    {
+      "id": "Edge3",
+      "source": "Node2",
+      "target": "Node4",
+      "label": "Rescue approved",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "north",
+      "labelPosition": {
+        "fraction": 0.658311345646438,
+        "offsetAlong": -30.759144981614817,
+        "offsetNormal": -44.90128060534577
+      }
+    },
+    {
+      "id": "Edge4",
+      "source": "Node3",
+      "target": "Node4",
+      "label": "Terrain + routes",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "west",
+      "labelPosition": {
+        "fraction": 0.46220782861693155,
+        "offsetAlong": 0,
+        "offsetNormal": 22.878173828125
+      }
+    },
+    {
+      "id": "Edge5",
+      "source": "Node4",
+      "target": "Node5",
+      "label": "Dispatch flight plan",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "west",
+      "waypoints": [
+        {
+          "x": 620,
+          "y": 715
+        },
+        {
+          "x": 620,
+          "y": 190
+        }
+      ],
+      "labelPosition": {
+        "fraction": 0.34303327813676,
+        "offsetAlong": 0,
+        "offsetNormal": 25
+      }
+    },
+    {
+      "id": "Edge6",
+      "source": "Node5",
+      "target": "Node6",
+      "label": "Atmospheric check",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "north",
+      "labelPosition": {
+        "fraction": 0.6238532110091743,
+        "offsetAlong": 0,
+        "offsetNormal": -175
+      }
+    },
+    {
+      "id": "Edge7",
+      "source": "Node5",
+      "target": "Node6",
+      "label": "Live radar feed",
+      "direction": "forward",
+      "style": "dashed",
+      "routing": "orthogonal",
+      "sourceSide": "west",
+      "targetSide": "west",
+      "waypoints": [
+        {
+          "x": 720.0000000000001,
+          "y": 196.00002455801138
+        },
+        {
+          "x": 720,
+          "y": 380
+        }
+      ],
+      "labelPosition": {
+        "fraction": 0.5869485971856365,
+        "offsetAlong": 0,
+        "offsetNormal": -80
+      }
+    },
+    {
+      "id": "Edge8",
+      "source": "Node6",
+      "target": "Node8",
+      "label": "Clear to land",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "north",
+      "labelPosition": {
+        "fraction": 0.5100671140939598,
+        "offsetAlong": 0,
+        "offsetNormal": 145
+      }
+    },
+    {
+      "id": "Edge9",
+      "source": "Node6",
+      "target": "Node7",
+      "label": "Storm warning",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "north",
+      "labelPosition": {
+        "fraction": 0.7828119529482789,
+        "offsetAlong": -1.0008221358057992,
+        "offsetNormal": 4.8987609805231225
+      }
+    },
+    {
+      "id": "Edge10",
+      "source": "Node7",
+      "target": "Node5",
+      "label": "Wait out the storm",
+      "direction": "forward",
+      "style": "dashed",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "east",
+      "waypoints": [
+        {
+          "x": 1370,
+          "y": 500
+        },
+        {
+          "x": 1370,
+          "y": 190
+        }
+      ],
+      "labelPosition": {
+        "fraction": 0.31846221826704535,
+        "offsetAlong": 0,
+        "offsetNormal": 59.99998092651367
+      }
+    },
+    {
+      "id": "Edge11",
+      "source": "Node8",
+      "target": "Node9",
+      "label": "Six crew aboard",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "north",
+      "labelPosition": {
+        "fraction": 0.5408163265306123,
+        "offsetAlong": 0,
+        "offsetNormal": -165
+      }
+    },
+    {
+      "id": "Edge12",
+      "source": "Node9",
+      "target": "Node3",
+      "label": "Mission debrief",
+      "direction": "forward",
+      "style": "dashed",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "south",
+      "waypoints": [
+        {
+          "x": 915,
+          "y": 925
+        },
+        {
+          "x": 125,
+          "y": 925
+        },
+        {
+          "x": 125,
+          "y": 630
+        }
+      ],
+      "labelPosition": {
+        "fraction": 0.3346774193548387,
+        "offsetAlong": 0,
+        "offsetNormal": -50
+      }
+    }
+  ],
+  "settings": {
+    "direction": "TD",
+    "layout": "adaptive",
+    "grid": false,
+    "guides": true,
+    "fontSize": 18,
+    "view": {
+      "x": 34.65649760568793,
+      "y": 40.05630808827908,
+      "scale": 0.9671751197156035
+    }
+  }
+}

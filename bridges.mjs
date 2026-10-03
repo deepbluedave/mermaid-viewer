@@ -1,8 +1,23 @@
 const cross=(a,b)=>a.x*b.y-a.y*b.x;
+function drawingPoints(points){
+  const result=[];
+  for(const point of points){
+    const last=result.at(-1);if(last&&last.x===point.x&&last.y===point.y)continue;
+    while(result.length>1){
+      const a=result.at(-2),b=result.at(-1),v={x:b.x-a.x,y:b.y-a.y},w={x:point.x-b.x,y:point.y-b.y};
+      if(cross(v,w)!==0||v.x*w.x+v.y*w.y<=0)break;
+      result.pop();
+    }
+    result.push(point);
+  }
+  return result;
+}
 export function bridgedPaths(edges,routes,radius=5) {
   const result=new Map(),previous=[];
   for(const edge of edges) {
-    const points=routes.get(edge.id)||[],jumps=[];let path=points.length?`M${points[0].x},${points[0].y}`:'';
+    // A waypoint within a straight run is not a junction. Merge that run only
+    // for drawing, so crossings there retain their bridge; raw routes stay intact.
+    const points=drawingPoints(routes.get(edge.id)||[]),jumps=[];let path=points.length?`M${points[0].x},${points[0].y}`:'';
     for(let i=1;i<points.length;i++) {
       const a=points[i-1],b=points[i],v={x:b.x-a.x,y:b.y-a.y},length=Math.hypot(v.x,v.y),hits=[];
       if(length>3.5)for(const segment of previous) {

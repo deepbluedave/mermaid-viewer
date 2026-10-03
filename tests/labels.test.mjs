@@ -28,3 +28,30 @@ test('self-loop and crossing labels remain legible after moving a node',()=>{
  for(const y of [180,320]){m.nodes[1].y=y;const labels=layoutEdgeLabels(m,router.route(m));assert.equal(labels.size,4);readable(m,labels);}
 });
 test.after(()=>router.dispose());
+test('manual labels respect exact placement and overlaps without changing routes',async()=>{
+ const {manualLabelPosition}=await import('../labels.mjs');const m=emptyModel();m.nodes=[node('A',0,0),node('B',600,0),node('Obstacle',250,120)];m.edges=[edge('E','Docking clearance')];const routes=router.route(m),before=JSON.stringify([...routes]);const center={x:300,y:150};m.edges[0].labelPosition=manualLabelPosition(routes.get('E'),center);const label=layoutEdgeLabels(m,routes).get('E');assert.ok(Math.abs(label.anchor.x-center.x)<.001&&Math.abs(label.anchor.y-center.y)<.001);assert.ok(overlap(label.box,m.nodes[2]),'manual overlap is respected');assert.ok(label.leader,'displaced label has a leader');assert.equal(JSON.stringify([...routes]),before);
+});
+test('leaders appear only when attachment lies outside the label box and terminate on its border',async()=>{
+ const {manualLabelPosition}=await import('../labels.mjs');const m=emptyModel();m.nodes=[node('A',0,0),node('B',600,0)];m.edges=[edge('E','Signal')];const routes=new Map([['E',[{x:120,y:35},{x:600,y:35}]]]);
+ for(const [y,leader]of[[35,false],[45,false],[100,true]]){m.edges[0].labelPosition=manualLabelPosition(routes.get('E'),{x:320,y});const label=layoutEdgeLabels(m,routes).get('E');assert.equal(Boolean(label.leader),leader);if(leader){assert.equal(label.leader.start.y,35);assert.equal(label.leader.end.y,label.box.y);assert.ok(label.leader.end.x>=label.box.x&&label.leader.end.x<=label.box.x+label.box.width);}}
+});
+test('route-following offsets retain separation when a connection lengthens or rotates',async()=>{
+ const {manualLabelPosition}=await import('../labels.mjs');const m=emptyModel();m.edges=[edge('E','Navigation beacon')];const first=[{x:0,y:0},{x:400,y:0}];m.edges[0].labelPosition=manualLabelPosition(first,{x:200,y:80});
+ for(const [path,expected]of[[[{x:0,y:0},{x:800,y:0}],{x:400,y:80}],[[{x:40,y:50},{x:440,y:50}],{x:240,y:130}],[[{x:0,y:0},{x:0,y:400}],{x:-80,y:200}]]){const label=layoutEdgeLabels(m,new Map([['E',path]])).get('E');assert.deepEqual(label.anchor,expected);assert.ok(label.leader,'route rotation keeps an off-route label off the route');}
+});
+test('automatic labels avoid manual labels independent of edge ordering',async()=>{
+ const {manualLabelPosition}=await import('../labels.mjs');const m=emptyModel();m.nodes=[node('A',0,0),node('B',600,0)];m.edges=[edge('Automatic','Auto beacon'),edge('Manual','Human priority')];const path=[{x:120,y:35},{x:600,y:35}],routes=new Map(m.edges.map(e=>[e.id,path]));m.edges[1].labelPosition=manualLabelPosition(path,{x:360,y:35});for(const edges of [m.edges,[...m.edges].reverse()]){m.edges=edges;const labels=layoutEdgeLabels(m,routes);assert.equal(labels.get('Manual').anchor.x,360);assert.ok(!overlap(labels.get('Manual').box,labels.get('Automatic').box));}
+});
+test('reset restores collision-aware automatic placement and its leader behavior',async()=>{
+ const {manualLabelPosition}=await import('../labels.mjs');const m=emptyModel();m.nodes=[node('A',0,0),node('B',140,0)];m.edges=[edge('E','A very cramped docking clearance')];const routes=router.route(m),automatic=layoutEdgeLabels(m,routes).get('E');assert.ok(automatic.leader);m.edges[0].labelPosition=manualLabelPosition(routes.get('E'),{x:500,y:400});assert.equal(layoutEdgeLabels(m,routes).get('E').anchor.x,500);delete m.edges[0].labelPosition;assert.deepEqual(layoutEdgeLabels(m,routes).get('E'),automatic);
+});
+test('manual positions validate and persist, including empty-label preferences',async()=>{
+ const {validateModel,History,copy}=await import('../core.mjs');const m=emptyModel();m.nodes=[node('A',0,0),node('B',600,0)];m.edges=[{...edge('E',''),labelPosition:{fraction:.4,offsetAlong:0,offsetNormal:80}}];assert.deepEqual(validateModel(JSON.parse(JSON.stringify(m))),m);const history=new History(),before=copy(m);m.edges[0].labelPosition.offsetNormal=150;history.record(before,m);assert.deepEqual(history.undo(m),before);assert.deepEqual(history.redo(before),m);
+ for(const position of [null,{}, {fraction:-1,offsetAlong:0,offsetNormal:0},{fraction:2,offsetAlong:0,offsetNormal:0},{fraction:NaN,offsetAlong:0,offsetNormal:0},{fraction:.5,offsetAlong:Infinity,offsetNormal:0},{fraction:.5,offsetAlong:0,offsetNormal:1e7}]){const bad=copy(m);bad.edges[0].labelPosition=position;assert.throws(()=>validateModel(bad),/label position/);}
+});
+test('projection supports diagonal routes, repeated points, and manual offsets past endpoints',async()=>{
+ const {manualLabelPosition}=await import('../labels.mjs');const m=emptyModel();m.edges=[edge('E','Diagonal')];for(const path of [[{x:0,y:0},{x:300,y:300}],[{x:0,y:0},{x:0,y:0},{x:400,y:0}],[{x:0,y:0},{x:0,y:0}]])for(const center of [{x:200,y:60},{x:-80,y:90},{x:600,y:300}]){m.edges[0].labelPosition=manualLabelPosition(path,center);const p=layoutEdgeLabels(m,new Map([['E',path]])).get('E').anchor;assert.ok(Math.abs(p.x-center.x)<.001&&Math.abs(p.y-center.y)<.001);}
+});
+test('a small orthogonal jog does not flip a manual label sideways',async()=>{
+ const {manualLabelPosition}=await import('../labels.mjs');const m=emptyModel();m.edges=[edge('E','Rescue route')];const straight=[{x:0,y:0},{x:400,y:0}];m.edges[0].labelPosition=manualLabelPosition(straight,{x:200,y:80});const jog=[{x:0,y:0},{x:200,y:0},{x:200,y:10},{x:400,y:10}],label=layoutEdgeLabels(m,new Map([['E',jog]])).get('E');assert.ok(Math.abs(label.anchor.x-200)<10,'short jog keeps label near its chosen column');assert.ok(Math.abs(label.anchor.y-85)<1,'label follows the small route movement');assert.ok(label.leader,'leader remains present');
+});

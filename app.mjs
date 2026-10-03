@@ -4,12 +4,17 @@ import { initializeMermaid, importMermaid, layoutModel, mergeSource } from './me
 import { AvoidLib } from './vendor/libavoid/dist/index.js';
 import { DiagramRouter, sidePoint } from './routing.mjs?v=whole-words';
 import { createScene, svgElement, exportSvg } from './scene.mjs?v=whole-words';
+import {waypointConflicts,waypointInsertionIndex,translateWaypoints,MAX_WAYPOINTS} from './waypoints.mjs?v=whole-words';
+import {layoutEdgeLabels,manualLabelPosition} from './labels.mjs?v=whole-words';
+import {attachmentKey,reorderAttachment,resetAttachmentOrder,pruneAttachmentOrders} from './attachments.mjs?v=whole-words';
 const $=id=>document.getElementById(id);
 const canvas=$('canvas'),world=$('world'),viewport=$('viewport'),editor=$('editor'),properties=$('properties');
 let model=emptyModel(),selection=new Set(),tool='select',gesture=null,busy=true,sourceDirty=false,spaceHeld=false,router=null,routes=new Map(),frame=null,dirty=false;
 let pendingPropertyEdit=null,pendingFontSize=null;
 let connectSource=null,hoverId=null,dropTarget=null;
 let paletteStart=null,blockedPaletteClick=null;
+let activeWaypoint=null,waypointEdge=null;
+let activeLabel=null;
 const collapsedZones=new Set();
 let inspectedId=null;
 let panelsSuspended=false,hierarchyNeedsRefresh=false;
@@ -24,10 +29,13 @@ function updateView() {
   viewport.style.backgroundSize=`${spacing}px ${spacing}px`;
   viewport.style.backgroundPosition=`${v.x-spacing/2}px ${v.y-spacing/2}px`;
   for(const handle of world.querySelectorAll('[data-resize]')){const n=object(model,handle.dataset.resize),side=handle.dataset.handle,size=8/v.scale;if(!n)continue;const x=side.includes('e')?1:side.includes('w')?0:.5,y=side.includes('s')?1:side.includes('n')?0:.5;handle.setAttribute('x',n.x+n.width*x-size/2);handle.setAttribute('y',n.y+n.height*y-size/2);handle.setAttribute('width',size);handle.setAttribute('height',size);}
+  for(const handle of world.querySelectorAll('.waypoint-handle'))handle.setAttribute('r',7/v.scale);
+  for(const handle of world.querySelectorAll('.route-segment-handle')){handle.querySelector('circle').setAttribute('r',6/v.scale);handle.querySelector('path').setAttribute('d',`M${-3/v.scale},0 H${3/v.scale} M0,${-3/v.scale} V${3/v.scale}`);}
 }
 function updateControls() {
   $('btn-undo').disabled=busy||!history.past.length;$('btn-redo').disabled=busy||!history.future.length;
   $('btn-delete').disabled=busy||!selection.size;$('btn-discard').disabled=busy||!sourceDirty;
+  $('btn-delete').textContent=activeWaypoint?'Delete waypoint':'Delete';
   $('direction').value=model.settings.direction;$('layout-mode').value=model.settings.layout;$('snap-grid').checked=model.settings.grid;
   $('alignment-guides').checked=model.settings.guides!==false;if(pendingFontSize===null)$('font-size').value=diagramFontSize(model);
   $('counts').textContent=`${model.nodes.length} nodes · ${model.edges.length} edges · ${model.zones.length} zones${dirty?' · Unsaved changes':''}`;
@@ -35,13 +43,21 @@ function updateControls() {
   if(selected&&!model.edges.includes(selected))for(const dimension of ['width','height']){const input=$(`property-${dimension}`);if(input&&!(pendingPropertyEdit?.id===selected.id&&pendingPropertyEdit.field===dimension))input.value=Math.round(selected[dimension]);}
   document.querySelectorAll('[data-tool]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tool===tool)));
   viewport.dataset.tool=tool;
-  $('canvas-help').textContent={select:'Drag into or out of containers to change parent · Shift-click to select more',pan:'Drag to pan · Scroll to zoom · V returns to selection',node:'Click to add a node · Nodes keep a 24-unit gap · Escape cancels',connect:connectSource?'Choose the target node · Escape cancels':'Click a source, then a target · Or drag from a handle',zone:'Click to add a zone · Drag nodes and zones into it'}[tool];
+  if(selected&&model.edges.includes(selected))for(const panel of properties.querySelectorAll('.attachment-order')){
+    const end=panel.dataset.attachmentEnd,key=attachmentKey(selected.id,end),group=[...router.groups.values()].find(g=>g.entries.some(e=>e.key===key));if(!group)continue;
+    const index=group.entries.findIndex(e=>e.key===key),buttons=panel.querySelectorAll('.attachment-order-buttons button');
+    buttons[0].disabled=busy||Boolean(gesture)||index===0;buttons[1].disabled=busy||Boolean(gesture)||index===group.entries.length-1;
+    panel.querySelector(`#btn-reset-${end}-attachment-order`).disabled=busy||Boolean(gesture)||!group.manual;
+  }
+  $('canvas-help').textContent={select:'Drag into or out of containers · Select a connection to edit its route',pan:'Drag to pan · Scroll to zoom · V returns to selection',node:'Click to add a node · Nodes keep a 24-unit gap · Escape cancels',connect:connectSource?'Choose the target node · Escape cancels':'Click a source, then a target · Or drag from a handle',zone:'Click to add a zone · Drag nodes and zones into it',waypoint:'Click to place a waypoint · Adding one uses orthogonal routing · Escape cancels'}[tool];
 }
 function draw({inspect=true,reroute=true}={}) {
   if(inspect)flushPropertyEdit();
   if(!router)return;
-  if(reroute)routes=router.route(model);
-  world.replaceChildren(createScene(model,routes,selection,{tool,connectSource,hoverId,dropTarget}));updateView();updateControls();if(inspect&&!panelsSuspended){renderProperties();renderHierarchy();}
+  if(activeWaypoint&&(!selection.has(activeWaypoint.edgeId)||selection.size!==1||!object(model,activeWaypoint.edgeId)?.waypoints?.[activeWaypoint.index]))activeWaypoint=null;
+  if(activeLabel&&(!selection.has(activeLabel)||selection.size!==1||!object(model,activeLabel)?.label))activeLabel=null;
+  if(reroute)routes=router.route(model,{freezeOrder:Boolean(gesture&&['move','resize','waypoint'].includes(gesture.type))});
+  world.replaceChildren(createScene(model,routes,selection,{tool,connectSource,hoverId,dropTarget,activeWaypoint}));updateView();updateControls();if(inspect&&!panelsSuspended){renderProperties();renderHierarchy();}
 }
 function safeDraw(options) {try{draw(options)}catch(e){error(e)}}
 function commit(before,message,{forceSource=false,inspect=true}={}) {
@@ -52,11 +68,11 @@ function mutate(message,fn,{inspect=true,axis=null}={}) {
   if(busy||gesture)return;
   flushPropertyEdit();
   const before=copy(model),previousSelection=new Set(selection);
-  try {fn();const changed=new Set(model.nodes.filter(n=>{const old=before.nodes.find(o=>o.id===n.id);return !old||['x','y','width','height'].some(k=>old[k]!==n[k]);}).map(n=>n.id));ensureNodeSpacing(model,{preferredIds:changed,axis});expandZones(model);validateModel(model);router.route(model);commit(before,message,{inspect});if(!inspect)renderHierarchy();}
+  try {fn();const changed=new Set(model.nodes.filter(n=>{const old=before.nodes.find(o=>o.id===n.id);return !old||['x','y','width','height'].some(k=>old[k]!==n[k]);}).map(n=>n.id));ensureNodeSpacing(model,{preferredIds:changed,axis});expandZones(model);translateWaypoints(before,model);validateModel(model);router.route(model);commit(before,message,{inspect});if(!inspect)renderHierarchy();}
   catch(e){model=before;selection=previousSelection;safeDraw();error(e);}
 }
-function setTool(value){if(gesture)cancelGesture();flushPropertyEdit();connectSource=null;hoverId=null;tool=value;if(value==='connect')selection.clear();safeDraw({reroute:false});viewport.focus();}
-function select(id,extend=false){flushPropertyEdit();if(extend){selection.has(id)?selection.delete(id):selection.add(id);}else selection=new Set(id?[id]:[]);for(const selected of selection){let parent=object(model,selected)?.parentId;while(parent){collapsedZones.delete(parent);parent=object(model,parent)?.parentId;}}safeDraw({reroute:false});}
+function setTool(value){if(gesture)cancelGesture();flushPropertyEdit();connectSource=null;hoverId=null;activeWaypoint=null;activeLabel=null;waypointEdge=null;tool=value;if(value==='connect')selection.clear();safeDraw({reroute:false});viewport.focus();}
+function select(id,extend=false){flushPropertyEdit();activeWaypoint=null;activeLabel=null;if(extend){selection.has(id)?selection.delete(id):selection.add(id);}else selection=new Set(id?[id]:[]);for(const selected of selection){let parent=object(model,selected)?.parentId;while(parent){collapsedZones.delete(parent);parent=object(model,parent)?.parentId;}}safeDraw({reroute:false});}
 function queuePropertyEdit(edit){if(pendingPropertyEdit&&(pendingPropertyEdit.id!==edit.id||(pendingPropertyEdit.field||'label')!==(edit.field||'label')))flushPropertyEdit();pendingPropertyEdit={...pendingPropertyEdit,...edit};}
 function flushFontSize(){
   if(pendingFontSize===null||busy||gesture)return;const value=Number(pendingFontSize);pendingFontSize=null;
@@ -96,18 +112,33 @@ function renderProperties(){
   const label=document.createElement('textarea');label.value=n.label;field('Label',label);
   label.addEventListener('input',()=>previewPropertyEdit({id,value:label.value}));
   label.addEventListener('change',()=>{queuePropertyEdit({id,value:label.value});flushPropertyEdit();});label.addEventListener('blur',flushPropertyEdit);
+  if(model.edges.includes(n)){
+    const position=document.createElement('p');position.className='small-note';position.textContent=n.labelPosition?'Manual label · follows the connection':'Automatic label placement';properties.append(position);
+    const reset=document.createElement('button');reset.id='btn-reset-label-position';reset.textContent='Reset label position';reset.disabled=!n.labelPosition;reset.addEventListener('click',()=>mutate('Automatic label placement restored.',()=>{delete object(model,id).labelPosition;activeLabel=null;}));properties.append(reset);
+    const hint=document.createElement('p');hint.className='small-note';hint.textContent='Drag the label, or click it and use arrow keys. A dotted leader appears when the label is away from its connection. Manual placement allows overlaps.';properties.append(hint);
+  }
   for(const name of ['description','notes']){const input=document.createElement('textarea');input.value=n[name]||'';input.rows=name==='notes'?4:2;field(name[0].toUpperCase()+name.slice(1),input);input.addEventListener('input',()=>queuePropertyEdit({id,field:name,value:input.value}));input.addEventListener('change',()=>{queuePropertyEdit({id,field:name,value:input.value});flushPropertyEdit();});input.addEventListener('blur',flushPropertyEdit);}
   const hint=document.createElement('p');hint.className='small-note';hint.textContent='Descriptions and notes are retained in project files.';properties.append(hint);
   if(model.edges.includes(n)) {
     const endpoints=items(model).map(o=>[o.id,`${o.label.replace(/\n/g,' ')} (${o.id})`]);
-    selectControl('Source',n.source,endpoints,value=>mutate('Connection source updated.',()=>{const e=object(model,id);e.source=value;e.sourceSide=null;}));
-    selectControl('Target',n.target,endpoints,value=>mutate('Connection target updated.',()=>{const e=object(model,id);e.target=value;e.targetSide=null;}));
+    selectControl('Source',n.source,endpoints,value=>mutate('Connection source updated.',()=>{const e=object(model,id);e.source=value;e.sourceSide=null;pruneAttachmentOrders(model);}));
+    selectControl('Target',n.target,endpoints,value=>mutate('Connection target updated.',()=>{const e=object(model,id);e.target=value;e.targetSide=null;pruneAttachmentOrders(model);}));
     selectControl('Direction',n.direction,[['forward','Directed →'],['none','Undirected —'],['both','Bidirectional ↔']],value=>mutate('Arrow direction updated.',()=>object(model,id).direction=value));
     selectControl('Line style',n.style,[['normal','Normal'],['dashed','Dashed'],['thick','Thick']],value=>mutate('Line style updated.',()=>object(model,id).style=value));
-    selectControl('Routing',n.routing,[['orthogonal','Orthogonal'],['straight','Straight']],value=>mutate('Routing updated.',()=>object(model,id).routing=value));
+    selectControl('Routing',n.routing,[['orthogonal','Orthogonal'],['straight','Straight']],value=>{if(value==='straight'&&n.waypoints?.length){error(new Error('Reset route before choosing Straight to remove manual waypoints.'));$('property-routing').value=n.routing;return;}mutate('Routing updated.',()=>object(model,id).routing=value);});
     const sides=[['','Automatic'],['north','Top'],['south','Bottom'],['west','Left'],['east','Right']];
     selectControl('Source attachment',n.sourceSide,sides,value=>mutate('Source attachment updated.',()=>object(model,id).sourceSide=value||null));
     selectControl('Target attachment',n.targetSide,sides,value=>mutate('Target attachment updated.',()=>object(model,id).targetSide=value||null));
+    for(const end of ['source','target'])renderAttachmentOrder(n,end);
+    const orderHint=document.createElement('p');orderHint.className='small-note';orderHint.textContent='Move an attachment in the stack to set the order for that whole side. Spacing stays automatic. New connections join at the end; Reset releases all attachments on that side.';properties.append(orderHint);
+    const hint=document.createElement('p');hint.className='small-note';hint.textContent='Forced sides stay fixed. Drag a + on the connection to add a waypoint. Waypoints stay put when one endpoint moves and travel when both move together.';properties.append(hint);
+    const add=document.createElement('button');add.id='btn-add-waypoint';add.textContent='Add waypoint';add.disabled=(n.waypoints||[]).length>=MAX_WAYPOINTS;add.addEventListener('click',()=>{setTool('waypoint');waypointEdge=id;status('Click the canvas to place a waypoint.');});properties.append(add);
+    for(const [index,p]of(n.waypoints||[]).entries()){
+      const row=document.createElement('div');row.className='waypoint-row';const pick=document.createElement('button');pick.textContent=`Waypoint ${index+1} · ${Math.round(p.x)}, ${Math.round(p.y)}`;pick.addEventListener('click',()=>{activeWaypoint={edgeId:id,index};safeDraw({reroute:false});viewport.focus();});
+      const remove=document.createElement('button');remove.textContent='×';remove.setAttribute('aria-label',`Remove waypoint ${index+1}`);remove.addEventListener('click',()=>mutate('Waypoint removed.',()=>{object(model,id).waypoints.splice(index,1);activeWaypoint=null;}));row.append(pick,remove);properties.append(row);
+    }
+    const conflicts=waypointConflicts(model,n);if(conflicts.length){const warning=document.createElement('p');warning.className='waypoint-warning';warning.textContent=conflicts.map(c=>`Waypoint ${c.index+1} is blocked by ${c.node.label}.`).join(' ')+' Move the point or node; the route currently skips blocked points.';properties.append(warning);}
+    const reset=document.createElement('button');reset.id='btn-reset-route';reset.textContent='Reset route';reset.disabled=!n.waypoints?.length;reset.addEventListener('click',()=>mutate('Manual waypoints cleared. Attachment sides retained.',()=>{delete object(model,id).waypoints;activeWaypoint=null;}));properties.append(reset);
   }else{
     if(model.nodes.includes(n))selectControl('Shape',n.shape,shapes.map(s=>[s,{rectangle:'Rectangle',rounded:'Rounded rectangle',diamond:'Diamond',circle:'Circle',cylinder:'Database cylinder'}[s]]),value=>mutate('Node shape updated.',()=>{const node=object(model,id);node.shape=value;resizeNode(node,diagramFontSize(model));}));
     for(const [name,key,value]of[['Background color','backgroundColor',objectColors(model,n).background],['Font color','fontColor',objectColors(model,n).font]]){
@@ -127,6 +158,18 @@ function renderProperties(){
     const geometry=document.createElement('div');geometry.className='geometry';geometry.textContent=`Position ${Math.round(n.x)}, ${Math.round(n.y)} · Size ${Math.round(n.width)} × ${Math.round(n.height)}`;properties.append(geometry);
     const connections=model.edges.filter(e=>e.source===id||e.target===id);if(connections.length){const caption=document.createElement('strong');caption.className='connections-heading';caption.textContent='Connections';properties.append(caption);for(const e of connections){const b=document.createElement('button');b.className='flow-row';b.textContent=`${e.source===id?'→':'←'} ${object(model,e.source===id?e.target:e.source)?.label}${e.label?' · '+e.label:''}`;b.addEventListener('click',()=>selectAndReveal(e.id));properties.append(b);}}
   }
+}
+function renderAttachmentOrder(edge,end){
+  const key=attachmentKey(edge.id,end),group=[...router.groups.values()].find(g=>g.entries.some(e=>e.key===key));if(!group)return;
+  const index=group.entries.findIndex(e=>e.key===key),horizontal=['north','south'].includes(group.side),sideName={north:'Top',south:'Bottom',west:'Left',east:'Right'}[group.side];
+  const panel=document.createElement('div');panel.className='attachment-order';panel.dataset.attachmentEnd=end;
+  const caption=document.createElement('p');caption.className='small-note';caption.textContent=`${end==='source'?'Source':'Target'} order · ${sideName} · ${index+1} of ${group.entries.length} · ${group.manual?'Manual':'Automatic'}`;panel.append(caption);
+  const row=document.createElement('div');row.className='attachment-order-buttons';
+  for(const [delta,direction]of[[-1,horizontal?'left':'up'],[1,horizontal?'right':'down']]){
+    const button=document.createElement('button');button.id=`btn-${end}-attachment-${direction}`;button.textContent=`Move ${direction}`;button.disabled=index+delta<0||index+delta>=group.entries.length;button.addEventListener('click',()=>mutate('Attachment order updated.',()=>reorderAttachment(model,router.groups,edge.id,end,delta)));row.append(button);
+  }
+  const reset=document.createElement('button');reset.id=`btn-reset-${end}-attachment-order`;reset.textContent='Reset side to automatic';reset.disabled=!group.manual;reset.addEventListener('click',()=>mutate('Automatic attachment order restored for this side.',()=>resetAttachmentOrder(model,group.n.id,group.side)));
+  panel.append(row,reset);properties.append(panel);
 }
 function selectAndReveal(id,extend=false){select(id,extend);const n=object(model,id);if(!n)return;const bounds=model.edges.includes(n)?routes.get(id):[{x:n.x,y:n.y},{x:n.x+n.width,y:n.y+n.height}];if(!bounds?.length)return;const x=(Math.min(...bounds.map(p=>p.x))+Math.max(...bounds.map(p=>p.x)))/2,y=(Math.min(...bounds.map(p=>p.y))+Math.max(...bounds.map(p=>p.y)))/2,v=model.settings.view;const sx=x*v.scale+v.x,sy=y*v.scale+v.y;if(sx<40||sx>viewport.clientWidth-40||sy<40||sy>viewport.clientHeight-40){v.x=viewport.clientWidth/2-x*v.scale;v.y=viewport.clientHeight/2-y*v.scale;updateView();}}
 function renderHierarchy(){
@@ -148,7 +191,8 @@ function parentZoneAt(point){return containingParent(model,{x:point.x,y:point.y,
 function placementParent(point,adoptNode){return adoptNode?containingParent(model,{...point,width:0,height:0},new Set(),items(model),{allowNodes:true}):parentZoneAt(point);}
 function addNode(point,{adoptNode=false}={}){mutate('Node added.',()=>{const parent=placementParent(point,adoptNode),node={id:nextId(model,'Node'),label:'New node',shape:'rectangle',parentId:null,x:point.x-60,y:point.y-27,width:120,height:54};resizeNode(node,diagramFontSize(model));node.x=snap(node.x);node.y=snap(node.y);model.nodes.push(node);dropSelection(model,new Set([node.id]),undefined,new Map([[node.id,parent]]),{expand:false});selection=new Set([node.id]);});setTool('select');}
 function addZone(point,{centred=false,adoptNode=false}={}){mutate('Zone added.',()=>{const parent=placementParent(point,adoptNode),zone={id:nextId(model,'Zone'),label:'New zone',parentId:null,x:snap(point.x-(centred?140:0)),y:snap(point.y-(centred?90:0)),width:280,height:180};model.zones.push(zone);dropSelection(model,new Set([zone.id]),undefined,new Map([[zone.id,parent]]),{expand:false});selection=new Set([zone.id]);});setTool('select');}
-function capture(event,data){gesture={...data,pointerId:event.pointerId,clientX:event.clientX,clientY:event.clientY,start:diagramPoint(event),before:copy(model),selectionBefore:new Set(selection),moved:false};viewport.setPointerCapture(event.pointerId);viewport.classList.add('gesturing');viewport.dataset.gesture=data.type;event.preventDefault();}
+function capture(event,data){gesture={...data,pointerId:event.pointerId,clientX:event.clientX,clientY:event.clientY,start:diagramPoint(event),before:copy(model),selectionBefore:new Set(selection),waypointBefore:activeWaypoint,labelBefore:activeLabel,moved:false};viewport.setPointerCapture(event.pointerId);viewport.classList.add('gesturing');viewport.dataset.gesture=data.type;event.preventDefault();}
+function insertWaypoint(edge,point,index){if((edge.waypoints||[]).length>=MAX_WAYPOINTS)throw new Error(`A connection can have at most ${MAX_WAYPOINTS} waypoints.`);edge.waypoints||=[];edge.waypoints.splice(index,0,{x:snap(point.x),y:snap(point.y)});edge.routing='orthogonal';}
 function placementPoint(event){const b=canvas.getBoundingClientRect(),hit=document.elementFromPoint(event.clientX,event.clientY);return event.clientX>=b.left&&event.clientX<=b.right&&event.clientY>=b.top&&event.clientY<=b.bottom&&!hit?.closest('.zoom-toolbar');}
 document.querySelectorAll('[data-tool="node"],[data-tool="zone"]').forEach(button=>{
   button.addEventListener('pointerdown',event=>{if(!busy&&!gesture&&event.isPrimary&&event.button===0)paletteStart={pointerId:event.pointerId,tool:button.dataset.tool,x:event.clientX,y:event.clientY};});
@@ -167,16 +211,24 @@ viewport.addEventListener('pointerdown',event=>{
   $('error-banner').hidden=true;
   const point=diagramPoint(event),target=event.target;
   if(tool==='pan'||spaceHeld){capture(event,{type:'pan',view:{...model.settings.view}});return;}
+  if(tool==='waypoint'){
+    const id=waypointEdge,edge=object(model,id);if(!edge||!model.edges.includes(edge)){setTool('select');return;}
+    const index=waypointInsertionIndex(routes.get(id),edge.waypoints,point);tool='select';waypointEdge=null;
+    mutate('Waypoint added.',()=>{insertWaypoint(edge,point,index);activeWaypoint={edgeId:id,index};});viewport.focus();return;
+  }
+  if(tool==='node'){addNode(point);return;}if(tool==='zone'){addZone(point);return;}
+  const label=tool==='select'?target.closest('.edge-label'):null;if(label){const id=label.dataset.objectId,anchor=layoutEdgeLabels(model,routes).get(id).anchor;select(id);activeLabel=id;capture(event,{type:'label',id,anchor});viewport.focus();return;}
+  const waypoint=tool==='select'?target.closest('[data-waypoint]'):null;if(waypoint){const id=waypoint.dataset.waypoint,index=Number(waypoint.dataset.waypointIndex);select(id);activeWaypoint={edgeId:id,index};safeDraw({reroute:false});capture(event,{type:'waypoint',id,index,insert:false});viewport.focus();return;}
+  const segment=target.closest('[data-route-segment]');if(segment){const id=segment.dataset.routeSegment,edge=object(model,id);if((edge.waypoints||[]).length>=MAX_WAYPOINTS){error(new Error(`A connection can have at most ${MAX_WAYPOINTS} waypoints.`));return;}capture(event,{type:'waypoint',id,index:waypointInsertionIndex(routes.get(id),edge.waypoints,point),insert:true});viewport.focus();return;}
   const reconnect=target.closest('[data-reconnect]');if(reconnect){capture(event,{type:'connect',edgeId:reconnect.dataset.reconnect,end:reconnect.dataset.end});return;}
   const handle=target.closest('[data-connect]');if(handle){if(tool==='connect'&&connectSource){addConnection(connectSource,handle.dataset.connect,null,handle.dataset.side);return;}capture(event,{type:'connect',source:handle.dataset.connect,side:handle.dataset.side});return;}
   const resize=target.closest('[data-resize]');if(resize){capture(event,{type:'resize',id:resize.dataset.resize,handle:resize.dataset.handle});return;}
   const hit=target.closest('[data-object-id]'),id=hit?.dataset.objectId,item=id?object(model,id):null;
-  if(tool==='node'){addNode(point);return;}if(tool==='zone'){addZone(point);return;}
   if(tool==='connect'){if(item&&!model.edges.includes(item)){if(connectSource)addConnection(connectSource,id);else{connectSource=id;selection=new Set([id]);safeDraw({reroute:false});status('Source chosen. Click the target to connect; Escape cancels.');}}else{connectSource=null;selection.clear();safeDraw({reroute:false});}viewport.focus();return;}
   if(item){
     if(event.shiftKey&&model.zones.includes(item)&&!target.closest('[data-zone-header]')){capture(event,{type:'marquee',extend:new Set(selection),zoneId:id});viewport.focus();return;}
     if(event.shiftKey){select(id,true);if(!selection.has(id))return;}else if(!selection.has(id))select(id);
-    if(model.edges.includes(item)){viewport.focus();return;}
+    if(model.edges.includes(item)){activeWaypoint=null;activeLabel=null;safeDraw({reroute:false});viewport.focus();return;}
     capture(event,{type:'move',id,selected:new Set(selection)});viewport.focus();return;
   }
   if(event.shiftKey){capture(event,{type:'marquee',extend:new Set(selection)});}else{selection.clear();safeDraw({reroute:false});capture(event,{type:'pan',view:{...model.settings.view}});}
@@ -187,6 +239,14 @@ function moveGesture(event){
   const g=gesture,point=diagramPoint(event);g.last={clientX:event.clientX,clientY:event.clientY};
   if(!g.moved&&Math.hypot(event.clientX-g.clientX,event.clientY-g.clientY)<3)return;g.moved=true;
   if(g.type==='pan'){const v=model.settings.view;v.x=g.view.x+event.clientX-g.clientX;v.y=g.view.y+event.clientY-g.clientY;updateView();return;}
+  if(g.type==='label'){
+    model=copy(g.before);object(model,g.id).labelPosition=manualLabelPosition(routes.get(g.id),{x:snap(g.anchor.x+point.x-g.start.x),y:snap(g.anchor.y+point.y-g.start.y)});
+    safeDraw({inspect:false,reroute:false});return;
+  }
+  if(g.type==='waypoint'){
+    model=copy(g.before);const edge=object(model,g.id);if(g.insert)insertWaypoint(edge,point,g.index);else{const old=edge.waypoints[g.index];edge.waypoints[g.index]={x:snap(old.x+point.x-g.start.x),y:snap(old.y+point.y-g.start.y)};}
+    activeWaypoint={edgeId:g.id,index:g.index};safeDraw({inspect:false});return;
+  }
   if(g.type==='place'){
     world.querySelector('.placement-preview')?.remove();
     world.querySelectorAll('.drop-target').forEach(n=>n.classList.remove('drop-target'));dropTarget=null;
@@ -197,6 +257,7 @@ function moveGesture(event){
     model=copy(g.before);
     if(g.type==='move'){const primary=object(model,g.id);const dx=snap(primary.x+point.x-g.start.x)-primary.x,dy=snap(primary.y+point.y-g.start.y)-primary.y;moveSelection(model,g.selected,dx,dy,{expand:false});g.dropParents=dropParents(model,g.selected,items(g.before));dropTarget=g.dropParents.get(g.id)||null;dropSelection(model,g.selected,items(g.before),g.dropParents,{expand:false});separateSelection(model,g.selected);}
     else{const n=object(model,g.id),x=n.x+(g.handle.includes('e')?n.width:0),y=n.y+(g.handle.includes('s')?n.height:0);resizeObject(model,g.id,g.handle,snap(x+point.x-g.start.x)-x,snap(y+point.y-g.start.y)-y);}
+    if(g.type==='move')translateWaypoints(g.before,model);
     safeDraw({inspect:false});
     if(model.settings.guides!==false){const layer=svgElement('g',{class:'alignment-guides editor-only'});for(const line of alignmentGuides(model,g.type==='move'?g.selected:new Set([g.id])))layer.append(svgElement('line',line.axis==='x'?{x1:line.value,x2:line.value,y1:line.start,y2:line.end}:{y1:line.value,y2:line.value,x1:line.start,x2:line.end}));world.append(layer);}
   }else if(g.type==='marquee'){
@@ -229,30 +290,30 @@ function finishGesture(event){
     const hit=document.elementFromPoint(event.clientX,event.clientY),handle=hit?.closest('[data-connect]'),objectHit=hit?.closest('[data-object-id]');
     const target=handle?.dataset.connect||objectHit?.dataset.objectId;const side=handle?.dataset.side||null;
     if(target&&items(model).some(n=>n.id===target)){
-      if(g.edgeId){const edge=object(model,g.edgeId);edge[g.end]=target;edge[g.end+'Side']=side;selection=new Set([edge.id]);}
+      if(g.edgeId){const edge=object(model,g.edgeId);edge[g.end]=target;edge[g.end+'Side']=side;pruneAttachmentOrders(model);selection=new Set([edge.id]);}
       else{const edge={id:nextId(model,'Edge'),source:g.source,target,label:'',direction:'forward',style:'normal',routing:'orthogonal',sourceSide:g.side,targetSide:side};model.edges.push(edge);selection=new Set([edge.id]);}
       releaseCapture();connectSource=null;if(!g.edgeId){tool='select';hoverId=null;}commit(g.before,g.edgeId?'Connection reattached.':'Connection added.');return;
     }
     status('Connection cancelled: drop onto a node or its handle.');
   }
   if(g.type==='connect'&&!g.moved&&!g.edgeId){connectSource=g.source;selection=new Set([g.source]);}
-  if(g.type==='move'&&g.moved)dropSelection(model,g.selected,items(g.before),g.dropParents);
+  if(g.type==='move'&&g.moved){dropSelection(model,g.selected,items(g.before),g.dropParents);translateWaypoints(g.before,model);}
   releaseCapture();
   if(g.type==='marquee'&&!g.moved&&g.zoneId)select(g.zoneId,true);
-  if(['move','resize'].includes(g.type)&&g.moved)commit(g.before,g.type==='move'?'Selection moved.':'Object resized.');else safeDraw({reroute:false});
+  if(['move','resize','waypoint','label'].includes(g.type)&&g.moved)commit(g.before,g.type==='move'?'Selection moved.':g.type==='resize'?'Object resized.':g.type==='label'?'Label position updated.':'Waypoint updated.');else safeDraw({reroute:false});
 }
 viewport.addEventListener('pointerup',finishGesture);
-function cancelGesture(){if(!gesture)return;if(frame){cancelAnimationFrame(frame);frame=null;}const g=gesture;model=g.before;selection=g.selectionBefore;releaseCapture();safeDraw();status('Gesture cancelled.');}
+function cancelGesture(){if(!gesture)return;if(frame){cancelAnimationFrame(frame);frame=null;}const g=gesture;model=g.before;selection=g.selectionBefore;activeWaypoint=g.waypointBefore;activeLabel=g.labelBefore;releaseCapture();safeDraw();status('Gesture cancelled.');}
 viewport.addEventListener('pointercancel',cancelGesture);viewport.addEventListener('lostpointercapture',()=>{if(gesture)cancelGesture();});window.addEventListener('blur',()=>{spaceHeld=false;paletteStart=null;cancelGesture();});
-viewport.addEventListener('dblclick',event=>{if(busy||tool!=='select')return;const id=event.target.closest('[data-object-id]')?.dataset.objectId;if(id){select(id);$('property-label')?.focus();}});
+viewport.addEventListener('dblclick',event=>{if(busy||tool!=='select'||event.target.closest('[data-waypoint],[data-route-segment]'))return;const id=event.target.closest('[data-object-id]')?.dataset.objectId;if(id){select(id);$('property-label')?.focus();}});
 function zoomAt(scale,point={x:viewport.clientWidth/2,y:viewport.clientHeight/2}){const v=model.settings.view,next=Math.max(.02,Math.min(8,scale)),ratio=next/v.scale;v.x=point.x-(point.x-v.x)*ratio;v.y=point.y-(point.y-v.y)*ratio;v.scale=next;updateView();}
 viewport.addEventListener('wheel',event=>{if(event.target.closest('.zoom-toolbar'))return;event.preventDefault();if(gesture||busy)return;zoomAt(model.settings.view.scale*Math.exp(-event.deltaY*.0015),canvasPoint(event));},{passive:false});
 function fit(){if(!items(model).length)return;const scene=world.querySelector('#diagram-scene');if(!scene)return;const b=scene.getBBox(),padding=54;const scale=Math.max(.02,Math.min(1.25,(viewport.clientWidth-2*padding)/Math.max(1,b.width),(viewport.clientHeight-2*padding)/Math.max(1,b.height)));model.settings.view={x:(viewport.clientWidth-b.width*scale)/2-b.x*scale,y:(viewport.clientHeight-b.height*scale)/2-b.y*scale,scale};updateView();}
-function deleteSelected(){mutate('Selection deleted.',()=>{deleteSelection(model,selection);selection.clear();});}
-function undo(redo=false){if(busy||gesture)return;flushPropertyEdit();const view={...model.settings.view};const next=redo?history.redo(model):history.undo(model);if(!next)return;model=next;model.settings.view=view;selection=new Set([...selection].filter(id=>object(model,id)));dirty=true;syncSource();safeDraw();status(redo?'Edit redone.':'Edit undone.');}
+function deleteSelected(){if(activeWaypoint&&selection.has(activeWaypoint.edgeId)){mutate('Waypoint removed.',()=>{object(model,activeWaypoint.edgeId)?.waypoints?.splice(activeWaypoint.index,1);activeWaypoint=null;});return;}mutate('Selection deleted.',()=>{deleteSelection(model,selection);selection.clear();});}
+function undo(redo=false){if(busy||gesture)return;flushPropertyEdit();const view={...model.settings.view};const next=redo?history.redo(model):history.undo(model);if(!next)return;model=next;model.settings.view=view;activeWaypoint=null;activeLabel=null;selection=new Set([...selection].filter(id=>object(model,id)));dirty=true;syncSource();safeDraw();status(redo?'Edit redone.':'Edit undone.');}
 async function runAsync(message,fn,{forceSource=false}={}){if(busy||gesture)return false;flushPropertyEdit();const before=copy(model),oldSelection=new Set(selection);loading(true,message);try{await fn();validateModel(model);router.route(model);commit(before,message,{forceSource});if(forceSource)syncSource(true);$('error-banner').hidden=true;return true;}catch(e){model=before;selection=oldSelection;safeDraw();error(e);return false;}finally{loading(false);}}
 async function applySource(){flushPropertyEdit();const draft=editor.value;if(!draft.trim()){error(new Error('Enter a Mermaid flowchart, or choose New for an empty diagram.'));return;}let fresh=false;const applied=await runAsync('Source applied.',async()=>{const parsed=await importMermaid(draft,{layout:model.settings.layout}),ids=new Set(items(model).map(n=>n.id));fresh=!items(parsed).some(n=>ids.has(n.id));model=mergeSource(model,parsed);selection=new Set([...selection].filter(id=>object(model,id)));},{forceSource:true});if(applied&&fresh)fit();}
-function newDiagram(){if(busy)return;if(gesture)cancelGesture();flushPropertyEdit();const before=copy(model);model=emptyModel();selection.clear();collapsedZones.clear();connectSource=null;hoverId=null;tool='select';commit(before,'New diagram. Add nodes and zones, or paste Mermaid.',{forceSource:true});syncSource(true);$('error-banner').hidden=true;viewport.focus();}
+function newDiagram(){if(busy)return;if(gesture)cancelGesture();flushPropertyEdit();const before=copy(model);model=emptyModel();selection.clear();activeWaypoint=null;activeLabel=null;waypointEdge=null;collapsedZones.clear();connectSource=null;hoverId=null;tool='select';commit(before,'New diagram. Add nodes and zones, or paste Mermaid.',{forceSource:true});syncSource(true);$('error-banner').hidden=true;viewport.focus();}
 async function loadExample(name){if(!name)return;const loaded=await runAsync('Example loaded.',async()=>{const response=await fetch(`./diagrams/${name}.mmd`);if(!response.ok)throw new Error('The local example could not be loaded.');model=await importMermaid(await response.text());selection.clear();},{forceSource:true});if(loaded)fit();$('example').value='';}
 function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);}
 function saveProject(){if(busy||gesture)return;flushPropertyEdit();try{validateModel(model);download(new Blob([JSON.stringify(model,null,2)],{type:'application/json'}),'diagram.mermaid-project.json');dirty=false;updateControls();status('Project downloaded with its editable layout.');}catch(e){error(e)}}
@@ -291,6 +352,8 @@ document.addEventListener('keydown',event=>{
   if(mod&&event.key.toLowerCase()==='a'){event.preventDefault();selection=new Set(items(model).map(n=>n.id));safeDraw({reroute:false});return;}
   if(event.code==='Space'&&(event.target===viewport||event.target.closest('#canvas'))){event.preventDefault();spaceHeld=true;return;}
   if(event.key==='Delete'||event.key==='Backspace'){event.preventDefault();deleteSelected();return;}
+  if(event.key.startsWith('Arrow')&&activeLabel){event.preventDefault();const id=activeLabel,step=event.shiftKey?50:model.settings.grid?20:10;mutate('Connection label nudged.',()=>{const anchor=layoutEdgeLabels(model,routes).get(id)?.anchor;if(!anchor)return;object(model,id).labelPosition=manualLabelPosition(routes.get(id),{x:snap(anchor.x+(event.key==='ArrowLeft'?-step:event.key==='ArrowRight'?step:0)),y:snap(anchor.y+(event.key==='ArrowUp'?-step:event.key==='ArrowDown'?step:0))});});return;}
+  if(event.key.startsWith('Arrow')&&activeWaypoint){event.preventDefault();const {edgeId,index}=activeWaypoint,step=event.shiftKey?50:model.settings.grid?20:10;mutate('Waypoint nudged.',()=>{const point=object(model,edgeId)?.waypoints?.[index];if(!point)return;point.x+=event.key==='ArrowLeft'?-step:event.key==='ArrowRight'?step:0;point.y+=event.key==='ArrowUp'?-step:event.key==='ArrowDown'?step:0;});return;}
   if(event.key.startsWith('Arrow')&&selection.size){event.preventDefault();const step=event.shiftKey?50:model.settings.grid?20:10,reference=copy(containers(model));mutate('Selection nudged.',()=>{moveSelection(model,selection,event.key==='ArrowLeft'?-step:event.key==='ArrowRight'?step:0,event.key==='ArrowUp'?-step:event.key==='ArrowDown'?step:0,{expand:false});const parents=dropParents(model,selection,reference);dropSelection(model,selection,reference,parents,{expand:false});separateSelection(model,selection);});return;}
   if(!mod&&{v:'select',h:'pan',n:'node',c:'connect',z:'zone'}[event.key.toLowerCase()])setTool({v:'select',h:'pan',n:'node',c:'connect',z:'zone'}[event.key.toLowerCase()]);
 });

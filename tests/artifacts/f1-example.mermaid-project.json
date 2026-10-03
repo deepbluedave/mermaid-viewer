@@ -1,0 +1,313 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "idea",
+      "label": "New idea",
+      "shape": "rounded",
+      "parentId": "Zone1",
+      "x": 290.0000114920957,
+      "y": 72.99998768384916,
+      "width": 120,
+      "height": 54,
+      "backgroundColor": "#c7d2fe"
+    },
+    {
+      "id": "review",
+      "label": "Worth exploring?",
+      "shape": "diamond",
+      "parentId": "Zone1",
+      "x": 189.10370819489594,
+      "y": 235.9999962563712,
+      "width": 321.79254150390625,
+      "height": 108,
+      "backgroundColor": "#fef3c7"
+    },
+    {
+      "id": "prototype",
+      "label": "Build prototype",
+      "shape": "rectangle",
+      "parentId": "Zone1",
+      "x": 275.6958909766693,
+      "y": 457.99994627539957,
+      "width": 148.60826110839844,
+      "height": 54
+    },
+    {
+      "id": "backlog",
+      "label": "Idea backlog",
+      "shape": "rectangle",
+      "parentId": "Zone1",
+      "x": 55.943939222330414,
+      "y": 377.9999823497151,
+      "width": 128.11221313476562,
+      "height": 54
+    },
+    {
+      "id": "feedback",
+      "label": "Gather feedback",
+      "shape": "rectangle",
+      "parentId": "Zone1",
+      "x": 271.7438881053497,
+      "y": 632.9999595022834,
+      "width": 156.51226806640625,
+      "height": 54
+    },
+    {
+      "id": "ready",
+      "label": "Ready to build?",
+      "shape": "diamond",
+      "parentId": "Zone1",
+      "x": 203.50376235784896,
+      "y": 785.9999699063411,
+      "width": 292.99249267578125,
+      "height": 108,
+      "backgroundColor": "#fef3c7"
+    },
+    {
+      "id": "build",
+      "label": "Build feature",
+      "shape": "rectangle",
+      "parentId": "Zone2",
+      "x": 1085.4876886661036,
+      "y": 72.99999022798927,
+      "width": 129.02418518066406,
+      "height": 54
+    },
+    {
+      "id": "test",
+      "label": "Test feature",
+      "shape": "rectangle",
+      "parentId": "Zone2",
+      "x": 1089.5598536170896,
+      "y": 312.9999452561177,
+      "width": 120.88017272949219,
+      "height": 54
+    },
+    {
+      "id": "launch",
+      "label": "Launch",
+      "shape": "rounded",
+      "parentId": "Zone2",
+      "x": 1090.0000761133006,
+      "y": 552.9999854932732,
+      "width": 120,
+      "height": 54,
+      "backgroundColor": "#c7d2fe"
+    },
+    {
+      "id": "Node1",
+      "label": "Fix issues",
+      "shape": "rectangle",
+      "parentId": "Zone2",
+      "x": 825.0000536627548,
+      "y": 313.00005049949056,
+      "width": 120,
+      "height": 54,
+      "backgroundColor": "#ffedd5"
+    },
+    {
+      "id": "Node2",
+      "label": "Measure results",
+      "shape": "rounded",
+      "parentId": "Zone2",
+      "x": 1074.0158094167095,
+      "y": 772.9999886287094,
+      "width": 151.9682159423828,
+      "height": 54
+    }
+  ],
+  "zones": [
+    {
+      "id": "Zone1",
+      "label": "Discovery",
+      "parentId": null,
+      "x": -138.86220521748396,
+      "y": 23.999982349715083,
+      "width": 669.7584549162862,
+      "height": 960,
+      "backgroundColor": "#e0e7ff"
+    },
+    {
+      "id": "Zone2",
+      "label": "Delivery",
+      "parentId": null,
+      "x": 805.0000536627548,
+      "y": 24.00002020944015,
+      "width": 474.55430428601187,
+      "height": 960,
+      "backgroundColor": "#dcfce7"
+    }
+  ],
+  "edges": [
+    {
+      "id": "L_idea_review_0",
+      "source": "idea",
+      "target": "review",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_review_prototype_0",
+      "source": "review",
+      "target": "prototype",
+      "label": "Yes",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_review_backlog_0",
+      "source": "review",
+      "target": "backlog",
+      "label": "Later",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_prototype_feedback_0",
+      "source": "prototype",
+      "target": "feedback",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_feedback_ready_0",
+      "source": "feedback",
+      "target": "ready",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_ready_prototype_0",
+      "source": "ready",
+      "target": "prototype",
+      "label": "Revise",
+      "direction": "forward",
+      "style": "dashed",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "east"
+    },
+    {
+      "id": "L_ready_build_0",
+      "source": "ready",
+      "target": "build",
+      "label": "Yes",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_build_test_0",
+      "source": "build",
+      "target": "test",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_test_launch_0",
+      "source": "test",
+      "target": "launch",
+      "label": "Passed",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "north"
+    },
+    {
+      "id": "Edge1",
+      "source": "test",
+      "target": "Node1",
+      "label": "Issues found",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "straight",
+      "sourceSide": "west",
+      "targetSide": "east"
+    },
+    {
+      "id": "Edge2",
+      "source": "Node1",
+      "target": "test",
+      "label": "Retest",
+      "direction": "forward",
+      "style": "dashed",
+      "routing": "orthogonal",
+      "sourceSide": "north",
+      "targetSide": "north"
+    },
+    {
+      "id": "Edge3",
+      "source": "launch",
+      "target": "Node2",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Edge4",
+      "source": "Node2",
+      "target": "idea",
+      "label": "Next iteration",
+      "direction": "forward",
+      "style": "dashed",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "north",
+      "waypoints": [
+        {
+          "x": 1369.5543115845264,
+          "y": 800.0000503554367
+        },
+        {
+          "x": 1369.5543115845264,
+          "y": -45.99997080294729
+        },
+        {
+          "x": 350.0000436476606,
+          "y": -45.99997080294729
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "direction": "TD",
+    "layout": "adaptive",
+    "grid": false,
+    "guides": true,
+    "fontSize": 16,
+    "view": {
+      "x": 212.64709557502957,
+      "y": 111.09040783651983,
+      "scale": 0.9053958848757578
+    }
+  }
+}

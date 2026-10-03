@@ -1,0 +1,75 @@
+{
+  "passed": 17,
+  "total": 17,
+  "errors": [],
+  "results": [
+    {
+      "name": "rectangle nodes: manual corridor, one-end movement, resize, all forced sides",
+      "pass": true
+    },
+    {
+      "name": "rounded nodes: manual corridor, one-end movement, resize, all forced sides",
+      "pass": true
+    },
+    {
+      "name": "diamond nodes: manual corridor, one-end movement, resize, all forced sides",
+      "pass": true
+    },
+    {
+      "name": "circle nodes: manual corridor, one-end movement, resize, all forced sides",
+      "pass": true
+    },
+    {
+      "name": "cylinder nodes: manual corridor, one-end movement, resize, all forced sides",
+      "pass": true
+    },
+    {
+      "name": "joint dragging and keyboard nudges carry the corridor by the accepted endpoint movement",
+      "pass": true
+    },
+    {
+      "name": "segment dragging, point dragging, Escape, pointer capture and single-step Undo/Redo",
+      "pass": true
+    },
+    {
+      "name": "snap grid and Delete operate on a point without deleting its connection",
+      "pass": true
+    },
+    {
+      "name": "nested zone carries its internal route; a connection to an outside node keeps fixed waypoints",
+      "pass": true
+    },
+    {
+      "name": "moving the zone at only one end keeps the external route and its sides",
+      "pass": true
+    },
+    {
+      "name": "zone endpoints accept manual waypoints and keep forced border approaches",
+      "pass": true
+    },
+    {
+      "name": "node containers carry descendant waypoints once during native dragging",
+      "pass": true
+    },
+    {
+      "name": "parallel connections and a self-loop retain independent corridors",
+      "pass": true
+    },
+    {
+      "name": "creating a node over a waypoint shows a conflict; moving it away restores the exact point",
+      "pass": true
+    },
+    {
+      "name": "reconnecting an endpoint preserves the corridor and can force the new target side",
+      "pass": true
+    },
+    {
+      "name": "auto layout retains coordinates; save/reopen and SVG/PNG preserve routes",
+      "pass": true
+    },
+    {
+      "name": "reset is reversible, clears waypoints only, and allows straight routing afterward",
+      "pass": true
+    }
+  ]
+}

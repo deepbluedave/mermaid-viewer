@@ -1,4 +1,6 @@
 import {clearanceTranslation,NODE_GAP,containingZone} from './geometry.mjs?v=whole-words';
+import {translateWaypoints,MAX_WAYPOINTS} from './waypoints.mjs?v=whole-words';
+import {pruneAttachmentOrders} from './attachments.mjs?v=whole-words';
 export {NODE_GAP} from './geometry.mjs?v=whole-words';
 export const shapes = ['rectangle', 'rounded', 'diamond', 'circle', 'cylinder'];
 export const directions = ['TD', 'LR', 'BT', 'RL'];
@@ -127,10 +129,12 @@ export function movableIds(model, selection) {
   return ids;
 }
 export function moveSelection(model, selection, dx, dy, {expand=true,spacing=false}={}) {
+  const before=model.edges.some(e=>e.waypoints?.length)?copy(model):null;
   const ids = movableIds(model, selection);
   for (const n of items(model)) if (ids.has(n.id)) { n.x += dx; n.y += dy; }
   if(spacing)separateSelection(model,selection);
   if(expand)expandZones(model);
+  if(before)translateWaypoints(before,model);
 }
 export function separateSelection(model,selection) {
   const ids=movableIds(model,selection),roots=items(model).filter(n=>selection.has(n.id)&&!ids.has(n.parentId));
@@ -189,6 +193,7 @@ export function deleteSelection(model, selection) {
   model.zones = model.zones.filter(z => !selected.has(z.id));
   model.nodes = model.nodes.filter(n => !selected.has(n.id));
   model.edges = model.edges.filter(e => !selected.has(e.id) && !selected.has(e.source) && !selected.has(e.target));
+  pruneAttachmentOrders(model);
   collapseEmptyParents(model,previousParents);
 }
 export function nextId(model, prefix) {
@@ -209,6 +214,7 @@ export function groupSelection(model, selection, label = 'New zone') {
   model.zones.push(zone); for (const n of roots) n.parentId = zone.id; expandZones(model); return zone;
 }
 export function arrange(model, selection, command) {
+  const before=copy(model);
   const selected = items(model).filter(n => selection.has(n.id));
   const roots = selected.filter(n => !selected.some(o => o.id !== n.id && descendants(model, o.id).has(n.id)));
   if (roots.length < (command.startsWith('distribute') ? 3 : 2)) throw new Error(command.startsWith('distribute') ? 'Select at least three objects to distribute.' : 'Select at least two objects to align.');
@@ -231,6 +237,7 @@ export function arrange(model, selection, command) {
     if (command === 'bottom') dy = bottom - n.y - n.height;
     moveSelection(model, new Set([n.id]), dx, dy);
   }
+  translateWaypoints(before,model);
 }
 const encodeLabel = text => String(text).replace(/[&"#<>ﬂ°¶ß]/g, c => ({ '&': '#38;', '"': '#quot;', '#': '#35;', '<': '#60;', '>': '#62;' }[c] || `#${c.codePointAt(0)};`)).replace(/\n/g, '<br/>') || '#8203;';
 export function toMermaid(model) {
@@ -273,6 +280,20 @@ export function validateModel(input) {
     if (!items(model).some(n => n.id === e.source) || !items(model).some(n => n.id === e.target)) throw new Error('An edge endpoint is missing.');
     if (!['normal', 'dashed', 'thick'].includes(e.style) || !['forward', 'both', 'none'].includes(e.direction) || !['orthogonal', 'straight'].includes(e.routing)) throw new Error('Unsupported edge style.');
     for (const side of [e.sourceSide, e.targetSide]) if (side && !['north','south','east','west'].includes(side)) throw new Error('Invalid attachment side.');
+    if(e.labelPosition!==undefined){const p=e.labelPosition;if(!p||!Number.isFinite(p.fraction)||p.fraction<0||p.fraction>1||![p.offsetAlong,p.offsetNormal].every(v=>Number.isFinite(v)&&Math.abs(v)<=1e6))throw new Error('Invalid manual connection label position.');}
+    if(e.waypoints!==undefined){
+      if(!Array.isArray(e.waypoints)||e.waypoints.length>MAX_WAYPOINTS||e.waypoints.some(p=>!p||![p.x,p.y].every(v=>Number.isFinite(v)&&Math.abs(v)<=1e6)))throw new Error(`Use at most ${MAX_WAYPOINTS} finite waypoints per connection.`);
+      if(e.waypoints.length&&e.routing!=='orthogonal')throw new Error('Connections with waypoints must use orthogonal routing.');
+    }
+  }
+  const connections=new Map(model.edges.map(e=>[e.id,e]));
+  for(const node of items(model))if(node.attachmentOrder!==undefined){
+    const order=node.attachmentOrder;
+    if(!order||typeof order!=='object'||Array.isArray(order)||Object.keys(order).some(side=>!['north','south','east','west'].includes(side)))throw new Error('Invalid attachment order.');
+    for(const keys of Object.values(order)){
+      if(!Array.isArray(keys)||keys.length>2000||new Set(keys).size!==keys.length)throw new Error('Invalid attachment order.');
+      for(const key of keys){if(typeof key!=='string'||!/^([A-Za-z_][\w-]*):(source|target)$/.test(key))throw new Error('Invalid attachment order.');const [id,end]=key.split(':');if(connections.get(id)?.[end]!==node.id)throw new Error('An ordered attachment does not belong to this object.');}
+    }
   }
   if (!directions.includes(model.settings?.direction) || !['adaptive','hierarchical'].includes(model.settings.layout) || typeof model.settings.grid !== 'boolean') throw new Error('Invalid layout settings.');
   if(model.settings.fontSize!==undefined&&(!Number.isInteger(model.settings.fontSize)||model.settings.fontSize<10||model.settings.fontSize>48))throw new Error('Choose a diagram font size between 10 and 48.');

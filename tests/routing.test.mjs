@@ -110,3 +110,22 @@ test('parallel zone connections keep distinct border attachments and correct app
 test('connections to a zone leave unrelated routes through its body and title unobstructed',()=>{
  const m=emptyModel();m.nodes=[node('A',0,0),node('B',520,0),node('Outside',720,160)];m.edges=[edge('Crossing','A','B')];const original=router.route(m).get('Crossing');m.zones=[zone('Z',220,20,180,260)];m.edges.push(edge('ZoneEdge','Z','Outside'));assert.deepEqual(router.route(m).get('Crossing'),original,'connected zone body and title stay traversable away from its ports');
 });
+function visits(points,waypoints){let segment=1;for(const p of waypoints){while(segment<points.length){const a=points[segment-1],b=points[segment],cross=Math.abs((b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x));if(cross<.01&&p.x>=Math.min(a.x,b.x)-.01&&p.x<=Math.max(a.x,b.x)+.01&&p.y>=Math.min(a.y,b.y)-.01&&p.y<=Math.max(a.y,b.y)+.01)break;segment++;}assert.ok(segment<points.length,`route visits ${p.x},${p.y} in order`);}}
+test('manual waypoints keep ordered corridors and forced sides for every shape and endpoint movement',()=>{
+ for(const shape of ['rectangle','rounded','diamond','circle','cylinder'])for(const side of Object.keys(normals)){
+  const m=emptyModel();m.nodes=[{...node('A',50,50),shape},node('B',650,80),node('Obstacle',350,0)];m.edges=[{...edge('E','A','B'),sourceSide:side,targetSide:'west',waypoints:[{x:260,y:260},{x:570,y:260}]}];
+  for(const move of [()=>{},()=>{m.nodes[0].y+=120;},()=>{m.nodes[1].y+=200;m.nodes[0].width+=30;}]){move();const p=router.route(m).get('E');orthogonal(p);visits(p,m.edges[0].waypoints);approach(p,'source',m.nodes[0],side);approach(p,'target',m.nodes[1],'west');avoids(p,m.nodes[2]);}
+ }
+});
+test('manual checkpoints work for zones, containers, parallel connections and self loops',()=>{
+ const m=emptyModel();m.zones=[zone('Z',0,0,300,200)];m.nodes=[{...node('Parent',550,0),container:true,width:250,height:220},{...node('Child',600,100),parentId:'Parent'}];
+ m.edges=[{...edge('One','Z','Parent'),sourceSide:'south',targetSide:'south',waypoints:[{x:350,y:350}]},{...edge('Two','Z','Parent'),waypoints:[{x:350,y:450}]},{...edge('Loop','Child','Child'),sourceSide:'east',targetSide:'north',waypoints:[{x:900,y:300},{x:900,y:-80}]}];
+ for(const e of m.edges){const p=router.route(m).get(e.id);orthogonal(p);visits(p,e.waypoints);}approach(router.route(m).get('One'),'source',m.zones[0],'south');approach(router.route(m).get('One'),'target',m.nodes[0],'south');
+});
+test('covered checkpoints remain saved and resume when the blocking node leaves',async()=>{
+ const {waypointConflicts}=await import('../waypoints.mjs');const m=emptyModel();m.nodes=[node('A',0,0),node('B',650,0),node('Obstacle',300,250)];m.edges=[{...edge('E','A','B'),waypoints:[{x:340,y:280},{x:540,y:280}]}];const original=structuredClone(m.edges[0].waypoints);
+ assert.equal(waypointConflicts(m,m.edges[0]).length,1);const blocked=router.route(m).get('E');orthogonal(blocked);avoids(blocked,m.nodes[2]);visits(blocked,[original[1]]);assert.deepEqual(m.edges[0].waypoints,original);m.nodes[2].y=500;assert.equal(waypointConflicts(m,m.edges[0]).length,0);visits(router.route(m).get('E'),original);
+});
+test('coincident waypoints and reversed spans preserve their positions without invalid paths',()=>{
+ const m=emptyModel();m.nodes=[node('A',0,0),node('B',650,0)];m.edges=[{...edge('E','A','B'),sourceSide:'east',targetSide:'west',waypoints:[{x:300,y:300},{x:300,y:300},{x:300,y:450},{x:300,y:200}]}];const path=router.route(m).get('E');orthogonal(path);visits(path,m.edges[0].waypoints);
+});

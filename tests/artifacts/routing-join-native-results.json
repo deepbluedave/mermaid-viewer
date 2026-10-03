@@ -1,0 +1,47 @@
+{
+  "passed": 10,
+  "total": 10,
+  "results": [
+    {
+      "name": "open the unchanged lunar project: corrected dispatch preserves model and visits both fixed waypoints",
+      "pass": true
+    },
+    {
+      "name": "drag the target across alignment and back: waypoints and preferences stay fixed with exact restoration",
+      "pass": true
+    },
+    {
+      "name": "change the forced target side and undo: attachment direction and the original repaired route return",
+      "pass": true
+    },
+    {
+      "name": "move the lunar zone as a user: external waypoints stay fixed and Undo restores all routes",
+      "pass": true
+    },
+    {
+      "name": "drag and nudge the repaired connection label: its leader works and the path never changes",
+      "pass": true
+    },
+    {
+      "name": "repeat reroutes without movement: corrected paths do not alternate or drift",
+      "pass": true
+    },
+    {
+      "name": "native save/reopen and SVG/PNG exports preserve the repaired paths and original labels",
+      "pass": true
+    },
+    {
+      "name": "build a new corridor through real controls: an off-height waypoint turns without retracing",
+      "pass": true
+    },
+    {
+      "name": "create an obstacle requiring a long repair: fallback, deletion and Undo remain predictable",
+      "pass": true
+    },
+    {
+      "name": "create an explicit doubled-back waypoint while keeping the terminal correction and waypoint order",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

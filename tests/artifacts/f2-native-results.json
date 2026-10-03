@@ -1,0 +1,59 @@
+{
+  "passed": 13,
+  "total": 13,
+  "results": [
+    {
+      "name": "create a space-rescue connection, drag its label with no route change, undo and redo",
+      "pass": true
+    },
+    {
+      "name": "return label to the line, remove its leader, and move away again",
+      "pass": true
+    },
+    {
+      "name": "manual label overlap is respected, stays accessible, and permits moving the selected blocking node",
+      "pass": true
+    },
+    {
+      "name": "parallel automatic labels avoid a manually reserved label, even when the automatic edge comes first",
+      "pass": true
+    },
+    {
+      "name": "moving one endpoint and rotating the route preserve relative label preferences and leaders",
+      "pass": true
+    },
+    {
+      "name": "moving both endpoints transports labels with the connection",
+      "pass": true
+    },
+    {
+      "name": "manual label survives straight routing, diagonal segments, multiline text, and empty/restored text",
+      "pass": true
+    },
+    {
+      "name": "waypoint edits reroute the connection while retaining the label preference",
+      "pass": true
+    },
+    {
+      "name": "grid snapping, arrow keys, off-centre grabbing and Escape remain predictable at different zooms",
+      "pass": true
+    },
+    {
+      "name": "moving a nested zone carries labels for internal connections",
+      "pass": true
+    },
+    {
+      "name": "self-loop labels keep a leader and follow their node movement",
+      "pass": true
+    },
+    {
+      "name": "Auto layout, source edits, and save/reopen preserve manual label preferences",
+      "pass": true
+    },
+    {
+      "name": "SVG and PNG retain leader lines and label placement; reset is reversible",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

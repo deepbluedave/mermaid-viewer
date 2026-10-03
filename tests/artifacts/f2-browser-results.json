@@ -1,0 +1,114 @@
+{
+  "passed": 27,
+  "total": 27,
+  "results": [
+    {
+      "name": "starter import preserves nested memberships and all connections",
+      "pass": true
+    },
+    {
+      "name": "all five shapes, styles, arrow directions, loops, parallel and explicit IDs roundtrip",
+      "pass": true
+    },
+    {
+      "name": "quoted, entity, unicode and multiline labels roundtrip without corruption",
+      "pass": true
+    },
+    {
+      "name": "empty and entity-like text, including zone titles, roundtrips once",
+      "pass": true
+    },
+    {
+      "name": "source application retains manual positions and private route settings",
+      "pass": true
+    },
+    {
+      "name": "unsupported definitions, styling, callbacks, arrowheads and shapes fail explicitly",
+      "pass": true
+    },
+    {
+      "name": "both layouts work for all supplied architecture shapes and mixed connections",
+      "pass": true
+    },
+    {
+      "name": "exported SVG is standalone, contains full arrangement, and excludes editor controls",
+      "pass": true
+    },
+    {
+      "name": "zone titles overlay crossing routes with translucent backing in the scene and exported image",
+      "pass": true
+    },
+    {
+      "name": "parallel long labels remain distinct in the scene and standalone SVG/PNG",
+      "pass": true
+    },
+    {
+      "name": "crossing bridges survive standalone SVG and PNG rendering without changing routing",
+      "pass": true
+    },
+    {
+      "name": "both initial layouts maintain node clearance after the editor resizes shapes",
+      "pass": true
+    },
+    {
+      "name": "matching source IDs retain node and zone descriptions and notes",
+      "pass": true
+    },
+    {
+      "name": "project JSON restores geometry and settings without automatic layout",
+      "pass": true
+    },
+    {
+      "name": "novel diagrams retain manual dimensions, colors, font and edge context through source and both layouts",
+      "pass": true
+    },
+    {
+      "name": "large-font colored SVG and PNG include all label bounds and preserve pixels",
+      "pass": true
+    },
+    {
+      "name": "automatic layouts leave clearance between expanded zones and unrelated root nodes in every direction",
+      "pass": true
+    },
+    {
+      "name": "node containers roundtrip all shapes, nested zones, empty containers and parent connections through both layout engines",
+      "pass": true
+    },
+    {
+      "name": "malformed or contradictory container annotations fail explicitly",
+      "pass": true
+    },
+    {
+      "name": "live label metrics fit circle and diamond outlines at browser-measured font sizes and unwrap short labels",
+      "pass": true
+    },
+    {
+      "name": "parent-node titles and colors survive standalone SVG and PNG",
+      "pass": true
+    },
+    {
+      "name": "zone connection border approaches survive standalone SVG and PNG exports",
+      "pass": true
+    },
+    {
+      "name": "whole words fit every shape and remain intact in standalone SVG and PNG",
+      "pass": true
+    },
+    {
+      "name": "Auto layout and source application preserve manual route coordinates and forced sides",
+      "pass": true
+    },
+    {
+      "name": "manual route SVG and PNG preserve path geometry and omit editing handles",
+      "pass": true
+    },
+    {
+      "name": "manual label positions survive all layouts and matching source edits",
+      "pass": true
+    },
+    {
+      "name": "manual labels and leaders appear identically in SVG and render into PNG export bounds",
+      "pass": true
+    }
+  ]
+}
