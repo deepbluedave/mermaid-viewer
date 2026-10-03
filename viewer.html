@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'">
   <title>Mermaid Diagram Studio</title>
-  <link rel="stylesheet" href="studio.css?v=whole-words">
+  <link rel="stylesheet" href="studio.css?v=editing-controls">
 </head>
 <body>
   <header class="topbar">
@@ -19,10 +19,12 @@
       <button disabled id="btn-hierarchy" aria-expanded="true">Hierarchy</button>
       <button disabled id="btn-source" aria-expanded="false">Source</button>
     </div>
+    <button disabled id="btn-project-menu" class="narrow-only" aria-haspopup="menu" aria-expanded="false">Project ▾</button>
     <span class="local-badge">LOCAL · OFFLINE</span>
   </header>
   <nav class="toolbar" aria-label="Diagram tools">
-    <div class="tool-group" role="group" aria-label="Editing tools">
+    <button disabled id="btn-tool-menu" class="narrow-only" aria-haspopup="menu" aria-expanded="false">↖ Select ▾</button>
+    <div class="tool-group wide-tools" role="group" aria-label="Editing tools">
       <button disabled data-tool="select" aria-pressed="true" title="Select and move (V)">↖ Select</button>
       <button disabled data-tool="pan" aria-pressed="false" title="Pan (H or hold Space)">✥ Pan</button>
       <button disabled data-tool="node" aria-pressed="false" title="Add node (N): click then place, or drag onto the canvas">□ Node</button>
@@ -30,12 +32,14 @@
       <button disabled data-tool="zone" aria-pressed="false" title="Add zone (Z): click then place, or drag onto the canvas">▧ Zone</button>
     </div>
     <div class="tool-group"><button id="btn-undo" title="Undo (Ctrl/Cmd+Z)" disabled>Undo</button><button id="btn-redo" title="Redo (Ctrl/Cmd+Shift+Z)" disabled>Redo</button><button id="btn-delete" disabled>Delete</button></div>
-    <div class="tool-group">
+    <div class="tool-group" hidden>
       <select disabled id="alignment" aria-label="Alignment and distribution"><option value="">Arrange…</option><option value="left">Align left</option><option value="center-x">Align centres horizontally</option><option value="right">Align right</option><option value="top">Align top</option><option value="center-y">Align centres vertically</option><option value="bottom">Align bottom</option><option value="distribute-x">Distribute horizontally</option><option value="distribute-y">Distribute vertically</option></select>
     </div>
     <div class="tool-group layout-tools"><label for="direction">Flow</label><select disabled id="direction" aria-label="Flow direction"><option>TD</option><option>LR</option><option>BT</option><option>RL</option></select><select disabled id="layout-mode" aria-label="Layout style"><option value="adaptive">Adaptive</option><option value="hierarchical">Hierarchical</option></select><button disabled id="btn-layout">Auto layout</button></div>
     <div class="tool-group font-tools"><label for="font-size">Text</label><input disabled id="font-size" type="number" min="10" max="48" step="1" value="13" aria-label="Diagram font size"><span>px</span></div>
+    <button disabled id="btn-diagram-menu" class="narrow-only" aria-haspopup="menu" aria-expanded="false">Diagram ▾</button>
   </nav>
+  <nav id="selection-bar" class="selection-bar" aria-label="Selection actions"><span id="selection-name">Select an object to edit it</span><div id="selection-actions"></div><button disabled id="btn-selection-more" aria-haspopup="menu" aria-expanded="false">More ▾</button></nav>
   <main>
     <aside id="source-panel" class="source-panel">
       <div id="hierarchy-content">
@@ -58,14 +62,15 @@
       <svg id="canvas" xmlns="http://www.w3.org/2000/svg" role="graphics-document" aria-label="Editable diagram"><g id="world"></g></svg>
       <div id="canvas-help">Drag nodes or zones · Shift-drag to select · Scroll to zoom</div>
       <div id="loading" role="status">Starting local engines…</div>
-      <div class="zoom-toolbar"><button disabled id="btn-zoom-out" aria-label="Zoom out">−</button><span id="zoom-text">100%</span><button disabled id="btn-zoom-in" aria-label="Zoom in">+</button><button disabled id="btn-fit">Fit</button><label class="grid-control"><input disabled id="snap-grid" type="checkbox"> Snap grid</label><label class="grid-control"><input disabled id="alignment-guides" type="checkbox" checked> Guides</label></div>
+      <div class="zoom-toolbar"><button disabled id="btn-zoom-out" aria-label="Zoom out" title="Zoom out">−</button><span id="zoom-text">100%</span><button disabled id="btn-zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button disabled id="btn-fit">Fit diagram</button><label class="grid-control"><input disabled id="snap-grid" type="checkbox"> Snap grid</label><label class="grid-control"><input disabled id="alignment-guides" type="checkbox" checked> Guides</label></div>
     </section>
-    <aside class="properties-panel" aria-label="Object properties"><div class="panel-heading"><h2>Properties</h2><span id="selection-count">No selection</span></div><div id="properties"><p class="empty-properties">Select a node, edge, or zone to edit its properties.</p></div><div class="keyboard-help"><strong>At your fingertips</strong><p>V Select · H Pan · N Node · C Connect · Z Zone</p><p>Arrow keys nudge · Shift for larger steps<br>Escape cancels · Delete removes</p></div></aside>
+    <aside class="properties-panel" aria-label="Object properties"><div class="panel-heading"><h2>Properties</h2><span id="selection-count">No selection</span><button id="btn-close-properties" aria-label="Close Properties" title="Close Properties">Close</button></div><div id="properties"><p class="empty-properties">Select a node, connection, or zone to edit its properties.</p></div><div class="keyboard-help"><strong>At your fingertips</strong><p>V Select · H Pan · N Node · C Connect · Z Zone</p><p>Arrow keys nudge · Shift for larger steps<br>Escape cancels · Delete removes</p></div></aside>
   </main>
   <footer><span id="status" role="status">Loading…</span><span id="counts"></span></footer>
   <div id="error-banner" role="alert" hidden><span id="error-message"></span><button disabled id="dismiss-error" aria-label="Dismiss error">×</button></div>
   <input disabled id="file-input" type="file" accept=".json,.mmd,.mermaid,.txt" hidden>
   <script src="./vendor/mermaid.min.js"></script>
-  <script type="module" src="./app.mjs?v=whole-words"></script>
+  <div id="editing-overlay" class="editing-overlay" hidden></div>
+  <script type="module" src="./app.mjs?v=editing-controls"></script>
 </body>
 </html>

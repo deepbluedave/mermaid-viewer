@@ -14,3 +14,78 @@
 .edge-label{cursor:grab}.edge-label.selected>rect{stroke:#0284c7;stroke-width:1.5}.edge-label-leader{pointer-events:none}#viewport[data-gesture=label]{cursor:grabbing}
 .attachment-order{display:flex;flex-direction:column;gap:6px;padding:9px 0;border-top:1px solid var(--line)}.attachment-order-buttons{display:flex;gap:6px}.attachment-order-buttons button{flex:1;min-width:0}.attachment-order button{min-height:36px;white-space:normal}.attachment-order .small-note{margin:0}
 @media(pointer:coarse){.attachment-order button{min-height:44px}}
+
+/* Controls for the current selection stay outside the diagram. */
+[hidden]{display:none!important}
+button,select,input{-webkit-tap-highlight-color:transparent}
+button[aria-expanded=true]{border-color:#38bdf8}
+.narrow-only,#btn-close-properties{display:none}
+.topbar{order:0}.toolbar{order:1}.selection-bar{order:2}main{order:3}footer{order:4}
+.brand{min-width:160px}
+.selection-bar{display:flex;align-items:center;gap:12px;height:56px;min-height:56px;padding:8px 16px;border-bottom:1px solid var(--line);background:#101c2e;flex-shrink:0}
+#selection-name{min-width:0;flex:1;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#b8c9dc}
+#selection-actions{display:flex;align-items:center;gap:6px;min-width:0}
+#btn-selection-more{margin-left:auto}
+.property-group{display:flex;flex-direction:column;gap:10px;padding-top:12px;border-top:1px solid var(--line)}
+.property-group h3{margin:0;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:#c0d1e4}
+.editing-overlay{position:fixed;z-index:20;width:276px;max-width:calc(100vw - 16px);overflow:auto;overscroll-behavior:contain;background:#122039;color:#dbe4ee;border:1px solid #40516b;border-radius:10px;padding:8px;box-shadow:0 10px 36px #02061755;color-scheme:dark;touch-action:pan-y}
+.editing-overlay h2{font-size:13px;line-height:1.5;margin:2px 0 12px;overflow-wrap:anywhere}
+.menu-popover{display:flex;flex-direction:column;gap:2px;width:244px}
+.menu-popover button{border:0;background:transparent;text-align:left;border-radius:5px;min-height:36px;padding:8px 10px;white-space:normal}
+.menu-popover button[aria-checked=true]{background:#17405a;color:#b5e7ff}
+.menu-popover button[aria-checked=true]::after{content:'✓';float:right;margin-left:8px}
+.menu-popover .menu-separated{border-top:1px solid var(--line);margin-top:4px;padding-top:10px}
+.menu-popover .danger{color:#fda4af}
+.edit-popover,.attachment-popover{padding:16px;display:flex;flex-direction:column;gap:12px;width:300px}
+.editing-overlay .property-field{min-width:0}
+.editing-overlay .property-field label{line-height:1.5}
+.editing-overlay .property-field input,.editing-overlay .property-field textarea{min-height:36px}
+.editing-overlay .property-field textarea{min-height:86px}
+.editing-overlay input[aria-invalid=true]{border-color:#fb7185}
+.editing-overlay .edit-error{margin:0;color:#fda4af;font-size:12px;line-height:1.6}
+.popover-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--line)}
+.attachment-tabs{display:flex;gap:6px}.attachment-tabs button{flex:1}
+.attachment-summary{margin:0;color:#a7bfd5;font-size:12px;line-height:1.5}
+.attachment-popover>.small-note{font-size:11px}
+.connection-handle:focus-visible{outline:none;stroke:#7c3aed;stroke-width:3px}
+#viewport:focus-visible{box-shadow:inset 0 0 0 2px #38bdf8}
+@media(max-width:850px){
+  .topbar{min-height:56px;height:56px;justify-content:space-between}
+  .file-actions,.wide-tools,.layout-tools,.font-tools{display:none}
+  .narrow-only{display:block;min-height:44px}
+  .toolbar{height:56px;min-height:56px;flex-wrap:nowrap;padding:6px 8px;gap:4px}
+  .toolbar .tool-group{border:0;padding:0;gap:2px}
+  .toolbar button{min-height:44px;min-width:44px;font-size:12px;padding:6px 8px}
+  .toolbar .tool-group button{width:44px;padding:4px;font-size:11px}
+  #btn-tool-menu{margin-right:auto;min-width:70px;max-width:105px;flex:1;overflow:hidden;text-overflow:ellipsis}
+  #btn-delete{overflow:hidden;text-overflow:ellipsis}
+  #btn-diagram-menu{width:70px;padding:4px;font-size:11px}
+  main{order:2}.selection-bar{order:3}
+  .selection-bar{height:104px;min-height:104px;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:22px 44px;gap:8px;padding:12px;border-top:1px solid var(--line);border-bottom:0}
+  #selection-name{grid-column:1/-1;max-width:none;width:100%;font-size:12px}
+  #selection-actions{overflow:hidden;gap:6px}
+  .selection-bar button{min-height:44px;min-width:44px;padding:8px 10px;font-size:12px}
+  #btn-selection-more{grid-column:2;grid-row:2}
+  .properties-panel{display:none;position:fixed;z-index:10;bottom:8px;left:8px;right:8px;width:auto;max-height:80dvh;border:1px solid #40516b;border-radius:12px;padding:16px;box-shadow:0 -8px 35px #02061755}
+  .properties-panel.is-open{display:flex}
+  .properties-panel>.panel-heading{position:sticky;top:-16px;z-index:1;background:#101b2d;padding:8px 0}
+  #btn-close-properties{display:block;min-height:44px}
+  .properties-panel input,.properties-panel select,.properties-panel button,.properties-panel textarea{min-height:44px;font-size:16px}
+  .properties-panel input[type=checkbox]{width:24px;min-height:24px}
+  .properties-panel .color-field{grid-template-columns:minmax(0,1fr) 44px}
+  .properties-panel input[type=color]{width:44px}
+  .source-panel{position:fixed;top:120px;bottom:139px;width:min(360px,calc(100vw - 16px));left:8px;border:1px solid #40516b;border-radius:10px;z-index:8;box-shadow:8px 0 24px #0003}
+  .source-panel button,.source-panel select{min-height:44px}
+  .source-panel .tree-toggle,.source-panel .tree-spacer{width:44px;min-width:44px}
+  #canvas-help{display:none}
+  .zoom-toolbar{bottom:10px;right:10px;max-width:calc(100% - 20px);display:grid;grid-template-columns:44px 48px 44px minmax(92px,1fr);gap:4px;padding:5px}
+  .zoom-toolbar button{min-height:44px;min-width:44px;font-size:12px}
+  .zoom-toolbar .grid-control{grid-column:span 2;min-height:44px;justify-content:center;font-size:12px;margin:0}
+  .zoom-toolbar input{width:18px;height:18px}
+  .editing-overlay button,.editing-overlay select{min-height:44px;font-size:14px}
+  .editing-overlay .property-field input,.editing-overlay .property-field textarea{min-height:44px;font-size:16px}
+  .editing-overlay input[type=color]{min-width:44px;min-height:44px}
+  footer{font-size:9px;padding:6px 10px;gap:8px}
+  #status{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #counts{white-space:nowrap}
+}

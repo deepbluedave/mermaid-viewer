@@ -1,0 +1,235 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Node1",
+      "label": "Harvest ledger",
+      "shape": "cylinder",
+      "parentId": "Zone1",
+      "x": 99.04596710205078,
+      "y": 140,
+      "width": 121.90806579589844,
+      "height": 70
+    },
+    {
+      "id": "Node2",
+      "label": "Pick fruit",
+      "shape": "rounded",
+      "parentId": "Zone1",
+      "x": 180,
+      "y": 413,
+      "width": 120,
+      "height": 54
+    },
+    {
+      "id": "Node3",
+      "label": "Launch drones",
+      "shape": "rectangle",
+      "parentId": "Zone2",
+      "x": 618.8054504394531,
+      "y": 228,
+      "width": 122.38909912109375,
+      "height": 54
+    },
+    {
+      "id": "Node4",
+      "label": "Storm clear?",
+      "shape": "diamond",
+      "parentId": "Zone4",
+      "x": 470,
+      "y": 391,
+      "width": 240,
+      "height": 108
+    },
+    {
+      "id": "Node5",
+      "label": "Charge pods",
+      "shape": "circle",
+      "parentId": "Zone4",
+      "x": 734,
+      "y": 478.2048634016161,
+      "width": 143.59027319676787,
+      "height": 143.59027319676787
+    },
+    {
+      "id": "Node6",
+      "label": "Landing clear?",
+      "shape": "diamond",
+      "parentId": "Zone3",
+      "x": 1039.8729248046875,
+      "y": 246,
+      "width": 240.254150390625,
+      "height": 108
+    },
+    {
+      "id": "Node7",
+      "label": "Rooftop pantry",
+      "shape": "rounded",
+      "parentId": "Zone3",
+      "x": 1097.882453918457,
+      "y": 523,
+      "width": 124.23509216308594,
+      "height": 54
+    }
+  ],
+  "zones": [
+    {
+      "id": "Zone1",
+      "label": "01 · Sky harvest",
+      "parentId": null,
+      "x": 79.04596710205078,
+      "y": 96,
+      "width": 240.95403289794922,
+      "height": 391,
+      "backgroundColor": "#e0e7ff",
+      "fontColor": "#475569"
+    },
+    {
+      "id": "Zone2",
+      "label": "02 · Drone dispatch",
+      "parentId": null,
+      "x": 422,
+      "y": 184,
+      "width": 495.59027319676784,
+      "height": 477.7951365983839,
+      "backgroundColor": "#dcfce7",
+      "fontColor": "#475569"
+    },
+    {
+      "id": "Zone3",
+      "label": "03 · Rooftop pantry",
+      "parentId": null,
+      "x": 1019.8729248046875,
+      "y": 202,
+      "width": 280.254150390625,
+      "height": 395,
+      "backgroundColor": "#ffedd5",
+      "fontColor": "#475569"
+    },
+    {
+      "id": "Zone4",
+      "label": "Weather & power",
+      "parentId": "Zone2",
+      "x": 442,
+      "y": 337,
+      "width": 455.59027319676784,
+      "height": 304.7951365983839,
+      "backgroundColor": "#bbf7d0",
+      "fontColor": "#475569",
+      "padding": {
+        "top": 24,
+        "right": 20,
+        "bottom": 20,
+        "left": 28
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "Edge1",
+      "source": "Node1",
+      "target": "Node2",
+      "label": "Ripeness check",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "north"
+    },
+    {
+      "id": "Edge2",
+      "source": "Node2",
+      "target": "Node3",
+      "label": "Dispatch orchard flight",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "west",
+      "waypoints": [
+        {
+          "x": 435.0000303704408,
+          "y": 330.0000110559408
+        }
+      ]
+    },
+    {
+      "id": "Edge3",
+      "source": "Node3",
+      "target": "Node4",
+      "label": "Atmospheric check",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "north"
+    },
+    {
+      "id": "Edge4",
+      "source": "Node3",
+      "target": "Node4",
+      "label": "Live radar feed",
+      "direction": "forward",
+      "style": "dashed",
+      "routing": "orthogonal",
+      "sourceSide": "west",
+      "targetSide": "west"
+    },
+    {
+      "id": "Edge5",
+      "source": "Node4",
+      "target": "Node5",
+      "label": "Recharge",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "north"
+    },
+    {
+      "id": "Edge6",
+      "source": "Node5",
+      "target": "Node5",
+      "label": "Battery check",
+      "direction": "forward",
+      "style": "dashed",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "south"
+    },
+    {
+      "id": "Edge7",
+      "source": "Node3",
+      "target": "Node6",
+      "label": "Fresh fruit",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "west"
+    },
+    {
+      "id": "Edge8",
+      "source": "Node6",
+      "target": "Node7",
+      "label": "Clear to land",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "north"
+    }
+  ],
+  "settings": {
+    "direction": "TD",
+    "layout": "adaptive",
+    "grid": false,
+    "guides": true,
+    "fontSize": 13,
+    "view": {
+      "x": -39.36485447964421,
+      "y": 2.4665078163673684,
+      "scale": 1.1811463367777801
+    }
+  }
+}

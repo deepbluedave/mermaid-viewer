@@ -1,6 +1,18 @@
 # Acceptance verification
 
-Latest revision verified on 3 October 2026 against SPEC.md in the local Codex browser at 1800 × 1250 for native interaction checks (1800 × 1200 for automated browser checks), served by Python's local HTTP server. The editor's actual Mermaid 12.0.0 bundle and libavoid WASM were used.
+Latest revision verified on 3 October 2026 against SPEC.md and EDITING-UI-SPEC.md in Chromium, served by Python's local HTTP server. Desktop checks use 1024 × 768 through 2000 × 1350 windows. Mobile checks use 320–850 pixel widths, including a 390 × 844 touch session. The editor's actual Mermaid 12.0.0 bundle and libavoid WASM were used.
+
+## Editing controls
+
+The controls revision passes **155 Node checks**, **30 browser checks**, **80 UI handler checks**, **23 native zone scenarios**, **18 native attachment scenarios**, and **23 new native controls scenarios**: **329 checks in total**.
+
+The new native session builds a Floating Orchard supply diagram through the UI. It creates seven nodes in all five shapes, three stages, a nested weather zone, eight connections, solid/dotted parallel paths, and a self-loop. It uses the selection bar, More, popup editors, attachment tabs, file pickers, downloads, and keyboard menus. Save/Open, source edits, Auto layout/Undo, and all export formats retain the appropriate diagram preferences.
+
+Checks cover captured creation coordinates at 25%, 100%, and 200% zoom; group and part menu targeting; attachment sides/order/reset; reconnect drag/cancellation; nested fitting and padding; root-aware alignment; label/color previews; Apply/click-away/Cancel; invalid values blocking actions and saves; leader lines; named deletion and Undo; stable bars; all menu corners; narrow-screen overflow and touch target sizes; and Properties sheets. Native Chrome touch input tests taps, long-presses on nodes, labels, waypoints, attachments and blank canvas, drags, a second touch, and placement mode. No browser script errors were recorded.
+
+Testing found and resolved a draw error for selected connections, a click-away commit that replaced the hierarchy before the original click completed, and routine redraws closing open menus. Touch presses now wait for release, drag, or long-press before acting, so a placement tool cannot create an unwanted object first. Attachment popovers sit outside their node's selected side when space permits. Mobile controls keep a stable bar and suppress the browser tap flash over open menus.
+
+Run `DIAGRAM_URL=http://127.0.0.1:8000 node tests/native-controls.cjs` with Playwright and Chromium available. Evidence: [native controls](artifacts/controls/results.json), [browser checks](artifacts/controls/browser-results.json), [UI checks](artifacts/controls/ui-results.json), [Node checks](artifacts/controls/unit-results.txt), [editable orchard](artifacts/controls/floating-orchard.mermaid-project.json), [desktop controls](artifacts/controls/desktop-attachments.png), [mobile controls](artifacts/controls/mobile.png), and [mobile menu](artifacts/controls/mobile-menu.png).
 
 ## Automated results
 

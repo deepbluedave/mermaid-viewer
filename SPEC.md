@@ -131,19 +131,21 @@ Users can edit a source draft and explicitly apply it. Draft typing does not rer
 
 ## Toolbar and properties
 
-Provide one consistent main toolbar with:
+Control placement and interaction are specified in [Editing controls](EDITING-UI-SPEC.md). Use that specification for the selection bar, action menus, attachment controls, narrow layout, and acceptance tests.
+
+Provide consistent controls for:
 
 - Select and Pan.
 - Add node, Connect, and Add zone.
 - Undo, Redo, and Delete.
-- Alignment and distribution commands for multiple selections.
-- Zoom controls and Fit.
+- Align and Distribute in the selection bar for multiple selections.
+- Zoom controls and Fit diagram on the canvas.
 - Flow direction and layout controls.
 - Auto layout.
 - Open/import, Save project, and Export.
 - New, to start with an empty diagram as one undoable action.
 
-A properties panel exposes relevant fields for the current selection: labels, node shape, edge direction and line style, zone title, descriptions, notes, and parent membership. Users must not need to edit Mermaid syntax to perform the supported visual operations.
+A selection bar exposes common actions for the selected node, connection, zone, group, or waypoint. More opens the full action menu. Right-click and long-press open actions for the clicked object or canvas position. Attachment controls open beside an endpoint. Properties groups precise fields and detailed information. On narrow screens, Details opens it as a sheet. Users must not need to edit Mermaid syntax to perform the supported visual operations.
 
 Labels preview immediately for nodes, zones, and edges while retaining field focus/caret. Coalesce the continuous input session into one Undo action on commit. Label, description, notes, and size typing must commit before leaving the field, changing selection/tools, or saving/exporting. Disable editing controls while the local engines are starting or an asynchronous layout/import is running.
 

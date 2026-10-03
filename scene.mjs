@@ -40,7 +40,7 @@ export function createScene(model,routes,selection=new Set(),{controls=true,tool
       label.append(svgElement('rect',{x:-width/2,y:-height/2,width,height,rx:3}));
       const lineHeight=Math.ceil(fontSize*1.35),text=svgElement('text',{'text-anchor':'middle',style:`font-size:${fontSize}px`});lines.forEach((line,i)=>text.append(svgElement('tspan',{x:0,y:-(lines.length-1)*lineHeight/2+fontSize*.35+i*lineHeight},line)));label.append(text);(e.labelPosition?manualLabelLayer:labelLayer).append(label);
     }
-    if(controls&&selection.has(e.id))for(const [end,p]of[['source',points[0]],['target',points.at(-1)]])controlLayer.append(svgElement('circle',{class:'connection-handle',cx:p.x,cy:p.y,r:6,'data-reconnect':e.id,'data-end':end}));
+    if(controls&&selection.has(e.id))for(const [end,p]of[['source',points[0]],['target',points.at(-1)]]){const handle=svgElement('circle',{class:'connection-handle',cx:p.x,cy:p.y,r:6/(model.settings.view?.scale||1),'data-reconnect':e.id,'data-end':end,tabindex:0,role:'button','aria-label':`${end==='source'?'Source':'Target'} attachment · ${object(model,e[end])?.label||e[end]}`});handle.append(svgElement('title',{},'Click for side and order · Drag to reconnect'));controlLayer.append(handle);}
     if(controls){
       const scale=model.settings.view.scale,conflicts=new Map(waypointConflicts(model,e).map(c=>[c.index,c.node]));
       for(const [index,p]of(e.waypoints||[]).entries())if(selection.has(e.id)||conflicts.has(index)){

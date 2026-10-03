@@ -1,0 +1,24 @@
+flowchart TD
+  subgraph Zone1["01 · Sky harvest"]
+    Node1[("Harvest ledger")]
+    Node2("Pick fruit")
+  end
+  subgraph Zone2["02 · Drone dispatch"]
+    subgraph Zone4["Weather #38; power"]
+      Node4{"Storm clear?"}
+      Node5(("Charge pods"))
+    end
+    Node3["Launch drones"]
+  end
+  subgraph Zone3["03 · Rooftop pantry"]
+    Node6{"Landing clear?"}
+    Node7("Rooftop pantry")
+  end
+  Node1 Edge1@-->|"Ripeness check"| Node2
+  Node2 Edge2@-->|"Dispatch orchard flight"| Node3
+  Node3 Edge3@-->|"Atmospheric check"| Node4
+  Node3 Edge4@-.->|"Live radar feed"| Node4
+  Node4 Edge5@-->|"Recharge"| Node5
+  Node5 Edge6@-.->|"Battery check"| Node5
+  Node3 Edge7@-->|"Fresh fruit"| Node6
+  Node6 Edge8@-->|"Clear to land"| Node7
