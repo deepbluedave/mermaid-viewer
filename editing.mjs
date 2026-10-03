@@ -1,8 +1,17 @@
-import {copy,items,object,movableIds,diagramFontSize,setNodeSize,expandZones,related,descendants}from'./core.mjs?v=whole-words';
+import {copy,items,object,movableIds,diagramFontSize,setNodeSize,expandZones,related,descendants,zoneMinimumSize,zoneChildBounds}from'./core.mjs?v=whole-words';
 import{overlapsWithGap}from'./geometry.mjs?v=whole-words';
 
 export function resizeObject(model,id,handle,dx,dy) {
   const before=copy(object(model,id)),node=model.nodes.some(n=>n.id===id),font=diagramFontSize(model);
+  if(!node){
+    const minimum=zoneMinimumSize(model,before),fit=zoneChildBounds(model,before);
+    let left=before.x,top=before.y,right=before.x+before.width,bottom=before.y+before.height;
+    if(handle.includes('w'))left=Math.min(left+dx,right-minimum.width,fit?fit.x:Infinity);
+    if(handle.includes('e'))right=Math.max(right+dx,left+minimum.width,fit?fit.x+fit.width:-Infinity);
+    if(handle.includes('n'))top=Math.min(top+dy,bottom-minimum.height,fit?fit.y:Infinity);
+    if(handle.includes('s'))bottom=Math.max(bottom+dy,top+minimum.height,fit?fit.y+fit.height:-Infinity);
+    const next={x:left,y:top,width:right-left,height:bottom-top};if(['x','y','width','height'].some(k=>Math.abs(before[k]-next[k])>1e-7))Object.assign(object(model,id),next);expandZones(model);return object(model,id);
+  }
   const candidate=t=>{
     const n=copy(before);let width=before.width+(handle.includes('e')?dx:handle.includes('w')?-dx:0)*t,height=before.height+(handle.includes('s')?dy:handle.includes('n')?-dy:0)*t;
     width=Math.max(1,width);height=Math.max(1,height);

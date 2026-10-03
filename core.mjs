@@ -78,7 +78,28 @@ const insetRatio=n=>n.shape==='circle'?.2:n.shape==='diamond'?.26:0;
 function minimumTitleWidth(n,fontSize){const wordWidth=Math.max(0,...String(n.label).split(/\s+/).map(word=>textWidth(word,fontSize)));return Math.max(160,(wordWidth+32)/(1-2*insetRatio(n)));}
 export function containerTitleMetrics(n,fontSize=13){const ratio=insetRatio(n),lines=wrapText(n.label,Math.max(fontSize,n.width*(1-2*ratio)-32),fontSize),lineHeight=Math.ceil(fontSize*1.35);return{lines,lineHeight,height:Math.max(30,lines.length*lineHeight+14)};}
 export function containerTitleBox(model,n){const ratio=insetRatio(n),height=model.zones.includes(n)?zoneHeaderHeight(model):containerTitleMetrics(n,diagramFontSize(model)).height;return{x:n.x+n.width*ratio,y:n.y+n.height*ratio+(n.shape==='cylinder'?12:0),width:n.width*(1-2*ratio),height};}
-export function containerContentBox(model,n){const ratio=insetRatio(n),title=containerTitleBox(model,n),bottom=n.shape==='cylinder'?30:20;return{x:n.x+n.width*ratio+20,y:title.y+title.height+14,width:Math.max(1,n.width*(1-2*ratio)-40),height:Math.max(1,n.y+n.height*(1-ratio)-bottom-title.y-title.height-14)};}
+export const DEFAULT_ZONE_PADDING=Object.freeze({top:14,right:20,bottom:20,left:20});
+export const MAX_ZONE_PADDING=1000;
+export const zonePadding=n=>({...DEFAULT_ZONE_PADDING,...n.padding});
+export function zoneMinimumSize(model,n){const p=zonePadding(n),header=zoneHeaderHeight(model);return{width:Math.max(160,textWidth(n.label,diagramFontSize(model))+32,p.left+p.right+1),height:Math.max(100,header+60,header+p.top+p.bottom+1)};}
+// Fit only the frame. A nested child's frame counts as content; its own manual
+// size stays intact unless that zone is also explicitly selected for fitting.
+export function zoneChildBounds(model,n){
+  const children=items(model).filter(c=>c.parentId===n.id),p=zonePadding(n);
+  if(!children.length)return null;
+  const left=Math.min(...children.map(c=>c.x)),top=Math.min(...children.map(c=>c.y)),right=Math.max(...children.map(c=>c.x+c.width)),bottom=Math.max(...children.map(c=>c.y+c.height));
+  return{x:left-p.left,y:top-zoneHeaderHeight(model)-p.top,width:right-left+p.left+p.right,height:bottom-top+zoneHeaderHeight(model)+p.top+p.bottom};
+}
+export function zoneFitBounds(model,n){
+  const bounds=zoneChildBounds(model,n),minimum=zoneMinimumSize(model,n);
+  return bounds?{...bounds,width:Math.max(minimum.width,bounds.width),height:Math.max(minimum.height,bounds.height)}:{x:n.x,y:n.y,...minimum};
+}
+export function fitZonesToContents(model,selection){
+  const zones=model.zones.filter(n=>selection.has(n.id));if(!zones.length)throw new Error('Select a zone to fit.');
+  for(const n of zones.sort((a,b)=>depth(model,b)-depth(model,a))){const fit=zoneFitBounds(model,n);if(['x','y','width','height'].some(k=>Math.abs(n[k]-fit[k])>1e-7))Object.assign(n,fit);}
+  expandZones(model);
+}
+export function containerContentBox(model,n){const ratio=insetRatio(n),title=containerTitleBox(model,n),p=model.zones.includes(n)?zonePadding(n):{left:20,right:20,top:14,bottom:n.shape==='cylinder'?30:20};return{x:n.x+n.width*ratio+p.left,y:title.y+title.height+p.top,width:Math.max(1,n.width*(1-2*ratio)-p.left-p.right),height:Math.max(1,n.y+n.height*(1-ratio)-p.bottom-title.y-title.height-p.top)};}
 function insideNode(n,x,y){
   const dx=(x-n.x-n.width/2)/(n.width/2),dy=(y-n.y-n.height/2)/(n.height/2);
   if(Math.abs(dx)>1||Math.abs(dy)>1)return false;
@@ -166,7 +187,15 @@ export function depth(model, item) {
 }
 export function expandZones(model) {
   for(const n of [...containers(model)].sort((a,b)=>depth(model,b)-depth(model,a))){
-    const zone=model.zones.includes(n),ratio=insetRatio(n),font=diagramFontSize(model),minimumWidth=Math.max(160,zone?textWidth(n.label,font)+32:minimumTitleWidth(n,font));if(n.width<minimumWidth-1e-7)n.width=minimumWidth;n.height=Math.max(n.height,100);
+    if(model.zones.includes(n)){
+      const minimum=zoneMinimumSize(model,n);if(n.width<minimum.width-1e-7)n.width=minimum.width;if(n.height<minimum.height-1e-7)n.height=minimum.height;
+      const fit=zoneChildBounds(model,n);if(fit&&(fit.x<n.x-1e-7||fit.y<n.y-1e-7||fit.x+fit.width>n.x+n.width+1e-7||fit.y+fit.height>n.y+n.height+1e-7)){
+        const left=Math.min(n.x,fit.x),top=Math.min(n.y,fit.y),right=Math.max(n.x+n.width,fit.x+fit.width),bottom=Math.max(n.y+n.height,fit.y+fit.height);
+        Object.assign(n,{x:left,y:top,width:right-left,height:bottom-top});
+      }
+      continue;
+    }
+    const ratio=insetRatio(n),font=diagramFontSize(model),minimumWidth=minimumTitleWidth(n,font);if(n.width<minimumWidth-1e-7)n.width=minimumWidth;n.height=Math.max(n.height,100);
     if(n.shape==='circle')n.width=n.height=Math.max(n.width,n.height);
     const title=containerTitleBox(model,n),minimum=(title.height+60+(n.shape==='cylinder'?12:0))/(1-2*ratio);n.height=Math.max(n.height,minimum);if(n.shape==='circle')n.width=n.height=Math.max(n.width,n.height);
     const box=containerContentBox(model,n),children=items(model).filter(c=>c.parentId===n.id);if(!children.length||children.every(c=>c.x>=box.x-1e-7&&c.y>=box.y-1e-7&&c.x+c.width<=box.x+box.width+1e-7&&c.y+c.height<=box.y+box.height+1e-7))continue;
@@ -226,7 +255,7 @@ export function arrange(model, selection, command) {
     const extent = sorted.at(-1)[axis] + sorted.at(-1)[size] - sorted[0][axis];
     const gap = Math.max(NODE_GAP,(extent - sorted.reduce((sum, n) => sum + n[size], 0)) / (sorted.length - 1));
     let position = sorted[0][axis];
-    for (const n of sorted) { const diff = position - n[axis]; moveSelection(model, new Set([n.id]), horizontal ? diff : 0, horizontal ? 0 : diff); position += n[size] + gap; }
+    for (const n of sorted) { const diff = position - n[axis]; moveSelection(model, new Set([n.id]), horizontal ? diff : 0, horizontal ? 0 : diff,{expand:false}); position += n[size] + gap; }
   } else for (const n of roots) {
     let dx = 0, dy = 0;
     if (command === 'left') dx = left - n.x;
@@ -235,8 +264,16 @@ export function arrange(model, selection, command) {
     if (command === 'top') dy = top - n.y;
     if (command === 'center-y') dy = (top + bottom - n.height) / 2 - n.y;
     if (command === 'bottom') dy = bottom - n.y - n.height;
-    moveSelection(model, new Set([n.id]), dx, dy);
+    moveSelection(model, new Set([n.id]), dx, dy,{expand:false});
   }
+  // Resolve collisions perpendicular to the alignment, translating each root
+  // with all its descendants. Never run per-child clearance on these groups.
+  const axis=['left','center-x','right','distribute-x'].includes(command)?'y':'x',moved=movableIds(model,selection),fixed=items(model).filter(n=>!moved.has(n.id));
+  for(const n of [...roots].sort((a,b)=>a[axis]-b[axis])){
+    const blockers=fixed.filter(other=>!related(model,n,other)&&(isContainer(model,n)||model.nodes.includes(other))),delta=clearanceTranslation([n],blockers,{axis});
+    moveSelection(model,new Set([n.id]),delta.x,delta.y,{expand:false});fixed.push(n);
+  }
+  expandZones(model);
   translateWaypoints(before,model);
 }
 const encodeLabel = text => String(text).replace(/[&"#<>ﬂ°¶ß]/g, c => ({ '&': '#38;', '"': '#quot;', '#': '#35;', '<': '#60;', '>': '#62;' }[c] || `#${c.codePointAt(0)};`)).replace(/\n/g, '<br/>') || '#8203;';
@@ -276,6 +313,7 @@ export function validateModel(input) {
     while (parent) { if (seen.has(parent)) throw new Error('Containment contains a cycle.'); seen.add(parent); parent = object(model,parent)?.parentId; }
   }
   for (const n of model.nodes){if(n.container!==undefined&&typeof n.container!=='boolean')throw new Error('Invalid node container setting.');if (!shapes.includes(n.shape)) throw new Error(`Unsupported node shape: ${n.shape}`);for(const key of ['manualSize','containerSize'])if(n[key]!==undefined&&(!n[key]||typeof n[key]!=='object'||![n[key].width,n[key].height].every(v=>Number.isFinite(v)&&v>0&&v<=1e6)))throw new Error('Invalid manual node size.');}
+  for(const n of model.zones)if(n.padding!==undefined){const p=n.padding;if(!p||typeof p!=='object'||Array.isArray(p)||Object.keys(p).length!==4||!Object.keys(DEFAULT_ZONE_PADDING).every(side=>Number.isFinite(p[side])&&p[side]>=0&&p[side]<=MAX_ZONE_PADDING))throw new Error(`Zone padding must contain four values between 0 and ${MAX_ZONE_PADDING}.`);}
   for (const e of model.edges) {
     if (!items(model).some(n => n.id === e.source) || !items(model).some(n => n.id === e.target)) throw new Error('An edge endpoint is missing.');
     if (!['normal', 'dashed', 'thick'].includes(e.style) || !['forward', 'both', 'none'].includes(e.direction) || !['orthogonal', 'straight'].includes(e.routing)) throw new Error('Unsupported edge style.');

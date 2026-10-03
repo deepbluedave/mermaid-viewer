@@ -1,0 +1,295 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Node1",
+      "label": "Seed library",
+      "shape": "cylinder",
+      "parentId": "Zone1",
+      "x": 179.51991271972656,
+      "y": 104,
+      "width": 120.96017456054688,
+      "height": 70,
+      "description": "",
+      "notes": ""
+    },
+    {
+      "id": "Node2",
+      "label": "Sprout trays",
+      "shape": "rounded",
+      "parentId": "Zone1",
+      "x": 178.3599090576172,
+      "y": 312,
+      "width": 123.28018188476562,
+      "height": 54,
+      "description": "",
+      "notes": ""
+    },
+    {
+      "id": "Node4",
+      "label": "Read climate",
+      "shape": "circle",
+      "parentId": "Zone4",
+      "x": 526.2050549081526,
+      "y": 230.2501137835905,
+      "width": 151.499772432819,
+      "height": 151.499772432819,
+      "description": "",
+      "notes": ""
+    },
+    {
+      "id": "Node5",
+      "label": "Adjust airflow",
+      "shape": "rectangle",
+      "parentId": "Zone4",
+      "x": 704.4748462148942,
+      "y": 394,
+      "width": 134.96018981933594,
+      "height": 54,
+      "description": "",
+      "notes": ""
+    },
+    {
+      "id": "Node3",
+      "label": "Set daylight",
+      "shape": "rounded",
+      "parentId": "Zone2",
+      "x": 631.7148517080583,
+      "y": 104,
+      "width": 120.48017883300781,
+      "height": 54,
+      "description": "",
+      "notes": ""
+    },
+    {
+      "id": "Node6",
+      "label": "Ready?",
+      "shape": "diamond",
+      "parentId": "Zone3",
+      "x": 1070,
+      "y": 104,
+      "width": 240,
+      "height": 108,
+      "description": "",
+      "notes": ""
+    },
+    {
+      "id": "Node7",
+      "label": "Pack & dispatch",
+      "shape": "rounded",
+      "parentId": "Zone3",
+      "x": 1114.6478729248047,
+      "y": 391,
+      "width": 150.70425415039062,
+      "height": 54,
+      "description": "",
+      "notes": ""
+    }
+  ],
+  "zones": [
+    {
+      "id": "Zone1",
+      "label": "01 · Seed vault",
+      "parentId": null,
+      "x": 158.3599090576172,
+      "y": 58,
+      "width": 163.28018188476562,
+      "height": 328,
+      "description": "",
+      "notes": "",
+      "padding": {
+        "top": 14,
+        "right": 20,
+        "bottom": 20,
+        "left": 20
+      },
+      "backgroundColor": "#e0e7ff"
+    },
+    {
+      "id": "Zone4",
+      "label": "Climate loop",
+      "parentId": "Zone2",
+      "x": 496.20505490815265,
+      "y": 170.2501137835905,
+      "width": 379.2299811260775,
+      "height": 301.7498862164095,
+      "description": "",
+      "notes": "",
+      "padding": {
+        "top": 28,
+        "right": 36,
+        "bottom": 24,
+        "left": 30
+      },
+      "backgroundColor": "#bbf7d0"
+    },
+    {
+      "id": "Zone2",
+      "label": "02 · Aurora greenhouse",
+      "parentId": null,
+      "x": 476.20505490815265,
+      "y": 58,
+      "width": 419.2299811260775,
+      "height": 434,
+      "description": "",
+      "notes": "",
+      "backgroundColor": "#dcfce7"
+    },
+    {
+      "id": "Zone3",
+      "label": "03 · Harvest & delivery",
+      "parentId": null,
+      "x": 1050,
+      "y": 58,
+      "width": 280,
+      "height": 407,
+      "description": "",
+      "notes": "",
+      "backgroundColor": "#ffedd5"
+    }
+  ],
+  "edges": [
+    {
+      "id": "Edge1",
+      "source": "Node1",
+      "target": "Node2",
+      "label": "Germinate",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "north",
+      "description": "",
+      "notes": ""
+    },
+    {
+      "id": "Edge2",
+      "source": "Node2",
+      "target": "Node3",
+      "label": "Sprout batch",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "west",
+      "description": "",
+      "notes": "",
+      "waypoints": [
+        {
+          "x": 398.9225654359865,
+          "y": 339.00001958509097
+        },
+        {
+          "x": 398.9225654359865,
+          "y": 130.9999986216537
+        }
+      ]
+    },
+    {
+      "id": "Edge3",
+      "source": "Node3",
+      "target": "Node4",
+      "label": "Climate target",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "north",
+      "description": "",
+      "notes": ""
+    },
+    {
+      "id": "Edge4",
+      "source": "Node4",
+      "target": "Node5",
+      "label": "Tune airflow",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "west",
+      "description": "",
+      "notes": "",
+      "waypoints": [
+        {
+          "x": 691.9549411245621,
+          "y": 381
+        }
+      ],
+      "labelPosition": {
+        "fraction": 0.11882692884163393,
+        "offsetAlong": -9.937437345399289,
+        "offsetNormal": -102.1271304805086
+      }
+    },
+    {
+      "id": "Edge5",
+      "source": "Node5",
+      "target": "Node6",
+      "label": "Crop check",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "west",
+      "description": "",
+      "notes": ""
+    },
+    {
+      "id": "Edge6",
+      "source": "Node6",
+      "target": "Node7",
+      "label": "Yes · harvest",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "north",
+      "description": "",
+      "notes": ""
+    },
+    {
+      "id": "Edge7",
+      "source": "Node6",
+      "target": "Node2",
+      "label": "Wait · grow again",
+      "direction": "forward",
+      "style": "dashed",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "west",
+      "description": "",
+      "notes": "",
+      "waypoints": [
+        {
+          "x": 1390.000121480177,
+          "y": 157.99997720448985
+        },
+        {
+          "x": 1390.000121480177,
+          "y": -7.000054998307759
+        },
+        {
+          "x": 88.35988492548717,
+          "y": -7.000054998307759
+        },
+        {
+          "x": 88.35988492548717,
+          "y": 338.9999588498142
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "direction": "TD",
+    "layout": "adaptive",
+    "grid": false,
+    "guides": true,
+    "fontSize": 16,
+    "view": {
+      "x": -44.227413007429305,
+      "y": 146.2007341737513,
+      "scale": 1.1116742819142427
+    }
+  }
+}

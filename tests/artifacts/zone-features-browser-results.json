@@ -1,0 +1,454 @@
+{
+  "browser": {
+    "passed": 30,
+    "total": 30,
+    "results": [
+      {
+        "name": "starter import preserves nested memberships and all connections",
+        "pass": true
+      },
+      {
+        "name": "all five shapes, styles, arrow directions, loops, parallel and explicit IDs roundtrip",
+        "pass": true
+      },
+      {
+        "name": "quoted, entity, unicode and multiline labels roundtrip without corruption",
+        "pass": true
+      },
+      {
+        "name": "empty and entity-like text, including zone titles, roundtrips once",
+        "pass": true
+      },
+      {
+        "name": "source application retains manual positions and private route settings",
+        "pass": true
+      },
+      {
+        "name": "unsupported definitions, styling, callbacks, arrowheads and shapes fail explicitly",
+        "pass": true
+      },
+      {
+        "name": "both layouts work for all supplied architecture shapes and mixed connections",
+        "pass": true
+      },
+      {
+        "name": "exported SVG is standalone, contains full arrangement, and excludes editor controls",
+        "pass": true
+      },
+      {
+        "name": "zone titles overlay crossing routes with translucent backing in the scene and exported image",
+        "pass": true
+      },
+      {
+        "name": "parallel long labels remain distinct in the scene and standalone SVG/PNG",
+        "pass": true
+      },
+      {
+        "name": "crossing bridges survive standalone SVG and PNG rendering without changing routing",
+        "pass": true
+      },
+      {
+        "name": "both initial layouts maintain node clearance after the editor resizes shapes",
+        "pass": true
+      },
+      {
+        "name": "matching source IDs retain node and zone descriptions and notes",
+        "pass": true
+      },
+      {
+        "name": "project JSON restores geometry and settings without automatic layout",
+        "pass": true
+      },
+      {
+        "name": "novel diagrams retain manual dimensions, colors, font and edge context through source and both layouts",
+        "pass": true
+      },
+      {
+        "name": "large-font colored SVG and PNG include all label bounds and preserve pixels",
+        "pass": true
+      },
+      {
+        "name": "automatic layouts leave clearance between expanded zones and unrelated root nodes in every direction",
+        "pass": true
+      },
+      {
+        "name": "node containers roundtrip all shapes, nested zones, empty containers and parent connections through both layout engines",
+        "pass": true
+      },
+      {
+        "name": "malformed or contradictory container annotations fail explicitly",
+        "pass": true
+      },
+      {
+        "name": "live label metrics fit circle and diamond outlines at browser-measured font sizes and unwrap short labels",
+        "pass": true
+      },
+      {
+        "name": "parent-node titles and colors survive standalone SVG and PNG",
+        "pass": true
+      },
+      {
+        "name": "zone connection border approaches survive standalone SVG and PNG exports",
+        "pass": true
+      },
+      {
+        "name": "whole words fit every shape and remain intact in standalone SVG and PNG",
+        "pass": true
+      },
+      {
+        "name": "Auto layout and source application preserve manual route coordinates and forced sides",
+        "pass": true
+      },
+      {
+        "name": "manual route SVG and PNG preserve path geometry and omit editing handles",
+        "pass": true
+      },
+      {
+        "name": "manual label positions survive all layouts and matching source edits",
+        "pass": true
+      },
+      {
+        "name": "manual labels and leaders appear identically in SVG and render into PNG export bounds",
+        "pass": true
+      },
+      {
+        "name": "repaired waypoint joins preserve the saved lunar arrangement and standalone SVG/PNG geometry",
+        "pass": true
+      },
+      {
+        "name": "attachment preferences survive layouts and matching source edits and prune replaced endpoints",
+        "pass": true
+      },
+      {
+        "name": "automatic attachment swaps remove the radar bridge and retain labels and exported geometry",
+        "pass": true
+      }
+    ]
+  },
+  "ui": {
+    "passed": 80,
+    "total": 80,
+    "results": [
+      {
+        "name": "source import replaces structure and preserves nested hierarchy",
+        "pass": true
+      },
+      {
+        "name": "dragging the title overlay moves its whole zone once and undo restores it",
+        "pass": true
+      },
+      {
+        "name": "invalid drafts preserve diagram and history, and typing never relayouts",
+        "pass": true
+      },
+      {
+        "name": "adding and editing a node preserves ID and updates generated source",
+        "pass": true
+      },
+      {
+        "name": "shape labels fit measured text, including long and wide glyphs",
+        "pass": true
+      },
+      {
+        "name": "parent changes visibly relocate objects and deleting zones retains contents",
+        "pass": true
+      },
+      {
+        "name": "multi-selection alignment, distribution and grid nudges are undoable",
+        "pass": true
+      },
+      {
+        "name": "zone creation, resizing, naming and deletion retain contents and title bounds",
+        "pass": true
+      },
+      {
+        "name": "edge properties, endpoints, loops and parallel connections update without relayout",
+        "pass": true
+      },
+      {
+        "name": "source application retains manual centres and unsupported imports do not replace the diagram",
+        "pass": true
+      },
+      {
+        "name": "layout preferences and draft edits preserve positions; explicit layout is undoable",
+        "pass": true
+      },
+      {
+        "name": "cancelled node drag restores model and creates no history entry",
+        "pass": true
+      },
+      {
+        "name": "save/open restores exact geometry and settings without relayout",
+        "pass": true
+      },
+      {
+        "name": "SVG, PNG and Mermaid exports use the current model and exclude handles",
+        "pass": true
+      },
+      {
+        "name": "deleting nodes removes incident edges in one undoable action",
+        "pass": true
+      },
+      {
+        "name": "dragging handles creates parallel edges and self-loops, then reconnects an endpoint",
+        "pass": true
+      },
+      {
+        "name": "parallel edge attachments and reconnect handles remain separate after moving and reshaping nodes",
+        "pass": true
+      },
+      {
+        "name": "pending node, edge, and zone labels commit before canvas actions and saving",
+        "pass": true
+      },
+      {
+        "name": "New clears the canvas and source draft as one undoable action",
+        "pass": true
+      },
+      {
+        "name": "new objects inherit the innermost containing zone and move with it",
+        "pass": true
+      },
+      {
+        "name": "fresh source fits the viewport while edits to existing IDs preserve the view",
+        "pass": true
+      },
+      {
+        "name": "the dot grid follows world coordinates at different zooms and after panning",
+        "pass": true
+      },
+      {
+        "name": "Connect uses source/target clicks with contextual handles and a crosshair cursor",
+        "pass": true
+      },
+      {
+        "name": "dragging nodes into, between, and out of zones updates canvas and hierarchy atomically",
+        "pass": true
+      },
+      {
+        "name": "zone drops adopt their intended parent even when node clearance shifts the contents",
+        "pass": true
+      },
+      {
+        "name": "node dragging, creation and shape growth maintain minimum spacing",
+        "pass": true
+      },
+      {
+        "name": "descriptions, notes and size typing commit, survive source changes, Undo and project reopening",
+        "pass": true
+      },
+      {
+        "name": "older crowded projects are repaired on open and marked for saving",
+        "pass": true
+      },
+      {
+        "name": "hierarchy selection, collapse and connection rows stay synchronized with the diagram",
+        "pass": true
+      },
+      {
+        "name": "all loaded runtime resources are local; external access is blocked by policy",
+        "pass": true
+      },
+      {
+        "name": "eight resize handles resize nodes from corners and sides, reroute, cancel and undo one whole gesture",
+        "pass": true
+      },
+      {
+        "name": "resize handles keep an eight-pixel target at every zoom and color swatches follow typed hex",
+        "pass": true
+      },
+      {
+        "name": "numeric node sizing fits labels, links circle dimensions, stops at neighbours and resets to the label",
+        "pass": true
+      },
+      {
+        "name": "dark purple side guides appear for move and resize, disappear on release and never export",
+        "pass": true
+      },
+      {
+        "name": "node and zone colors use pickers or hex fields, remain undoable and export their appearance",
+        "pass": true
+      },
+      {
+        "name": "edges have context fields that commit on click-away, survive source and layout, reopen and undo",
+        "pass": true
+      },
+      {
+        "name": "click-away commits keep hierarchy targets connected until the click selects the intended object",
+        "pass": true
+      },
+      {
+        "name": "global text size updates all labels and fit limits while preserving view and manual widths",
+        "pass": true
+      },
+      {
+        "name": "live label typing previews immediately, keeps the field/caret and commits as one undoable edit",
+        "pass": true
+      },
+      {
+        "name": "color picker input previews continuously, updates descendant zones and commits one undoable session",
+        "pass": true
+      },
+      {
+        "name": "node parents support creating children, nested hierarchy, moves, resizing, deletion and undo",
+        "pass": true
+      },
+      {
+        "name": "new child creation and native-style drops use enabled node interiors and release on exit",
+        "pass": true
+      },
+      {
+        "name": "parent node source and project restore keep shape, parent links, contexts, colors and view",
+        "pass": true
+      },
+      {
+        "name": "circle and diamond short-label wrapping responds to shrinking and growing dimensions",
+        "pass": true
+      },
+      {
+        "name": "zone and edge labels preview while typing, preserve focus and undo an entire label session",
+        "pass": true
+      },
+      {
+        "name": "dropping onto an ordinary node enables a parent in every shape, preserves the drop centre and undoes atomically",
+        "pass": true
+      },
+      {
+        "name": "moving the final child out demotes the node parent and preserves manual size, connection and Undo",
+        "pass": true
+      },
+      {
+        "name": "toolbar Node and Zone drag into the canvas at zoomed and panned coordinates, with one Undo and no active placement tool",
+        "pass": true
+      },
+      {
+        "name": "toolbar drags adopt existing zones and ordinary nodes, and new zones can be children of nodes",
+        "pass": true
+      },
+      {
+        "name": "outside palette drops, Escape and lost capture leave no object or edit and no stale preview",
+        "pass": true
+      },
+      {
+        "name": "toolbar drag respects snapping, label size and clean exports and commits pending field edits",
+        "pass": true
+      },
+      {
+        "name": "original node dimensions survive source application and project reopening before final child release",
+        "pass": true
+      },
+      {
+        "name": "zone body dragging moves nested contents once, preserves external objects and records one edit",
+        "pass": true
+      },
+      {
+        "name": "zone bodies retain Shift-marquee selection and cancel dragging without a history edit",
+        "pass": true
+      },
+      {
+        "name": "incomplete and invalid connection attempts keep Connect active until a valid handle drop",
+        "pass": true
+      },
+      {
+        "name": "zone-to-zone and node-to-zone arrows approach borders normally after connection, zone drag and attachment edits",
+        "pass": true
+      },
+      {
+        "name": "whole-word labels grow legacy circles, resize without fragments, and reopen stably",
+        "pass": true
+      },
+      {
+        "name": "waypoint placement switches straight routing, respects forced sides, saves and undoes",
+        "pass": true
+      },
+      {
+        "name": "native-style waypoint dragging, snapping, nudging, cancellation and deletion preserve the edge",
+        "pass": true
+      },
+      {
+        "name": "dragging the segment plus adds one waypoint as one undoable gesture",
+        "pass": true
+      },
+      {
+        "name": "covered waypoints flag conflicts, recover, and never put editing handles in exports",
+        "pass": true
+      },
+      {
+        "name": "reset route preserves sides; straight mode requires an explicit reset; add mode cancels cleanly",
+        "pass": true
+      },
+      {
+        "name": "Node and Zone placement take precedence over existing waypoint handles",
+        "pass": true
+      },
+      {
+        "name": "clicking the connection clears point selection before deleting the whole connection",
+        "pass": true
+      },
+      {
+        "name": "waypoint and segment handles retain screen size when zooming and capture loss cancels a drag",
+        "pass": true
+      },
+      {
+        "name": "dragging a label preserves its route, creates a leader, and is one undoable edit",
+        "pass": true
+      },
+      {
+        "name": "bringing a manual label back onto its connection removes the leader",
+        "pass": true
+      },
+      {
+        "name": "manual labels follow joint movement while preserving their route-relative offset",
+        "pass": true
+      },
+      {
+        "name": "manual overlap is retained and reset restores automatic placement without changing waypoints",
+        "pass": true
+      },
+      {
+        "name": "label snapping, keyboard nudging, Escape and lost capture keep predictable edit history",
+        "pass": true
+      },
+      {
+        "name": "manual label positions survive empty text, source application, project reopening, and exports",
+        "pass": true
+      },
+      {
+        "name": "route segment handles stay clear of draggable labels and placement tools take precedence",
+        "pass": true
+      },
+      {
+        "name": "a manual label overlapping the selected node cannot intercept its movement",
+        "pass": true
+      },
+      {
+        "name": "repaired joins stay stable through node movement, undo and repeated redraws without altering waypoints",
+        "pass": true
+      },
+      {
+        "name": "repaired routes retain label dragging, project reopening and image exports",
+        "pass": true
+      },
+      {
+        "name": "automatic launch attachment ordering exposes correctly disabled manual controls",
+        "pass": true
+      },
+      {
+        "name": "manual reorder is authoritative, undoable, and side reset restores clean automatic order",
+        "pass": true
+      },
+      {
+        "name": "a stack can be reordered and reset through either incoming or outgoing properties",
+        "pass": true
+      },
+      {
+        "name": "manual attachment order survives real node movement, save/reopen and source application",
+        "pass": true
+      },
+      {
+        "name": "top and bottom stack controls use left/right and support multiple ambiguous connections",
+        "pass": true
+      }
+    ]
+  }
+}

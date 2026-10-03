@@ -1,4 +1,4 @@
-import { emptyModel, copy, items, object, shapes, textWidth, resizeNode, moveSelection, movableIds, expandZones, reparent, deleteSelection, nextId, arrange, toMermaid, validateModel, History, depth,ensureNodeSpacing,ensureLabelFit,separateSelection,dropSelection,dropParents,diagramFontSize,objectColors,containers,isContainer,containingParent,setNodeContainer,descendants } from './core.mjs?v=whole-words';
+import { emptyModel, copy, items, object, shapes, textWidth, resizeNode, moveSelection, movableIds, expandZones, reparent, deleteSelection, nextId, arrange, toMermaid, validateModel, History, depth,ensureNodeSpacing,ensureLabelFit,separateSelection,dropSelection,dropParents,diagramFontSize,objectColors,containers,isContainer,containingParent,setNodeContainer,descendants,zonePadding,MAX_ZONE_PADDING,fitZonesToContents } from './core.mjs?v=whole-words';
 import {resizeObject,resizeNodeTo,alignmentGuides} from './editing.mjs?v=whole-words';
 import { initializeMermaid, importMermaid, layoutModel, mergeSource } from './mermaid-adapter.mjs?v=whole-words';
 import { AvoidLib } from './vendor/libavoid/dist/index.js';
@@ -41,6 +41,7 @@ function updateControls() {
   $('counts').textContent=`${model.nodes.length} nodes · ${model.edges.length} edges · ${model.zones.length} zones${dirty?' · Unsaved changes':''}`;
   const selected=selectedObject(),geometry=properties.querySelector('.geometry');if(selected&&geometry)geometry.textContent=`Position ${Math.round(selected.x)}, ${Math.round(selected.y)} · Size ${Math.round(selected.width)} × ${Math.round(selected.height)}`;
   if(selected&&!model.edges.includes(selected))for(const dimension of ['width','height']){const input=$(`property-${dimension}`);if(input&&!(pendingPropertyEdit?.id===selected.id&&pendingPropertyEdit.field===dimension))input.value=Math.round(selected[dimension]);}
+  if(selection.size>1){const selected=items(model).filter(n=>selection.has(n.id)),roots=selected.filter(n=>!selected.some(other=>other.id!==n.id&&descendants(model,other.id).has(n.id)));for(const b of properties.querySelectorAll('[data-arrange-minimum]'))b.disabled=busy||roots.length<Number(b.dataset.arrangeMinimum);}
   document.querySelectorAll('[data-tool]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tool===tool)));
   viewport.dataset.tool=tool;
   if(selected&&model.edges.includes(selected))for(const panel of properties.querySelectorAll('.attachment-order')){
@@ -64,11 +65,11 @@ function commit(before,message,{forceSource=false,inspect=true}={}) {
   if(history.record(before,model)){dirty=true;syncSource(forceSource);status(message);}
   safeDraw({inspect});
 }
-function mutate(message,fn,{inspect=true,axis=null}={}) {
+function mutate(message,fn,{inspect=true,axis=null,spacing=true}={}) {
   if(busy||gesture)return;
   flushPropertyEdit();
   const before=copy(model),previousSelection=new Set(selection);
-  try {fn();const changed=new Set(model.nodes.filter(n=>{const old=before.nodes.find(o=>o.id===n.id);return !old||['x','y','width','height'].some(k=>old[k]!==n[k]);}).map(n=>n.id));ensureNodeSpacing(model,{preferredIds:changed,axis});expandZones(model);translateWaypoints(before,model);validateModel(model);router.route(model);commit(before,message,{inspect});if(!inspect)renderHierarchy();}
+  try {fn();if(spacing){const changed=new Set(model.nodes.filter(n=>{const old=before.nodes.find(o=>o.id===n.id);return !old||['x','y','width','height'].some(k=>old[k]!==n[k]);}).map(n=>n.id));ensureNodeSpacing(model,{preferredIds:changed,axis});}expandZones(model);translateWaypoints(before,model);validateModel(model);router.route(model);commit(before,message,{inspect});if(!inspect)renderHierarchy();}
   catch(e){model=before;selection=previousSelection;safeDraw();error(e);}
 }
 function setTool(value){if(gesture)cancelGesture();flushPropertyEdit();connectSource=null;hoverId=null;activeWaypoint=null;activeLabel=null;waypointEdge=null;tool=value;if(value==='connect')selection.clear();safeDraw({reroute:false});viewport.focus();}
@@ -80,7 +81,8 @@ function flushFontSize(){
   if(value!==diagramFontSize(model))mutate('Diagram font size updated.',()=>{model.settings.fontSize=value;for(const n of model.nodes)resizeNode(n,value);});
 }
 function applyPropertyValue(id,field,value){
-  const current=object(model,id);if(['width','height'].includes(field)){const size=Number(value);if(!Number.isFinite(size)||size<=0)throw new Error('Enter a positive size.');if(model.nodes.includes(current))resizeNodeTo(model,id,field==='width'?size:current.width,field==='height'?size:current.height);else current[field]=Math.max(field==='width'?160:100,size);}
+  const current=object(model,id);if(['width','height'].includes(field)){const size=Number(value);if(!Number.isFinite(size)||size<=0)throw new Error('Enter a positive size.');resizeNodeTo(model,id,field==='width'?size:current.width,field==='height'?size:current.height);}
+  else if(field.startsWith('padding-')){const size=Number(value);if(!String(value).trim()||!Number.isFinite(size)||size<0||size>MAX_ZONE_PADDING)throw new Error(`Enter padding between 0 and ${MAX_ZONE_PADDING}.`);current.padding={...zonePadding(current),[field.slice(8)]:size};}
   else current[field]=value;
   if(field==='label'){if(model.nodes.includes(current))resizeNode(current,diagramFontSize(model));if(model.zones.includes(current))current.width=Math.max(current.width,textWidth(value,diagramFontSize(model))+32);}
 }
@@ -100,13 +102,20 @@ function flushPropertyEdit({font=true}={}){
 document.addEventListener('pointerdown',event=>{panelsSuspended=true;try{if(!event.target.closest(`#property-${pendingPropertyEdit?.field||'label'}`))flushPropertyEdit({font:event.target.id!=='font-size'});}finally{panelsSuspended=false;}},true);
 document.addEventListener('click',()=>{if(hierarchyNeedsRefresh){hierarchyNeedsRefresh=false;renderHierarchy();}});
 function selectedObject(){return selection.size===1?object(model,[...selection][0]):null;}
+function arrangeSelection(command){mutate('Selection arranged; contents moved together.',()=>arrange(model,selection,command),{spacing:false});}
 function field(label,control){const wrap=document.createElement('div');wrap.className='property-field';const caption=document.createElement('label');const id=label==='Parent'?'property-parent-zone':`property-${label.toLowerCase().replace(/\W/g,'-')}`;control.id=id;control.disabled=busy;caption.htmlFor=id;caption.textContent=label;wrap.append(caption,control);properties.append(wrap);return control;}
 function selectControl(label,value,options,onChange){const input=document.createElement('select');for(const [key,text]of options){const option=document.createElement('option');option.value=key;option.textContent=text;input.append(option);}input.value=value||'';field(label,input);input.addEventListener('change',()=>onChange(input.value));return input;}
 function renderProperties(){
   const currentId=selectedObject()?.id||null;if(currentId!==inspectedId){properties.closest('.properties-panel').scrollTop=0;inspectedId=currentId;}
   properties.replaceChildren();$('selection-count').textContent=selection.size?`${selection.size} selected`:'No selection';
   if(!selection.size){const p=document.createElement('p');p.className='empty-properties';p.textContent='Select a node, edge, or zone to edit its properties.';properties.append(p);return;}
-  if(selection.size>1){const p=document.createElement('p');p.className='empty-properties';p.textContent='Move the selection together, or use Arrange to align and distribute objects.';properties.append(p);return;}
+  if(selection.size>1){
+    const p=document.createElement('p');p.className='empty-properties';p.textContent='Align zones and nodes as whole groups. Their contents move together; membership stays the same.';properties.append(p);
+    const selected=items(model).filter(n=>selection.has(n.id)),roots=selected.filter(n=>!selected.some(other=>other.id!==n.id&&descendants(model,other.id).has(n.id))),row=document.createElement('div');row.className='arrange-buttons';
+    for(const [command,label]of[['top','Align top'],['left','Align left'],['distribute-x','Space across'],['distribute-y','Space down']]){const b=document.createElement('button');b.id=`btn-align-${command}`;b.textContent=label;b.dataset.arrangeMinimum=command.startsWith('distribute')?3:2;b.disabled=roots.length<Number(b.dataset.arrangeMinimum);b.addEventListener('click',()=>arrangeSelection(command));row.append(b);}properties.append(row);
+    if(selected.some(n=>model.zones.includes(n))){const b=document.createElement('button');b.id='btn-fit-zone';b.textContent='Fit selected zones to contents';b.addEventListener('click',()=>mutate('Selected zones fitted to contents.',()=>fitZonesToContents(model,selection),{spacing:false}));properties.append(b);}
+    const hint=document.createElement('p');hint.className='small-note';hint.textContent='More alignment options are available in Arrange. Clearance is resolved along the other axis to keep the alignment.';properties.append(hint);return;
+  }
   const n=selectedObject();if(!n)return;const id=n.id;
   const identity=document.createElement('div');identity.className='object-id';identity.textContent=`${model.edges.includes(n)?'Edge':model.zones.includes(n)?'Zone':'Node'} · ${id}`;properties.append(identity);
   const label=document.createElement('textarea');label.value=n.label;field('Label',label);
@@ -155,6 +164,13 @@ function renderProperties(){
       input.addEventListener('input',()=>{queuePropertyEdit({id,field:dimension,value:input.value});});input.addEventListener('change',()=>{queuePropertyEdit({id,field:dimension,value:input.value});flushPropertyEdit();});input.addEventListener('blur',flushPropertyEdit);
     }
     if(model.nodes.includes(n)){const fitLabel=document.createElement('button');fitLabel.textContent='Fit to label';fitLabel.addEventListener('click',()=>mutate('Node fitted to label.',()=>{const node=object(model,id);delete node.manualSize;resizeNode(node,diagramFontSize(model));}));properties.append(fitLabel);}
+    else{
+      const fit=document.createElement('button');fit.id='btn-fit-zone';fit.textContent='Fit zone to contents';fit.addEventListener('click',()=>mutate('Zone fitted to contents; children kept in place.',()=>fitZonesToContents(model,new Set([id])),{spacing:false}));properties.append(fit);
+      const caption=document.createElement('strong');caption.className='connections-heading';caption.textContent='Content padding';properties.append(caption);
+      const grid=document.createElement('div');grid.className='zone-padding';const padding=zonePadding(n);
+      for(const [side,label]of[['top','Below title'],['right','Right'],['bottom','Bottom'],['left','Left']]){const input=document.createElement('input');input.type='number';input.min=0;input.max=MAX_ZONE_PADDING;input.step=1;input.value=padding[side];field(`Padding ${side}`,input);input.previousElementSibling.textContent=label;grid.append(input.parentElement);const queue=()=>queuePropertyEdit({id,field:`padding-${side}`,value:input.value});input.addEventListener('input',queue);input.addEventListener('change',()=>{queue();flushPropertyEdit();});input.addEventListener('blur',flushPropertyEdit);}properties.append(grid);
+      const hint=document.createElement('p');hint.className='small-note';hint.textContent='Frames grow when contents need room. Manual size stays until you resize or fit; fitting keeps children in place and includes nested zone frames.';properties.append(hint);
+    }
     const geometry=document.createElement('div');geometry.className='geometry';geometry.textContent=`Position ${Math.round(n.x)}, ${Math.round(n.y)} · Size ${Math.round(n.width)} × ${Math.round(n.height)}`;properties.append(geometry);
     const connections=model.edges.filter(e=>e.source===id||e.target===id);if(connections.length){const caption=document.createElement('strong');caption.className='connections-heading';caption.textContent='Connections';properties.append(caption);for(const e of connections){const b=document.createElement('button');b.className='flow-row';b.textContent=`${e.source===id?'→':'←'} ${object(model,e.source===id?e.target:e.source)?.label}${e.label?' · '+e.label:''}`;b.addEventListener('click',()=>selectAndReveal(e.id));properties.append(b);}}
   }
@@ -338,7 +354,7 @@ $('snap-grid').addEventListener('change',()=>mutate('Grid snapping updated.',()=
 $('alignment-guides').addEventListener('change',()=>mutate('Alignment guides updated.',()=>model.settings.guides=$('alignment-guides').checked));
 $('font-size').addEventListener('input',()=>{pendingFontSize=$('font-size').value;});$('font-size').addEventListener('change',()=>{pendingFontSize=$('font-size').value;flushFontSize();});$('font-size').addEventListener('blur',flushFontSize);
 $('btn-undo').addEventListener('click',()=>undo());$('btn-redo').addEventListener('click',()=>undo(true));$('btn-delete').addEventListener('click',deleteSelected);
-$('alignment').addEventListener('change',()=>{const value=$('alignment').value;$('alignment').value='';if(value)mutate('Selection arranged.',()=>arrange(model,selection,value),{axis:['left','center-x','right','distribute-y'].includes(value)?'y':'x'});});
+$('alignment').addEventListener('change',()=>{const value=$('alignment').value;$('alignment').value='';if(value)arrangeSelection(value);});
 $('btn-fit').addEventListener('click',fit);$('btn-zoom-in').addEventListener('click',()=>zoomAt(model.settings.view.scale*1.25));$('btn-zoom-out').addEventListener('click',()=>zoomAt(model.settings.view.scale/1.25));
 $('dismiss-error').addEventListener('click',()=>$('error-banner').hidden=true);
 document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));

@@ -1,0 +1,99 @@
+{
+  "passed": 23,
+  "total": 23,
+  "results": [
+    {
+      "name": "build the Aurora greenhouse with three stages and a nested climate room entirely through the UI",
+      "pass": true
+    },
+    {
+      "name": "configure unequal padding and fit a nested zone without moving its children",
+      "pass": true
+    },
+    {
+      "name": "create forward paths, a dashed feedback loop, fixed waypoints and a displaced label leader",
+      "pass": true
+    },
+    {
+      "name": "align the three stage tops with a selected descendant: each group and internal route moves once",
+      "pass": true
+    },
+    {
+      "name": "a complete align action undoes and redoes in one step with identical native routes",
+      "pass": true
+    },
+    {
+      "name": "fit all selected stages, then distribute the frames with equal gaps",
+      "pass": true
+    },
+    {
+      "name": "left alignment handles overlapping target frames by translating whole stages down",
+      "pass": true
+    },
+    {
+      "name": "ancestor plus its only selected child cannot align or distribute as two separate objects",
+      "pass": true
+    },
+    {
+      "name": "native n resize clamps at content, fixes opposite sides, preserves routes and supports Escape",
+      "pass": true
+    },
+    {
+      "name": "native s resize clamps at content, fixes opposite sides, preserves routes and supports Escape",
+      "pass": true
+    },
+    {
+      "name": "native e resize clamps at content, fixes opposite sides, preserves routes and supports Escape",
+      "pass": true
+    },
+    {
+      "name": "native w resize clamps at content, fixes opposite sides, preserves routes and supports Escape",
+      "pass": true
+    },
+    {
+      "name": "native nw resize clamps at content, fixes opposite sides, preserves routes and supports Escape",
+      "pass": true
+    },
+    {
+      "name": "native ne resize clamps at content, fixes opposite sides, preserves routes and supports Escape",
+      "pass": true
+    },
+    {
+      "name": "native sw resize clamps at content, fixes opposite sides, preserves routes and supports Escape",
+      "pass": true
+    },
+    {
+      "name": "native se resize clamps at content, fixes opposite sides, preserves routes and supports Escape",
+      "pass": true
+    },
+    {
+      "name": "numeric zone shrink keeps the upper-left anchor and refuses to clip the nested room",
+      "pass": true
+    },
+    {
+      "name": "padding grows only the frame; reducing padding keeps manual room until Fit",
+      "pass": true
+    },
+    {
+      "name": "zero and fractional padding are exact; invalid input restores the prior project",
+      "pass": true
+    },
+    {
+      "name": "dragging a child within its enlarged zone keeps membership, offsets, padding and external waypoints",
+      "pass": true
+    },
+    {
+      "name": "source editing by matching IDs retains padding, selected sizes, leaders and route constraints",
+      "pass": true
+    },
+    {
+      "name": "explicit auto layout retains padding and manual routes; Undo restores the manual diagram",
+      "pass": true
+    },
+    {
+      "name": "finish, save and reopen the greenhouse; image exports retain zones and leaders without controls",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

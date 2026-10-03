@@ -89,6 +89,7 @@ export function mergeSource(previous, incoming) {
     if (old) {
       n.description=old.description||'';n.notes=old.notes||'';
       for(const key of ['backgroundColor','fontColor','manualSize','attachmentOrder'])if(old[key]!==undefined)n[key]=copy(old[key]);
+      if(incoming.zones.includes(n)&&previous.zones.includes(old)&&old.padding!==undefined)n.padding=copy(old.padding);
       if(n.container&&old.containerSize)n.containerSize=copy(old.containerSize);
       const cx=old.x+old.width/2,cy=old.y+old.height/2;
       if (incoming.zones.includes(n)) Object.assign(n,{x:old.x,y:old.y,width:old.width,height:old.height});
