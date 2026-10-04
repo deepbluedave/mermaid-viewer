@@ -1,0 +1,227 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Ledger",
+      "label": "Seed archive",
+      "shape": "cylinder",
+      "parentId": "Collect",
+      "x": 36.0000508060599,
+      "y": 153.32438191069187,
+      "width": 120,
+      "height": 70
+    },
+    {
+      "id": "Sort",
+      "label": "Sort seed packets",
+      "shape": "rectangle",
+      "parentId": "Collect",
+      "x": 198.28400924110394,
+      "y": 161.32438191069187,
+      "width": 139.4320831298828,
+      "height": 54
+    },
+    {
+      "id": "Plant",
+      "label": "Plant the test bed",
+      "shape": "rectangle",
+      "parentId": "Grow",
+      "x": 478.1475398205871,
+      "y": 201.62503346098484,
+      "width": 139.70510864257812,
+      "height": 54
+    },
+    {
+      "id": "Ready",
+      "label": "Sprouts ready?",
+      "shape": "diamond",
+      "parentId": "Climate",
+      "x": 787.8458888196105,
+      "y": 246.25001820219583,
+      "width": 245.40216064453125,
+      "height": 108
+    },
+    {
+      "id": "Lamp",
+      "label": "Adjust moon lamps",
+      "shape": "rectangle",
+      "parentId": "Climate",
+      "x": 1106.5622813367004,
+      "y": 248.6000243057114,
+      "width": 150.31312561035156,
+      "height": 54
+    },
+    {
+      "id": "Orbit",
+      "label": "Orbit check",
+      "shape": "circle",
+      "parentId": "Deliver",
+      "x": 1469.9918593902366,
+      "y": 167.49192231426105,
+      "width": 143.59027319676787,
+      "height": 143.59027319676787
+    },
+    {
+      "id": "Launch",
+      "label": "Launch seed pods",
+      "shape": "rounded",
+      "parentId": "Deliver",
+      "x": 1662.4864436204712,
+      "y": 212.287058912645,
+      "width": 142.17510986328125,
+      "height": 54
+    }
+  ],
+  "zones": [
+    {
+      "id": "Collect",
+      "label": "01 · Moonlight seed library",
+      "parentId": null,
+      "x": 0.00005080604535123712,
+      "y": 100.0000258315903,
+      "width": 368,
+      "height": 154.14869689941406
+    },
+    {
+      "id": "Climate",
+      "label": "Light & moisture",
+      "parentId": "Grow",
+      "x": 767.8458888196105,
+      "y": 169.0000258315903,
+      "width": 513.8729553222656,
+      "height": 240
+    },
+    {
+      "id": "Grow",
+      "label": "02 · Lunar nursery",
+      "parentId": null,
+      "x": 448.00009414187616,
+      "y": 100.0000258315903,
+      "width": 897.71875,
+      "height": 333
+    },
+    {
+      "id": "Deliver",
+      "label": "03 · Rooftop delivery",
+      "parentId": null,
+      "x": 1424.999962907566,
+      "y": 100.0000258315903,
+      "width": 407.57403564453125,
+      "height": 256.07403564453125
+    }
+  ],
+  "edges": [
+    {
+      "id": "L_Ledger_Sort_0",
+      "source": "Ledger",
+      "target": "Sort",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_Orbit_Launch_0",
+      "source": "Orbit",
+      "target": "Launch",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_Sort_Plant_0",
+      "source": "Sort",
+      "target": "Plant",
+      "label": "Planting plan",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null,
+      "labelPosition": {
+        "fraction": 0.38850721102310454,
+        "offsetAlong": -77.92279459108556,
+        "offsetNormal": -188.56239103528586
+      },
+      "waypoints": [
+        {
+          "x": 407.9318262498205,
+          "y": 208.47465826992175
+        }
+      ]
+    },
+    {
+      "id": "L_Plant_Ready_0",
+      "source": "Plant",
+      "target": "Ready",
+      "label": "Growth check",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_Ready_Orbit_0",
+      "source": "Ready",
+      "target": "Orbit",
+      "label": "Yes",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_Ready_Lamp_0",
+      "source": "Ready",
+      "target": "Lamp",
+      "label": "More light",
+      "direction": "forward",
+      "style": "dashed",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_Lamp_Plant_0",
+      "source": "Lamp",
+      "target": "Plant",
+      "label": "Try again",
+      "direction": "forward",
+      "style": "dashed",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "L_Launch_Ledger_0",
+      "source": "Launch",
+      "target": "Ledger",
+      "label": "Next season",
+      "direction": "forward",
+      "style": "dashed",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    }
+  ],
+  "settings": {
+    "direction": "LR",
+    "layout": "adaptive",
+    "grid": false,
+    "guides": true,
+    "fontSize": 13,
+    "view": {
+      "x": 53.99995988833044,
+      "y": 289.92845286504274,
+      "scale": 0.7895997760791279
+    },
+    "theme": "botanical"
+  }
+}

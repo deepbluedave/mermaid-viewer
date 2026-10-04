@@ -1,0 +1,57 @@
+%% Southartica - Diagram Studio architecture
+%% Description: A local browser editor that starts from Mermaid and keeps an
+%% editable diagram model for visual arrangement, routing, context and exports.
+%% Notes: Open architecture/southartica.mermaid-project.json for the full document.
+%% Its outer DiagramStudio zone contains the full project description and
+%% maintenance notes. Components and connections also carry description/notes.
+%% Ordinary Mermaid comments are documentation, not imported object metadata.
+%% Solid arrows show data or edits; dotted arrows delegate to bundled engines;
+%% undirected lines show design and verification support. Vendors are unmodified.
+flowchart LR
+  subgraph DiagramStudio["Southartica · Diagram Studio"]
+    subgraph Interfaces["01 · Define #38; edit"]
+      Definition["Mermaid definition<br/>Flowchart / graph"]
+      Importer("Import #38; auto layout<br/>mermaid-adapter.mjs")
+      Controls["Toolbar, menus #38; inspector<br/>viewer.html · controls.mjs"]
+    end
+    subgraph State["02 · Diagram state"]
+      Model[("Authoritative model<br/>core.mjs")]
+      Transactions["Safe edit transactions<br/>Geometry · Undo / Redo"]
+      Controller("Application controller<br/>app.mjs")
+    end
+    subgraph Rendering["03 · Route #38; render"]
+      Router("Connection routing<br/>routing.mjs + refinements")
+      Labels["Labels, leaders #38; crossings<br/>labels.mjs · bridges.mjs"]
+      Scene["SVG scene #38; themes<br/>scene.mjs · themes.mjs"]
+    end
+    subgraph Artifacts["04 · Preview #38; files"]
+      ProjectFile[("Editable project JSON<br/>Layout · theme · context")]
+      MermaidFile["Mermaid export<br/>Supported structure"]
+      Canvas["Interactive SVG canvas<br/>Selection · drag · resize"]
+      Images["SVG / PNG export<br/>Rendered appearance"]
+    end
+    subgraph Engines["Bundled engines · unmodified"]
+      MermaidELK["Mermaid 12.0.0 + ELK<br/>Parse #38; auto layout"]
+      Avoid["libavoid-js + WebAssembly<br/>Find obstacle avoiding paths"]
+    end
+    subgraph Knowledge["Design #38; verification"]
+      Specs["Requirements #38; design notes<br/>README · SPEC · UI spec"]
+      Checks["Regression verification<br/>Unit · browser · native touch"]
+    end
+  end
+  Definition Define@--> Importer
+  Importer ImportModel@-->|"seed / apply"| Model
+  Controls Commands@--> Controller
+  Controller Edit@--> Transactions
+  Transactions Commit@-->|"validate / commit"| Model
+  Model Route@--> Router
+  Router Label@--> Labels
+  Labels Draw@--> Scene
+  Scene Preview@--> Canvas
+  Scene ExportImage@--> Images
+  Model SaveOpen@<-->|"save / open"| ProjectFile
+  Model ExportSource@-->|"structure"| MermaidFile
+  Importer LayoutEngine@-.->|"delegate"| MermaidELK
+  Router RouteEngine@-.->|"delegate"| Avoid
+  Specs Guide@--- Transactions
+  Checks Verify@--- Scene

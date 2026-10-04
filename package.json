@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build:vendor": "node tools/build-vendor.mjs",
-    "test": "node --test tests/core.test.mjs tests/routing.test.mjs tests/labels.test.mjs tests/structure.test.mjs tests/editing.test.mjs tests/refinement.test.mjs tests/assets.test.mjs tests/waypoints.test.mjs tests/route-joins.test.mjs tests/attachments.test.mjs tests/zones.test.mjs"
+    "test": "node --test tests/core.test.mjs tests/routing.test.mjs tests/labels.test.mjs tests/structure.test.mjs tests/editing.test.mjs tests/refinement.test.mjs tests/assets.test.mjs tests/waypoints.test.mjs tests/route-joins.test.mjs tests/attachments.test.mjs tests/zones.test.mjs tests/themes.test.mjs"
   },
   "devDependencies": {
     "mermaid": "12.0.0",

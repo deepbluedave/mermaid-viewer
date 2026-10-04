@@ -1,6 +1,8 @@
 import { object, items, descendants, zonePadding, objectColors, MAX_ZONE_PADDING } from './core.mjs?v=whole-words';
 import { attachmentKey } from './attachments.mjs?v=whole-words';
 import { MAX_WAYPOINTS } from './waypoints.mjs?v=whole-words';
+import {themes,diagramTheme} from './themes.mjs';
+import {svgElement} from './scene.mjs?v=whole-words';
 
 const $ = id => document.getElementById(id);
 const shapeNames = [['rectangle', 'Rectangle'], ['rounded', 'Rounded rectangle'], ['diamond', 'Diamond'], ['circle', 'Circle'], ['cylinder', 'Database cylinder']];
@@ -134,22 +136,42 @@ export function createEditingControls(api) {
     if (command === 'connection-actions') return menu({...target, kind: 'connection'}, anchor, invoker);
     if (command === 'flow') return choices('set-flow', ['TD', 'LR', 'BT', 'RL'].map(v => [v, {TD:'Top to bottom', LR:'Left to right', BT:'Bottom to top', RL:'Right to left'}[v]]), state().model.settings.direction, target, anchor, invoker, 'Flow direction');
     if (command === 'layout') return choices('set-layout', [['adaptive', 'Adaptive'], ['hierarchical', 'Hierarchical']], state().model.settings.layout, target, anchor, invoker, 'Layout style');
+    if (command === 'theme') return themePicker(target,anchor,invoker);
     dismiss(false); api.execute(command, target, value);
     if (command === 'details') {
       const panel = document.querySelector('.properties-panel'); panel.classList.add('is-open');
       (narrow.matches ? $('btn-close-properties') : panel.querySelector('#property-label,.arrange-buttons button'))?.focus({preventScroll:true});
     } else if (!['connect', 'node', 'zone', 'waypoint', 'open', 'source', 'hierarchy'].includes(command)) (invoker?.isConnected ? invoker : viewport).focus({preventScroll: true});
   }
+  function themePicker(target,anchor,invoker){
+    show('theme',target,anchor,invoker,'Diagram theme');
+    const hint=document.createElement('p');hint.className='small-note';hint.textContent='Set default colors. Custom colors stay in place.';overlay.append(hint);
+    const cards=document.createElement('div');cards.className='theme-cards';cards.setAttribute('role','group');cards.setAttribute('aria-label','Themes');
+    for(const theme of themes){
+      const card=button('',()=>api.execute('set-theme',target,theme.id));card.className='theme-card';card.dataset.theme=theme.id;card.setAttribute('aria-label',`${theme.name} · ${theme.description}`);
+      const preview=svgElement('svg',{viewBox:'0 0 220 86','aria-hidden':'true','font-family':'system-ui, sans-serif','font-weight':400});
+      preview.append(svgElement('rect',{width:220,height:86,fill:'#f8fafc',rx:5}));
+      for(let i=0;i<3;i++){
+        const x=8+i*70,bg=theme.zones[i%theme.zones.length];
+        preview.append(svgElement('rect',{x,y:9,width:64,height:68,rx:3,fill:bg,stroke:theme.zoneBorder,'stroke-dasharray':'2 2'}),svgElement('text',{x:x+32,y:24,fill:theme.zoneText,'font-size':9,'text-anchor':'middle'},['Plan','Build','Check'][i]));
+        if(i)preview.append(svgElement('path',{d:`M${x-18},51 H${x+9} m-4,-3 l4,3 -4,3`,stroke:theme.ink,fill:'none','stroke-width':1.5}));
+        preview.append(svgElement('rect',{x:x+11,y:36,width:42,height:30,rx:i===1?8:3,fill:theme.node,stroke:theme.ink}),svgElement('text',{x:x+32,y:54,fill:theme.nodeText,'font-size':9,'text-anchor':'middle'},['Idea','Make','Test'][i]));
+      }
+      const name=document.createElement('strong');name.textContent=theme.name;const description=document.createElement('span');description.textContent=theme.description;card.append(preview,name,description);cards.append(card);
+    }
+    overlay.append(cards,button('Close',()=>dismiss(),'btn-theme-close'));renderTheme();position();overlay.querySelector(`[data-theme="${diagramTheme(state().model).id}"]`).focus({preventScroll:true});
+  }
+  function renderTheme(){if(open?.type==='theme')for(const card of overlay.querySelectorAll('[data-theme]')){card.setAttribute('aria-pressed',String(card.dataset.theme===diagramTheme(state().model).id));card.disabled=state().busy||Boolean(state().gesture);}}
   function edit(command, target, anchor, invoker) {
     api.beginDraft(command, target); show('edit', target, anchor, invoker, {label:'Edit label', padding:'Padding', color:'Color', font:'Text size'}[command]);
-    open.command = command; open.fields = new Map();
+    open.command = command; open.fields = new Map(); open.colorEdits=new Map();
     const n = targetItem(target), values = command === 'padding' ? zonePadding(n) : command === 'color' ? objectColors(state().model, n) : null;
     function input(key, caption, value, type = 'text') {
       const wrap = document.createElement('div'); wrap.className = 'property-field';
       const label = document.createElement('label'), control = document.createElement(type === 'textarea' ? 'textarea' : 'input');
       control.id = `edit-${key}`; if (type !== 'textarea') control.type = type; else control.rows = 3;
       control.value = value; label.htmlFor = control.id; label.textContent = caption; wrap.append(label, control); overlay.append(wrap); open.fields.set(key, control);
-      control.addEventListener('input', validateDraft); return control;
+      control.addEventListener('input', () => {if(command==='color')open.colorEdits.set(key,'custom');validateDraft();}); return control;
     }
     if (command === 'label') input('label', 'Label', n.label || '', 'textarea');
     if (command === 'font') { const c = input('fontSize', 'Text size (px)', state().model.settings.fontSize || 13, 'number'); c.min = 10; c.max = 48; c.step = 1; }
@@ -163,22 +185,32 @@ export function createEditingControls(api) {
     if (command === 'color') for (const [key, caption, value] of [['backgroundColor', 'Background color', values.background], ['fontColor', 'Text color', values.font]]) {
       const c = input(key, caption, value); c.maxLength = 7; c.spellcheck = false; c.parentElement.classList.add('color-field');
       const picker = document.createElement('input'); picker.type = 'color'; picker.value = value; picker.setAttribute('aria-label', `${caption} picker`); c.parentElement.append(picker);
-      picker.addEventListener('input', () => { c.value = picker.value; validateDraft(); });
+      picker.addEventListener('input', () => { c.value = picker.value;open.colorEdits.set(key,'custom'); validateDraft(); });
       c.addEventListener('input', () => { if (/^#[\da-f]{6}$/i.test(c.value.trim())) picker.value = c.value.trim(); });
+      const origin=document.createElement('div');origin.className='color-inheritance';const badge=document.createElement('span');badge.className='color-origin';const reset=button('Reset to theme',()=>{open.colorEdits.set(key,null);if(validateDraft())c.focus({preventScroll:true});});reset.dataset.resetColor=key;reset.setAttribute('aria-label',`Reset ${caption.toLowerCase()} to theme`);origin.append(badge,reset);c.parentElement.append(origin);
     }
     const error = document.createElement('p'); error.id = 'edit-error'; error.className = 'edit-error'; error.setAttribute('role', 'alert'); error.hidden = true; overlay.append(error);
     const actions = document.createElement('div'); actions.className = 'popover-actions';
     const apply = button('Apply', () => beforeAction(true), 'btn-edit-apply'); apply.className = 'primary';
     actions.append(button('Cancel', cancelEdit, 'btn-edit-cancel'), apply); overlay.append(actions);
-    position(); const first = open.fields.values().next().value; first.focus({preventScroll: true}); if (command === 'label') first.select();
+    refreshColorDraft();position(); const first = open.fields.values().next().value; first.focus({preventScroll: true}); if (command === 'label') first.select();
+  }
+  function refreshColorDraft(){
+    if(open?.command!=='color')return;
+    const n=targetItem(open.target),colors=objectColors(state().model,n);
+    for(const [key,c]of open.fields){
+      const custom=n[key]!==undefined,row=c.parentElement;
+      row.querySelector('.color-origin').textContent=custom?'Custom':'Theme';row.querySelector('[data-reset-color]').disabled=!custom;
+      if(!custom&&open.colorEdits.get(key)!=='custom'){c.value=key==='backgroundColor'?colors.background:colors.font;row.querySelector('[type=color]').value=c.value;}
+    }
   }
   function validateDraft() {
     if (open?.type !== 'edit') return true;
-    const values = Object.fromEntries([...open.fields].map(([key, control]) => [key, control.value]));
+    const values = open.command==='color'?Object.fromEntries([...open.colorEdits].map(([key,value])=>[key,value===null?null:open.fields.get(key).value])):Object.fromEntries([...open.fields].map(([key, control]) => [key, control.value]));
     const result = api.previewDraft(values), message = $('edit-error');
     message.hidden = !result.error; message.textContent = result.error || '';
     for (const [key, control] of open.fields) { control.setAttribute('aria-invalid', String(key === result.field)); control.setAttribute('aria-describedby', 'edit-error'); }
-    open.invalid = result.field; return !result.error;
+    open.invalid = result.field;if(!result.error)refreshColorDraft(); return !result.error;
   }
   function beforeAction(restore = false) {
     if (open?.type !== 'edit') return true;
@@ -222,6 +254,7 @@ export function createEditingControls(api) {
     $('attachment-reset').title = group.manual ? 'Applies to all attachments on this side' : 'This side has automatic order'; position();
   }
   function render() {
+    $('btn-theme').textContent=`Theme · ${diagramTheme(state().model).name}`;renderTheme();
     const target = currentTarget(), n = targetItem(target), actions = barActions(target), key = JSON.stringify([target.kind, target.ids, target.index, hasZones(target)]);
     const name = target.kind === 'multiple' ? `${target.ids.length} objects selected` : target.kind === 'canvas' ? 'Select an object to edit it' : target.kind === 'waypoint' ? `Waypoint ${target.index + 1} · ${n?.label || 'Connection'}` : `${{node:'Node', connection:'Connection', zone:'Zone'}[target.kind]} · ${n?.label || n?.id}`;
     $('selection-name').textContent = name; $('selection-name').title = name; $('selection-name').setAttribute('aria-label', name);
@@ -266,7 +299,8 @@ export function createEditingControls(api) {
   $('btn-selection-more').addEventListener('click', event => menu(currentTarget(), anchorFor(event.currentTarget), event.currentTarget));
   $('btn-tool-menu').addEventListener('click', event => menu({kind:'global', ids:[]}, anchorFor(event.currentTarget), event.currentTarget, toolNames.map(([value, label]) => ({command:'tool', value, label, selected: value === state().tool})), 'Tools'));
   $('btn-project-menu').addEventListener('click', event => menu({kind:'global', ids:[]}, anchorFor(event.currentTarget), event.currentTarget, [['new','New'],['open','Open…'],['save','Save project'],['export-svg','Export SVG image'],['export-png','Export PNG image'],['export-mermaid','Export Mermaid source'],['hierarchy','Hierarchy'],['source','Source']].map(([command,label]) => ({command,label})), 'Project'));
-  $('btn-diagram-menu').addEventListener('click', event => menu({kind:'global', ids:[]}, anchorFor(event.currentTarget), event.currentTarget, [['flow','Flow direction'],['layout','Layout style'],['auto-layout','Auto layout'],['font','Text size']].map(([command,label]) => ({command,label})), 'Diagram'));
+  $('btn-diagram-menu').addEventListener('click', event => menu({kind:'global', ids:[]}, anchorFor(event.currentTarget), event.currentTarget, [['theme',`Theme · ${diagramTheme(state().model).name}`],['flow','Flow direction'],['layout','Layout style'],['auto-layout','Auto layout'],['font','Text size']].map(([command,label]) => ({command,label})), 'Diagram'));
+  $('btn-theme').addEventListener('click',event=>activate('theme',{kind:'global',ids:[]},anchorFor(event.currentTarget),event.currentTarget));
   function closeProperties(){api.flushProperties();document.querySelector('.properties-panel').classList.remove('is-open');$('btn-selection-more').focus();}
   $('btn-close-properties').addEventListener('click',closeProperties);
   viewport.addEventListener('contextmenu', event => { if (event.target.closest('.zoom-toolbar')) return; event.preventDefault(); context(event); });

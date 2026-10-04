@@ -8,6 +8,7 @@ import {waypointConflicts,waypointInsertionIndex,translateWaypoints,MAX_WAYPOINT
 import {layoutEdgeLabels,manualLabelPosition} from './labels.mjs?v=whole-words';
 import {attachmentKey,reorderAttachment,resetAttachmentOrder,pruneAttachmentOrders} from './attachments.mjs?v=whole-words';
 import {createEditingControls} from './controls.mjs';
+import {themes,diagramTheme} from './themes.mjs';
 const $=id=>document.getElementById(id);
 const canvas=$('canvas'),world=$('world'),viewport=$('viewport'),editor=$('editor'),properties=$('properties');
 let model=emptyModel(),selection=new Set(),tool='select',gesture=null,busy=true,sourceDirty=false,spaceHeld=false,router=null,routes=new Map(),frame=null,dirty=false;
@@ -51,8 +52,16 @@ function updateControls() {
   if(selected&&!model.edges.includes(selected))for(const dimension of ['width','height']){const input=$(`property-${dimension}`);if(input&&!(pendingPropertyEdit?.id===selected.id&&pendingPropertyEdit.field===dimension))input.value=Math.round(selected[dimension]);}
   if(controlEdit&&selected){
     if(controlEdit.command==='label'&&$('property-label'))$('property-label').value=selected.label;
-    if(controlEdit.command==='color'){const colors=objectColors(model,selected);for(const [name,value]of[['background-color',colors.background],['font-color',colors.font]]){const input=$(`property-${name}`);if(input){input.value=value;input.parentElement.querySelector('[type=color]').value=value;}}}
     if(controlEdit.command==='padding')for(const [side,value]of Object.entries(zonePadding(selected))){const input=$(`property-padding-${side}`);if(input)input.value=value;}
+  }
+  if(selected&&!model.edges.includes(selected)){
+    const colors=objectColors(model,selected);
+    for(const row of properties.querySelectorAll('[data-color-field]')){
+      const key=row.dataset.colorField,value=key==='backgroundColor'?colors.background:colors.font;
+      if(pendingPropertyEdit?.field!==key){row.querySelector('[type=text]').value=value;row.querySelector('[type=color]').value=value;}
+      row.querySelector('.color-origin').textContent=selected[key]===undefined?'Theme':'Custom';
+      row.querySelector('[data-reset-color]').disabled=busy||selected[key]===undefined;
+    }
   }
   if(selection.size>1){const selected=items(model).filter(n=>selection.has(n.id)),roots=selected.filter(n=>!selected.some(other=>other.id!==n.id&&descendants(model,other.id).has(n.id)));for(const b of properties.querySelectorAll('[data-arrange-minimum]'))b.disabled=busy||roots.length<Number(b.dataset.arrangeMinimum);}
   document.querySelectorAll('[data-tool]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tool===tool)));
@@ -75,9 +84,16 @@ function draw({inspect=true,reroute=true}={}) {
   world.replaceChildren(createScene(model,routes,selection,{tool,connectSource,hoverId,dropTarget,activeWaypoint}));updateView();updateControls();if(inspect&&!panelsSuspended){renderProperties();renderHierarchy();}
 }
 function safeDraw(options) {try{draw(options)}catch(e){error(e)}}
-function commit(before,message,{forceSource=false,inspect=true}={}) {
+function commit(before,message,{forceSource=false,inspect=true,reroute=true}={}) {
   if(history.record(before,model)){dirty=true;syncSource(forceSource);status(message);}
-  safeDraw({inspect});
+  safeDraw({inspect,reroute});
+}
+// Appearance edits do not expand frames or touch routing and manual geometry.
+function changeAppearance(message,fn){
+  if(busy||gesture||(editingControls&&!editingControls.beforeAction()))return;
+  flushPropertyEdit();const before=copy(model);
+  try{fn();validateModel(model);commit(before,message,{reroute:false});}
+  catch(e){model=before;safeDraw({reroute:false});error(e);}
 }
 function mutate(message,fn,{inspect=true,axis=null,spacing=true}={}) {
   if(busy||gesture)return;
@@ -98,20 +114,22 @@ function flushFontSize(){
 function applyPropertyValue(id,field,value){
   const current=object(model,id);if(['width','height'].includes(field)){const size=Number(value);if(!Number.isFinite(size)||size<=0)throw new Error('Enter a positive size.');resizeNodeTo(model,id,field==='width'?size:current.width,field==='height'?size:current.height);}
   else if(field.startsWith('padding-')){const size=Number(value);if(!String(value).trim()||!Number.isFinite(size)||size<0||size>MAX_ZONE_PADDING)throw new Error(`Enter padding between 0 and ${MAX_ZONE_PADDING}.`);current.padding={...zonePadding(current),[field.slice(8)]:size};}
+  else if(value===null&&['backgroundColor','fontColor'].includes(field))delete current[field];
   else current[field]=value;
   if(field==='label'){if(model.nodes.includes(current))resizeNode(current,diagramFontSize(model));if(model.zones.includes(current))current.width=Math.max(current.width,textWidth(value,diagramFontSize(model))+32);}
 }
 function previewPropertyEdit(edit){
   if(busy||gesture)return;queuePropertyEdit(edit);const pending=pendingPropertyEdit,field=pending.field||'label';if(!pending.before){pending.before=copy(model);pending.dirtyBefore=dirty;}
   if(['backgroundColor','fontColor'].includes(field)&&!/^#[\da-f]{6}$/i.test(pending.value))return;
-  const last=copy(model);try{applyPropertyValue(pending.id,field,pending.value);if(field==='label')ensureNodeSpacing(model,{preferredIds:descendants(model,pending.id)});expandZones(model);validateModel(model);safeDraw({inspect:false});dirty=JSON.stringify(model)!==JSON.stringify(pending.before)||pending.dirtyBefore;syncSource();updateControls();renderHierarchy();}catch(e){model=last;safeDraw({inspect:false});error(e);}
+  const appearance=['backgroundColor','fontColor'].includes(field);
+  const last=copy(model);try{applyPropertyValue(pending.id,field,pending.value);if(field==='label')ensureNodeSpacing(model,{preferredIds:descendants(model,pending.id)});if(!appearance)expandZones(model);validateModel(model);safeDraw({inspect:false,reroute:!appearance});dirty=JSON.stringify(model)!==JSON.stringify(pending.before)||pending.dirtyBefore;syncSource();updateControls();renderHierarchy();}catch(e){model=last;safeDraw({inspect:false});error(e);}
 }
 function flushPropertyEdit({font=true}={}){
   if(font)flushFontSize();if(!pendingPropertyEdit||busy||gesture)return;
   const edit=pendingPropertyEdit;pendingPropertyEdit=null;const {id,value,field='label'}=edit,item=object(model,id);if(!item)return;
   const caption={backgroundColor:'Background color',fontColor:'Font color'}[field]||field[0].toUpperCase()+field.slice(1);
-  if(edit.before){try{if(item[field]!==value)applyPropertyValue(id,field,value);expandZones(model);validateModel(model);dirty=edit.dirtyBefore;commit(edit.before,`${caption} updated.`,{inspect:false});renderHierarchy();}catch(e){model=edit.before;dirty=edit.dirtyBefore;syncSource();safeDraw();error(e);}return;}
-  if((item[field]||'')===value)return;mutate(`${caption} updated.`,()=>applyPropertyValue(id,field,value),{inspect:false});
+  if(edit.before){try{if(item[field]!==value)applyPropertyValue(id,field,value);if(!['backgroundColor','fontColor'].includes(field))expandZones(model);validateModel(model);dirty=edit.dirtyBefore;commit(edit.before,`${caption} updated.`,{inspect:false,reroute:!['backgroundColor','fontColor'].includes(field)});renderHierarchy();}catch(e){model=edit.before;dirty=edit.dirtyBefore;syncSource();safeDraw();error(e);}return;}
+  if((item[field]||'')===value)return;if(['backgroundColor','fontColor'].includes(field))changeAppearance(`${caption} updated.`,()=>applyPropertyValue(id,field,value));else mutate(`${caption} updated.`,()=>applyPropertyValue(id,field,value),{inspect:false});
 }
 // Commit property typing before a canvas/toolbar action can replace its input.
 document.addEventListener('pointerdown',event=>{panelsSuspended=true;try{if(!event.target.closest(`#property-${pendingPropertyEdit?.field||'label'}`))flushPropertyEdit({font:event.target.id!=='font-size'});}finally{panelsSuspended=false;}},true);
@@ -124,7 +142,7 @@ function beginControlDraft(command,target){
 function previewControlDraft(values){
   if(!controlEdit)return {error:'This edit is no longer active.',field:Object.keys(values)[0]};
   for(const [field,value]of Object.entries(values)){
-    if(['backgroundColor','fontColor'].includes(field)&&!/^#[\da-f]{6}$/i.test(value.trim()))return{error:'Enter a color such as #38bdf8.',field};
+    if(['backgroundColor','fontColor'].includes(field)&&value!==null&&!/^#[\da-f]{6}$/i.test(value.trim()))return{error:'Enter a color such as #38bdf8.',field};
     if(field.startsWith('padding-')&&(!value.trim()||!Number.isFinite(Number(value))||Number(value)<0||Number(value)>MAX_ZONE_PADDING))return{error:`Enter padding between 0 and ${MAX_ZONE_PADDING}.`,field};
     if(field==='fontSize'&&(!value.trim()||!Number.isInteger(Number(value))||Number(value)<10||Number(value)>48))return{error:'Enter a whole text size between 10 and 48.',field};
   }
@@ -132,16 +150,17 @@ function previewControlDraft(values){
   try{
     for(const [field,value]of Object.entries(values)){
       if(field==='fontSize'){model.settings.fontSize=Number(value);for(const n of model.nodes)resizeNode(n,Number(value));}
-      else applyPropertyValue(controlEdit.target.id,field,field.endsWith('Color')?value.trim():value);
+      else applyPropertyValue(controlEdit.target.id,field,field.endsWith('Color')&&value!==null?value.trim():value);
     }
     if(controlEdit.command==='label'||controlEdit.command==='font')ensureNodeSpacing(model,{preferredIds:controlEdit.target.id?descendants(model,controlEdit.target.id):new Set(model.nodes.map(n=>n.id))});
-    expandZones(model);translateWaypoints(controlEdit.before,model);validateModel(model);router.route(model);
-    dirty=JSON.stringify(model)!==JSON.stringify(controlEdit.before)||controlEdit.dirtyBefore;syncSource();safeDraw({inspect:false});return{};
+    const appearance=controlEdit.command==='color';
+    if(!appearance){expandZones(model);translateWaypoints(controlEdit.before,model);}validateModel(model);
+    dirty=JSON.stringify(model)!==JSON.stringify(controlEdit.before)||controlEdit.dirtyBefore;syncSource();safeDraw({inspect:false,reroute:!appearance});return{};
   }catch(e){model=last;safeDraw({inspect:false});return{error:e.message,field:Object.keys(values)[0]};}
 }
 function finishControlDraft(){
   if(!controlEdit)return;const edit=controlEdit;controlEdit=null;dirty=edit.dirtyBefore;
-  commit(edit.before,`${{label:'Label',padding:'Padding',color:'Color',font:'Text size'}[edit.command]} updated.`,{inspect:false});
+  commit(edit.before,`${{label:'Label',padding:'Padding',color:'Color',font:'Text size'}[edit.command]} updated.`,{inspect:false,reroute:edit.command!=='color'});
   hierarchyNeedsRefresh=true;propertiesNeedRefresh=true;
 }
 function cancelControlDraft(){
@@ -178,6 +197,8 @@ function executeControl(command,target,value){
     case 'export-svg':case 'export-png':case 'export-mermaid':$('export-format').value=command.slice(7);exportDiagram();break;
     case 'source':case 'hierarchy':showPanel(command);break;
     case 'set-flow':mutate('Flow direction set. Use Auto layout to rearrange.',()=>model.settings.direction=value);break;
+    case 'set-theme':if(themes.some(t=>t.id===value)&&value!==diagramTheme(model).id)changeAppearance(`${themes.find(t=>t.id===value).name} theme applied. Custom colors retained.`,()=>model.settings.theme=value);break;
+    case 'reset-color':if(['backgroundColor','fontColor'].includes(value))changeAppearance('Theme color restored.',()=>delete object(model,id)[value]);break;
     case 'set-layout':mutate('Layout preference set. Use Auto layout to rearrange.',()=>model.settings.layout=value);break;
     case 'auto-layout':$('btn-layout').click();break;
   }
@@ -244,6 +265,9 @@ function renderProperties(){
     for(const [name,key,value]of[['Background color','backgroundColor',objectColors(model,n).background],['Font color','fontColor',objectColors(model,n).font]]){
       const hex=document.createElement('input');hex.type='text';hex.value=value;hex.maxLength=7;hex.spellcheck=false;field(name,hex);if(key==='fontColor')hex.previousElementSibling.textContent='Text color';const row=hex.parentElement;row.classList.add('color-field');
       const picker=document.createElement('input');picker.type='color';picker.value=value;picker.disabled=busy;picker.setAttribute('aria-label',`${name} picker`);row.append(picker);
+      row.dataset.colorField=key;
+      const origin=document.createElement('div');origin.className='color-inheritance';const badge=document.createElement('span');badge.className='color-origin';badge.textContent=n[key]===undefined?'Theme':'Custom';
+      const reset=document.createElement('button');reset.textContent='Reset to theme';reset.dataset.resetColor=key;reset.id=`reset-property-${key}`;reset.setAttribute('aria-label',`Reset ${key==='fontColor'?'text color':'background color'} to theme`);reset.disabled=n[key]===undefined;reset.addEventListener('click',()=>{executeControl('reset-color',target,key);$(hex.id)?.focus({preventScroll:true});});origin.append(badge,reset);row.append(origin);
       const queue=()=>{if(/^#[\da-f]{6}$/i.test(hex.value.trim()))picker.value=hex.value.trim();queuePropertyEdit({id,field:key,value:hex.value.trim()});};hex.addEventListener('input',()=>{queue();previewPropertyEdit({id,field:key,value:hex.value.trim()});});hex.addEventListener('change',()=>{queue();flushPropertyEdit();});hex.addEventListener('blur',flushPropertyEdit);
       picker.addEventListener('input',()=>{hex.value=picker.value;queue();previewPropertyEdit({id,field:key,value:picker.value});});picker.addEventListener('change',()=>{hex.value=picker.value;queue();flushPropertyEdit();});picker.addEventListener('blur',flushPropertyEdit);
     }
@@ -256,7 +280,7 @@ function renderProperties(){
       const input=document.createElement('input');input.type='number';input.min=model.nodes.includes(n)?1:dimension==='width'?160:100;input.step=1;input.value=Math.round(n[dimension]);field(dimension==='width'?'Width':'Height',input);
       input.addEventListener('input',()=>{queuePropertyEdit({id,field:dimension,value:input.value});});input.addEventListener('change',()=>{queuePropertyEdit({id,field:dimension,value:input.value});flushPropertyEdit();});input.addEventListener('blur',flushPropertyEdit);
     }
-    if(model.nodes.includes(n)){const fitLabel=document.createElement('button');fitLabel.textContent='Fit to label';fitLabel.addEventListener('click',()=>executeControl('fit-label',target));propertyHost.append(fitLabel);}
+    if(model.nodes.includes(n)){const fitLabel=document.createElement('button');fitLabel.id='btn-fit-label';fitLabel.textContent='Fit to label';fitLabel.addEventListener('click',()=>executeControl('fit-label',target));propertyHost.append(fitLabel);}
     else{
       const fit=document.createElement('button');fit.id='btn-fit-zone';fit.textContent='Fit to contents';fit.addEventListener('click',()=>executeControl('fit-zone',target));propertyHost.append(fit);
       const caption=document.createElement('strong');caption.className='connections-heading';caption.textContent='Content padding';propertyHost.append(caption);

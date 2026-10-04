@@ -1,0 +1,24 @@
+flowchart LR
+  subgraph Collect["01 · Moonlight seed library"]
+    Ledger[("Seed archive")]
+    Sort["Sort seed packets"]
+  end
+  subgraph Grow["02 · Lunar nursery"]
+    subgraph Climate["Light #38; moisture"]
+      Ready{"Sprouts ready?"}
+      Lamp["Adjust moon lamps"]
+    end
+    Plant["Plant the test bed"]
+  end
+  subgraph Deliver["03 · Rooftop delivery"]
+    Orbit(("Orbit check"))
+    Launch("Launch seed pods")
+  end
+  Ledger L_Ledger_Sort_0@--> Sort
+  Orbit L_Orbit_Launch_0@--> Launch
+  Sort L_Sort_Plant_0@-->|"Planting plan"| Plant
+  Plant L_Plant_Ready_0@-->|"Growth check"| Ready
+  Ready L_Ready_Orbit_0@-->|"Yes"| Orbit
+  Ready L_Ready_Lamp_0@-.->|"More light"| Lamp
+  Lamp L_Lamp_Plant_0@-.->|"Try again"| Plant
+  Launch L_Launch_Ledger_0@-.->|"Next season"| Ledger

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'">
   <title>Mermaid Diagram Studio</title>
-  <link rel="stylesheet" href="studio.css?v=editing-controls">
+  <link rel="stylesheet" href="studio.css?v=themes">
 </head>
 <body>
   <header class="topbar">
@@ -37,6 +37,7 @@
     </div>
     <div class="tool-group layout-tools"><label for="direction">Flow</label><select disabled id="direction" aria-label="Flow direction"><option>TD</option><option>LR</option><option>BT</option><option>RL</option></select><select disabled id="layout-mode" aria-label="Layout style"><option value="adaptive">Adaptive</option><option value="hierarchical">Hierarchical</option></select><button disabled id="btn-layout">Auto layout</button></div>
     <div class="tool-group font-tools"><label for="font-size">Text</label><input disabled id="font-size" type="number" min="10" max="48" step="1" value="13" aria-label="Diagram font size"><span>px</span></div>
+    <button disabled id="btn-theme" class="theme-tools" aria-haspopup="dialog" aria-expanded="false">Theme · Clean</button>
     <button disabled id="btn-diagram-menu" class="narrow-only" aria-haspopup="menu" aria-expanded="false">Diagram ▾</button>
   </nav>
   <nav id="selection-bar" class="selection-bar" aria-label="Selection actions"><span id="selection-name">Select an object to edit it</span><div id="selection-actions"></div><button disabled id="btn-selection-more" aria-haspopup="menu" aria-expanded="false">More ▾</button></nav>
@@ -71,6 +72,6 @@
   <input disabled id="file-input" type="file" accept=".json,.mmd,.mermaid,.txt" hidden>
   <script src="./vendor/mermaid.min.js"></script>
   <div id="editing-overlay" class="editing-overlay" hidden></div>
-  <script type="module" src="./app.mjs?v=editing-controls"></script>
+  <script type="module" src="./app.mjs?v=themes"></script>
 </body>
 </html>

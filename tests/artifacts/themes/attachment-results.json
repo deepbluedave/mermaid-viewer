@@ -1,0 +1,79 @@
+{
+  "passed": 18,
+  "total": 18,
+  "results": [
+    {
+      "name": "open the unchanged lunar project: automatic order removes the crossing without editing coordinates",
+      "pass": true
+    },
+    {
+      "name": "choose the upper radar attachment deliberately, undo/redo, then choose the clean lower attachment",
+      "pass": true
+    },
+    {
+      "name": "drag a manually ordered node out/back and cancel another drag: order and preferences stay exact",
+      "pass": true
+    },
+    {
+      "name": "source/target controls share a side preference and reset returns to automatic ordering",
+      "pass": true
+    },
+    {
+      "name": "automatic order is held during pointer movement, settles on drop and cancels without drift",
+      "pass": true
+    },
+    {
+      "name": "resolve a moved-node ambiguity with manual order plus a waypoint adjustment",
+      "pass": true
+    },
+    {
+      "name": "manual order persists on inactive sides and node resizing; reset affects only the active side",
+      "pass": true
+    },
+    {
+      "name": "reconnect an ordered endpoint through a native drag: stale preference is pruned and Undo restores it",
+      "pass": true
+    },
+    {
+      "name": "new connections append to an existing manual stack; deletion and Undo retain peer choices",
+      "pass": true
+    },
+    {
+      "name": "moving a zone preserves the manual stack and route-following labels, then Undo restores every route",
+      "pass": true
+    },
+    {
+      "name": "moving an edge label preserves reordered routes and retains its leader",
+      "pass": true
+    },
+    {
+      "name": "save/reopen and image exports retain the chosen stack, clean routes, labels and leaders",
+      "pass": true
+    },
+    {
+      "name": "build a subsea command hub in rectangle: reorder mixed connections on all four sides",
+      "pass": true
+    },
+    {
+      "name": "build a subsea command hub in rounded: reorder mixed connections on all four sides",
+      "pass": true
+    },
+    {
+      "name": "build a subsea command hub in circle: reorder mixed connections on all four sides",
+      "pass": true
+    },
+    {
+      "name": "build a subsea command hub in diamond: reorder mixed connections on all four sides",
+      "pass": true
+    },
+    {
+      "name": "build a subsea command hub in cylinder: reorder mixed connections on all four sides",
+      "pass": true
+    },
+    {
+      "name": "parent-node and same-side self-loop attachments stay reorderable and distinct",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

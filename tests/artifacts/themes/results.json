@@ -1,0 +1,99 @@
+{
+  "passed": 23,
+  "total": 23,
+  "results": [
+    {
+      "name": "build a Moonlight seed library from source with five shapes, nested rooms, forward paths and loops",
+      "pass": true
+    },
+    {
+      "name": "arrange the stages in reading order by dragging whole zones and retaining nested membership",
+      "pass": true
+    },
+    {
+      "name": "manually place a label with a leader and add a waypoint before exercising themes",
+      "pass": true
+    },
+    {
+      "name": "switch every theme repeatedly without changing geometry, routes, labels, manual data or Mermaid source",
+      "pass": true
+    },
+    {
+      "name": "theme selection is one Undo step and selecting the current theme is a no-op",
+      "pass": true
+    },
+    {
+      "name": "opening and applying an untouched Color popup does not freeze theme colors or add Undo history",
+      "pass": true
+    },
+    {
+      "name": "a fill-only override keeps automatic text, updates readable contrast and survives a theme switch",
+      "pass": true
+    },
+    {
+      "name": "per-color resets preserve the other override; Cancel and Escape restore the original settings",
+      "pass": true
+    },
+    {
+      "name": "invalid color input blocks actions, focuses the invalid field and recovers without corrupting the model",
+      "pass": true
+    },
+    {
+      "name": "Properties displays the same color provenance and supports independent reset and fill-only edits",
+      "pass": true
+    },
+    {
+      "name": "custom parent rooms, inherited child shades and zone overrides remain consistent across themes",
+      "pass": true
+    },
+    {
+      "name": "move and resize rooms through the UI without changing stable stage colors or adding object color fields",
+      "pass": true
+    },
+    {
+      "name": "new nodes and zones use the active theme without explicit overrides",
+      "pass": true
+    },
+    {
+      "name": "source edits retain the active theme and overrides while new source objects inherit defaults",
+      "pass": true
+    },
+    {
+      "name": "keyboard-only theme selection, focus return and small previews work",
+      "pass": true
+    },
+    {
+      "name": "save/open restores theme, overrides and default inheritance exactly",
+      "pass": true
+    },
+    {
+      "name": "Auto layout retains the theme, custom colors and manual route/label preferences",
+      "pass": true
+    },
+    {
+      "name": "SVG, PNG and Mermaid exports retain the appropriate theme behavior and exclude editor controls",
+      "pass": true
+    },
+    {
+      "name": "invalid saved theme reports a clear error and leaves the open project intact",
+      "pass": true
+    },
+    {
+      "name": "desktop diagram and theme chooser screenshots",
+      "pass": true
+    },
+    {
+      "name": "mobile touch selection, overrides, resets and theme changes keep the diagram stable",
+      "pass": true
+    },
+    {
+      "name": "theme cards, Color controls and mobile toolbar fit 320–850px widths with 44px touch targets",
+      "pass": true
+    },
+    {
+      "name": "mobile save/open and Properties reset keep explicit text overrides independent",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

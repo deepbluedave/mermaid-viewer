@@ -1,6 +1,7 @@
 import {clearanceTranslation,NODE_GAP,containingZone} from './geometry.mjs?v=whole-words';
 import {translateWaypoints,MAX_WAYPOINTS} from './waypoints.mjs?v=whole-words';
 import {pruneAttachmentOrders} from './attachments.mjs?v=whole-words';
+import {diagramTheme,zoneThemeColor,readableColor,themes} from './themes.mjs';
 export {NODE_GAP} from './geometry.mjs?v=whole-words';
 export const shapes = ['rectangle', 'rounded', 'diamond', 'circle', 'cylinder'];
 export const directions = ['TD', 'LR', 'BT', 'RL'];
@@ -12,10 +13,12 @@ export const diagramFontSize = model => model.settings.fontSize ?? 13;
 export const zoneHeaderHeight = model => Math.max(30,diagramFontSize(model)+16);
 export function darkenColor(hex,amount=.08){return '#'+hex.slice(1).match(/../g).map(channel=>Math.round(parseInt(channel,16)*(1-amount)).toString(16).padStart(2,'0')).join('');}
 export function objectColors(model,n,seen=new Set()) {
+  const theme=diagramTheme(model);
   const zone=model.zones.includes(n),parent=object(model,n.parentId);seen.add(n.id);
   const inherited=zone&&parent&&!seen.has(parent.id)?objectColors(model,parent,seen):null;
-  const background=n.backgroundColor||(zone?(inherited?darkenColor(inherited.background,.055):'#eef2f6'):'#ffffff');
-  return{background,font:n.fontColor||(zone?(inherited?.font||'#475569'):'#1e293b'),header:darkenColor(background,.09)};
+  const background=n.backgroundColor||(zone?(inherited?darkenColor(inherited.background,.055):zoneThemeColor(theme,n.id)):theme.node);
+  const header=darkenColor(background,.09);
+  return{background,font:n.fontColor||readableColor(zone||n.container?header:background,zone?(inherited?.font||theme.zoneText):theme.nodeText),header};
 }
 export function items(model) { return [...model.zones, ...model.nodes]; }
 export function object(model, id) { return items(model).find(n => n.id === id) || model.edges.find(e => e.id === id); }
@@ -336,6 +339,7 @@ export function validateModel(input) {
   if (!directions.includes(model.settings?.direction) || !['adaptive','hierarchical'].includes(model.settings.layout) || typeof model.settings.grid !== 'boolean') throw new Error('Invalid layout settings.');
   if(model.settings.fontSize!==undefined&&(!Number.isInteger(model.settings.fontSize)||model.settings.fontSize<10||model.settings.fontSize>48))throw new Error('Choose a diagram font size between 10 and 48.');
   if(model.settings.guides!==undefined&&typeof model.settings.guides!=='boolean')throw new Error('Invalid alignment guide setting.');
+  if(model.settings.theme!==undefined&&!themes.some(t=>t.id===model.settings.theme))throw new Error('Choose a supported diagram theme.');
   const view = model.settings.view;
   if (!view || ![view.x,view.y,view.scale].every(Number.isFinite) || view.scale < .02 || view.scale > 8) throw new Error('Invalid canvas view.');
   return model;

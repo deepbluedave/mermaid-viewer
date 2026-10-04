@@ -41,7 +41,7 @@ Use this layout when the window is wider than 850 CSS pixels.
 | Location | Contents | Purpose |
 | --- | --- | --- |
 | File bar, at the top | New, Open, Save project, Export, Hierarchy, Source | Manage the project and its views. |
-| Main toolbar, below the file bar | Select, Pan, Node, Connect, Zone, Undo, Redo, Delete, flow direction, layout choice, Auto layout, Text size | Choose a tool or change the whole diagram. |
+| Main toolbar, below the file bar | Select, Pan, Node, Connect, Zone, Undo, Redo, Delete, flow direction, layout choice, Auto layout, Text size, Theme | Choose a tool or change the whole diagram. |
 | Selection bar, below the main toolbar | Selection name, common actions, More | Edit the current selection. |
 | Lower-right corner of the canvas | Zoom out, zoom value, Zoom in, Fit diagram, Snap grid, Guides | Change the view and editing aids. |
 | Properties, on the right | Fields grouped as specified in section 9 | Enter precise values and detailed information. |
@@ -61,7 +61,7 @@ Use this layout when the window is 850 CSS pixels wide or less.
 | Location | Contents | Purpose |
 | --- | --- | --- |
 | File bar, at the top | App name and Project menu | The menu contains New, Open, Save project, Export, Hierarchy, and Source. |
-| Main toolbar, below the file bar | Current tool, Undo, Redo, Delete, Diagram menu | The tool button offers Select, Pan, Node, Connect, and Zone. Diagram contains flow direction, layout choice, Auto layout, and Text size. |
+| Main toolbar, below the file bar | Current tool, Undo, Redo, Delete, Diagram menu | The tool button offers Select, Pan, Node, Connect, and Zone. Diagram contains Theme, flow direction, layout choice, Auto layout, and Text size. |
 | Selection bar, below the canvas | Selection name, common actions, More | Edit the selection without opening Properties. |
 
 - Put the selection bar below the canvas and above the status area. Reserve space for it.
@@ -122,6 +122,10 @@ Use the order below. Put Delete in the last group.
 Shape offers Rectangle, Rounded rectangle, Diamond, Circle, and Database cylinder.
 
 Color opens Background color and Text color. Provide a picker and a six-digit hex field for each color. Connections use Line style; they do not get a new color command in this update.
+
+Theme opens four diagram preview cards: Clean, Blueprint, Botanical, and Paper. Apply a chosen theme immediately as one Undo step. Keep the chooser open for comparison. Preserve explicit object color overrides and all geometry, routes, waypoints and label placements.
+
+Show Theme or Custom beside each object color in Color and Properties. Provide Reset to theme for each color. Reset only that field. A fill edit must not create a text override. Automatic text must remain readable on the displayed background. Explicit text colors remain the user's choice. Cancel restores a Color edit, including resets. Applying an untouched Color popup must not add overrides or an Undo record.
 
 Line style offers Normal, Dashed, and Thick. Arrows offers One arrow, No arrows, and Two arrows. One arrow points from source to target.
 

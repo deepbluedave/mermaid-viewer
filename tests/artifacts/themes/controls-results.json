@@ -1,0 +1,99 @@
+{
+  "passed": 23,
+  "total": 23,
+  "results": [
+    {
+      "name": "UI-01: build the Floating Orchard through tools, selection actions, and popup editors",
+      "pass": true
+    },
+    {
+      "name": "UI-02: create forward paths, parallel solid/dotted paths, and a self-loop from the selection bar",
+      "pass": true
+    },
+    {
+      "name": "UI-09: color, pad, and fit each zone while preserving every child coordinate",
+      "pass": true
+    },
+    {
+      "name": "UI-03: right-click retains a selected group and selects an unselected object without moving it",
+      "pass": true
+    },
+    {
+      "name": "UI-04: create at the captured world position at 25% zoom",
+      "pass": true
+    },
+    {
+      "name": "UI-04: create at the captured world position at 100% zoom",
+      "pass": true
+    },
+    {
+      "name": "UI-04: create at the captured world position at 200% zoom",
+      "pass": true
+    },
+    {
+      "name": "UI-05: Add waypoint here inserts at the click; the bar waits for placement",
+      "pass": true
+    },
+    {
+      "name": "UI-06/07: attachment clicks expose both ends; all side choices and manual order undo correctly",
+      "pass": true
+    },
+    {
+      "name": "UI-08: a reconnect drag never opens controls; Escape restores the complete model",
+      "pass": true
+    },
+    {
+      "name": "UI-10: a selected ancestor counts once; group alignment moves each descendant once",
+      "pass": true
+    },
+    {
+      "name": "UI-11: preview, Apply, click-away, Cancel, and Escape preserve one-edit Undo",
+      "pass": true
+    },
+    {
+      "name": "UI-11/17: invalid drafts block pointer and keyboard actions; a valid draft saves once",
+      "pass": true
+    },
+    {
+      "name": "click-away commits an edit and preserves hierarchy clicks and Properties input focus",
+      "pass": true
+    },
+    {
+      "name": "UI-12: label leaders and independent route/label reset commands keep their existing behavior",
+      "pass": true
+    },
+    {
+      "name": "UI-15/16: keyboard menus, focus return, waypoint deletion, and endpoint controls work",
+      "pass": true
+    },
+    {
+      "name": "UI-15: stable bars and menus at every canvas corner at 1024 × 768",
+      "pass": true
+    },
+    {
+      "name": "UI-15: stable bars and menus at every canvas corner at 1800 × 1100",
+      "pass": true
+    },
+    {
+      "name": "UI-17/19: save/open, source edits, auto layout, and exports retain preferences and hide controls",
+      "pass": true
+    },
+    {
+      "name": "UI-18: deleting a waypoint, connection, node, and zone targets the named object and undoes once",
+      "pass": true
+    },
+    {
+      "name": "UI-14: mobile exposes all actions, sheet controls, and no horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "UI-13: real touch tap, long-press, drag, second touch, and placement tools avoid accidental edits",
+      "pass": true
+    },
+    {
+      "name": "finish the user session with mobile and desktop screenshots of the new controls",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

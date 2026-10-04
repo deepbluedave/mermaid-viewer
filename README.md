@@ -64,6 +64,14 @@ A dotted leader appears whenever the label's attachment point on the route lies 
 
 Project save/open, Undo/Redo, Auto layout, and source changes with matching edge IDs and endpoints retain manual label preferences. SVG and PNG preserve the labels and leaders; Mermaid exports omit manual placement.
 
+## Diagram themes
+
+Use **Theme** in the toolbar, or **Diagram → Theme** on mobile. Choose Clean, Blueprint, Botanical, or Paper. Each card shows a small diagram preview. Clean retains the original white nodes and soft grey zones. Other themes use quiet node fills and coordinated stage colors. Stage colors follow object IDs, so moving, renaming or reordering a zone does not change its color. Nested zones shade their parent, including a parent's custom fill.
+
+Themes set defaults. Each object's background and text color can be overridden independently in **Color** or **Properties**. **Theme** means the color follows the defaults; **Custom** means the object has an override. **Reset to theme** clears only that color. Changing a fill does not create a text override. Automatic text adjusts for readable contrast; explicit text colors remain your choice.
+
+A theme change is one Undo step. It changes no positions, sizes, routes, waypoints or label placements. Project JSON stores the optional `settings.theme` ID and explicit object color overrides. Older projects use Clean. Applying source preserves the theme and matching-ID overrides. New diagrams and newly opened Mermaid files start with Clean. SVG and PNG exports retain the theme; Mermaid source contains the structure.
+
 ## Source, saving, and exports
 
 The editable model becomes authoritative after import. Visual edits generate normalized Mermaid; original comments, whitespace, and shorthand are not preserved. Property labels preview on every input, including node, zone, and edge labels. Labels and colors keep one Undo entry for a continuous input session. Context and size fields commit when you leave the field or perform a canvas, toolbar, save, or export action. Invalid final hex values restore the previous color. An unapplied source draft remains separate and is retained through canvas edits, Undo, and Auto layout. Applying valid source preserves existing object centres by ID; a completely new diagram fits the viewport. Invalid or unsupported source retains the last valid diagram and draft.
@@ -103,3 +111,7 @@ npm test
 These model and routing tests use Node's built-in test runner and the local WASM; no installed npm dependencies are needed. With the local server running, open [browser regression tests](http://127.0.0.1:8000/tests/browser.html) and [UI acceptance tests](http://127.0.0.1:8000/tests/ui.html). Both pages report results automatically. The UI harness exercises real app handlers and inspects generated project/export blobs; it substitutes capture for synthetic pointer gestures and suppresses repeated test downloads. Native pointer and file-picker checks are recorded separately in [tests/ACCEPTANCE.md](tests/ACCEPTANCE.md).
 
 With Playwright and Chromium available, run `DIAGRAM_URL=http://127.0.0.1:8000 node tests/native-controls.cjs` for selection bars, menus, popup editors, attachment controls, mobile layouts, keyboard access, and native touch gestures. It builds an orchard supply diagram through the UI and saves evidence in `tests/artifacts/controls/`. Run `tests/native-attachments.cjs` for attachment checks or `tests/native-zones.cjs` for zone alignment, fitting, padding and resize checks. All use native input, file pickers, save/reopen, and image exports. `CHROMIUM_PATH` can select a browser executable.
+
+Run `DIAGRAM_URL=http://127.0.0.1:8000 node tests/native-themes.cjs` for theme and override user sessions. It builds a Moonlight seed library from Mermaid, edits it through the UI, and checks desktop, keyboard, mobile touch, Undo, source edits, layout, save/open and exports. Screenshots and results are saved in `tests/artifacts/themes/`.
+
+The [Southartica architecture diagram](diagrams/architecture/README.md) maps the application with Blueprint, complete project descriptions and working notes. Its editable JSON retains context and arrangement; the companion Mermaid file retains the structure.

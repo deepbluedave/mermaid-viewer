@@ -1,0 +1,671 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Definition",
+      "label": "Mermaid definition\nFlowchart / graph",
+      "shape": "rectangle",
+      "parentId": "Interfaces",
+      "x": 80,
+      "y": 160,
+      "width": 330,
+      "height": 112,
+      "manualSize": {
+        "width": 330,
+        "height": 112
+      },
+      "description": "A flowchart or graph definition supplies supported nodes, edges, shapes and subgraphs.",
+      "notes": "Mermaid input is a structural starting point, not the complete saved project. Unsupported custom styles/callbacks/advanced shapes are rejected before import. Ordinary comments are not imported as object context."
+    },
+    {
+      "id": "Importer",
+      "label": "Import & auto layout\nmermaid-adapter.mjs",
+      "shape": "rounded",
+      "parentId": "Interfaces",
+      "x": 80,
+      "y": 350,
+      "width": 330,
+      "height": 112,
+      "manualSize": {
+        "width": 330,
+        "height": 112
+      },
+      "description": "mermaid-adapter.mjs parses Mermaid, maps subgraphs to zones and obtains initial or explicit automatic layout.",
+      "notes": "Uses Mermaid/ELK, normalizes labels and supported shapes, then produces a validated model. mergeSource retains metadata and manual preferences for matching IDs; changed endpoints do not inherit unrelated manual routes. Automatic layout is explicit after import."
+    },
+    {
+      "id": "Controls",
+      "label": "Toolbar, menus & inspector\nviewer.html · controls.mjs",
+      "shape": "rectangle",
+      "parentId": "Interfaces",
+      "x": 80,
+      "y": 540,
+      "width": 330,
+      "height": 112,
+      "manualSize": {
+        "width": 330,
+        "height": 112
+      },
+      "description": "Toolbar, context menus, selection actions and Properties turn user intent into commands.",
+      "notes": "viewer.html, studio.css and controls.mjs. On mobile, Project/Diagram menus and bottom sheets expose the same actions. Capture menu targets; do not derive canvas coordinates from menu positions. Invalid drafts must block dependent actions."
+    },
+    {
+      "id": "Model",
+      "label": "Authoritative model\ncore.mjs",
+      "shape": "cylinder",
+      "parentId": "State",
+      "x": 480,
+      "y": 160,
+      "width": 330,
+      "height": 120,
+      "manualSize": {
+        "width": 330,
+        "height": 120
+      },
+      "description": "The version 1 model stores nodes, zones, edges and project settings in one authoritative document.",
+      "notes": "core.mjs provides emptyModel, validation, hierarchy helpers, source generation and History. Context uses description and notes on each node/zone/edge. JSON includes geometry, manual dimensions, routing preferences, label positions, optional theme and canvas view. Mermaid text is generated on demand; it is not embedded inside the JSON."
+    },
+    {
+      "id": "Transactions",
+      "label": "Safe edit transactions\nGeometry · Undo / Redo",
+      "shape": "rectangle",
+      "parentId": "State",
+      "x": 480,
+      "y": 350,
+      "width": 330,
+      "height": 112,
+      "manualSize": {
+        "width": 330,
+        "height": 112
+      },
+      "description": "Model edits apply clearance, containment, sizing and history constraints before committing.",
+      "notes": "core.mjs, geometry.mjs and editing.mjs. Related ancestor/descendant pairs are not treated as unrelated obstacles. Move selected ancestors/descendants once. Zone alignment moves whole groups; Fit changes frames while preserving child coordinates. Automatic expansion grows, while explicit Fit can shrink."
+    },
+    {
+      "id": "Controller",
+      "label": "Application controller\napp.mjs",
+      "shape": "rounded",
+      "parentId": "State",
+      "x": 480,
+      "y": 540,
+      "width": 330,
+      "height": 112,
+      "manualSize": {
+        "width": 330,
+        "height": 112
+      },
+      "description": "app.mjs owns command dispatch, interaction state, source drafts, gesture previews and file actions.",
+      "notes": "Coordinates the model, History, DiagramRouter and SVG scene. An invalid operation restores the previous usable state. Coalesce continuous typing and whole gestures into one Undo action. Keep viewport transforms separate from object coordinates."
+    },
+    {
+      "id": "Router",
+      "label": "Connection routing\nrouting.mjs + refinements",
+      "shape": "rounded",
+      "parentId": "Rendering",
+      "x": 880,
+      "y": 160,
+      "width": 330,
+      "height": 120,
+      "manualSize": {
+        "width": 330,
+        "height": 120
+      },
+      "description": "routing.mjs builds connection shapes and separated pins, then delegates path finding to libavoid.",
+      "notes": "attachments.mjs chooses/records endpoint side order; waypoints.mjs handles user constraints and common translations; route-joins.mjs repairs eligible waypoint turns. Trials are bounded and must preserve unrelated routes. Forced sides and manual connector order remain authoritative. The adapter caches settled geometry and freezes ordering during drag previews."
+    },
+    {
+      "id": "Labels",
+      "label": "Labels, leaders & crossings\nlabels.mjs · bridges.mjs",
+      "shape": "rectangle",
+      "parentId": "Rendering",
+      "x": 880,
+      "y": 350,
+      "width": 330,
+      "height": 112,
+      "manualSize": {
+        "width": 330,
+        "height": 112
+      },
+      "description": "labels.mjs positions connection labels and leaders; bridges.mjs draws small crossing jumps.",
+      "notes": "Automatic label placement looks for free space, while manual positions follow the route and remain authoritative. A leader is present when its attachment point lies outside the label box. Bridges distinguish interior crossings; they do not alter underlying routes or invent junctions."
+    },
+    {
+      "id": "Scene",
+      "label": "SVG scene & themes\nscene.mjs · themes.mjs",
+      "shape": "rectangle",
+      "parentId": "Rendering",
+      "x": 880,
+      "y": 540,
+      "width": 330,
+      "height": 112,
+      "manualSize": {
+        "width": 330,
+        "height": 112
+      },
+      "description": "scene.mjs builds the SVG scene; themes.mjs resolves palette defaults and readable automatic text.",
+      "notes": "Clean, Blueprint, Botanical and Paper are default palettes. Explicit per-object fill/text overrides win independently. Nested zones shade their parent. Theme changes preserve geometry, routes and leaders. Export uses the same scene with editor-only controls excluded."
+    },
+    {
+      "id": "ProjectFile",
+      "label": "Editable project JSON\nLayout · theme · context",
+      "shape": "cylinder",
+      "parentId": "Artifacts",
+      "x": 1280,
+      "y": 160,
+      "width": 330,
+      "height": 120,
+      "manualSize": {
+        "width": 330,
+        "height": 120
+      },
+      "description": "Versioned .mermaid-project.json is the complete reusable editable project, including this diagram context.",
+      "notes": "Save/open retains descriptions, notes, positions, hierarchy, manual sizes, theme, overrides, attachment preferences, waypoints and label placement. Opening old files can grow undersized labels or separate overlaps; it does not perform automatic layout. JSON is the master copy for this architecture."
+    },
+    {
+      "id": "MermaidFile",
+      "label": "Mermaid export\nSupported structure",
+      "shape": "rectangle",
+      "parentId": "Artifacts",
+      "x": 1280,
+      "y": 350,
+      "width": 330,
+      "height": 112,
+      "manualSize": {
+        "width": 330,
+        "height": 112
+      },
+      "description": "Normalized Mermaid export describes the current supported structure.",
+      "notes": "core.mjs toMermaid generates source from model IDs, labels, shapes, connections and hierarchy. Layout, theme and description/notes are not carried by ordinary Mermaid exports. Original comments and whitespace are not preserved. The delivered architecture .mmd additionally includes an introductory documentation comment."
+    },
+    {
+      "id": "Canvas",
+      "label": "Interactive SVG canvas\nSelection · drag · resize",
+      "shape": "rectangle",
+      "parentId": "Artifacts",
+      "x": 1280,
+      "y": 533.9999423184238,
+      "width": 330,
+      "height": 112,
+      "manualSize": {
+        "width": 330,
+        "height": 112
+      },
+      "description": "The interactive SVG viewport presents the scene and captures selection, drag, resize and connection gestures.",
+      "notes": "app.mjs maps screen coordinates through the canvas view; scene.mjs draws controls and hit targets. Keep handles usable under zoom, prevent accidental touch edits, and cancel incomplete gestures cleanly with Escape. The scene is a view of model state, not the source of truth."
+    },
+    {
+      "id": "Images",
+      "label": "SVG / PNG export\nRendered appearance",
+      "shape": "rectangle",
+      "parentId": "Artifacts",
+      "x": 1280,
+      "y": 680,
+      "width": 330,
+      "height": 112,
+      "manualSize": {
+        "width": 330,
+        "height": 112
+      },
+      "description": "SVG and PNG exports capture the rendered diagram without editing handles.",
+      "notes": "scene.mjs exportSvg embeds standalone styling. app.mjs converts SVG to PNG locally, with size limits. Theme colors, manual routes, label leaders and crossings should match the editor. Context metadata is intended for the editable JSON, not raster images."
+    },
+    {
+      "id": "MermaidELK",
+      "label": "Mermaid 12.0.0 + ELK\nParse & auto layout",
+      "shape": "rectangle",
+      "parentId": "Engines",
+      "x": 80,
+      "y": 950,
+      "width": 330,
+      "height": 112,
+      "manualSize": {
+        "width": 330,
+        "height": 112
+      },
+      "description": "Mermaid parses supported definitions and the bundled ELK engine supplies initial/explicit layouts.",
+      "notes": "Mermaid 12.0.0; @mermaid-js/layout-elk 1.0.0; elkjs 0.9.3. Runtime assets are local and bundled/minified, with no custom library patches. The editable SVG scene is our own renderer after import. See vendor/THIRD-PARTY-LICENSES.md and tools/build-vendor.mjs."
+    },
+    {
+      "id": "Avoid",
+      "label": "libavoid-js + WebAssembly\nFind obstacle avoiding paths",
+      "shape": "rectangle",
+      "parentId": "Engines",
+      "x": 480,
+      "y": 950,
+      "width": 330,
+      "height": 112,
+      "manualSize": {
+        "width": 330,
+        "height": 112
+      },
+      "description": "libavoid-js JavaScript bindings and WASM find obstacle avoiding orthogonal routes.",
+      "notes": "Pinned release 0.5.0-beta.5. Keep release binaries intact. Application-owned pins, constraints and accepted refinement trials influence inputs, not vendor source. Preserve LGPL notices and supplied source/build archives. tests/assets.test.mjs checks byte-for-byte release integrity."
+    },
+    {
+      "id": "Specs",
+      "label": "Requirements & design notes\nREADME · SPEC · UI spec",
+      "shape": "rectangle",
+      "parentId": "Knowledge",
+      "x": 880,
+      "y": 950,
+      "width": 330,
+      "height": 112,
+      "manualSize": {
+        "width": 330,
+        "height": 112
+      },
+      "description": "README.md, SPEC.md and EDITING-UI-SPEC.md record behavior, design boundaries and action placement.",
+      "notes": "Use plain action names and clear conditions. This architecture is a navigation aid; implementation and current specifications should be reviewed before changes. Keep project description/notes updated with new decisions. F3 forward/feedback initial-layout guidance is still deferred."
+    },
+    {
+      "id": "Checks",
+      "label": "Regression verification\nUnit · browser · native touch",
+      "shape": "rectangle",
+      "parentId": "Knowledge",
+      "x": 1280,
+      "y": 950,
+      "width": 330,
+      "height": 112,
+      "manualSize": {
+        "width": 330,
+        "height": 112
+      },
+      "description": "Unit, browser, app-handler and native desktop/mobile sessions verify behavior and appearance.",
+      "notes": "npm test; tests/browser.html; tests/ui.html; native-controls.cjs; native-attachments.cjs; native-zones.cjs; native-themes.cjs. Test meaningful contracts, not implementation copies. Review screenshots for visual jank. The last theme baseline passed 365 checks."
+    }
+  ],
+  "zones": [
+    {
+      "id": "Interfaces",
+      "label": "01 · Define & edit",
+      "parentId": "DiagramStudio",
+      "x": 60,
+      "y": 110,
+      "width": 370,
+      "height": 584,
+      "description": "Entry surfaces for Mermaid definitions and human editing commands.",
+      "notes": "viewer.html and studio.css provide the shell. controls.mjs places frequent actions in toolbars, menus and popovers, with Properties for precise values and Context. Source application is explicit; typing a draft does not silently relayout the live model."
+    },
+    {
+      "id": "State",
+      "label": "02 · Diagram state",
+      "parentId": "DiagramStudio",
+      "x": 460,
+      "y": 110,
+      "width": 370,
+      "height": 584,
+      "description": "The editable model and safe transactions are the application state boundary.",
+      "notes": "After import, model data is authoritative. A transaction records a before/after snapshot and is one undoable action. Keep source drafts and canvas view behavior consistent; avoid silently resetting manual preferences."
+    },
+    {
+      "id": "Rendering",
+      "label": "03 · Route & render",
+      "parentId": "DiagramStudio",
+      "x": 860,
+      "y": 110,
+      "width": 370,
+      "height": 584,
+      "description": "Connection paths, labels, leaders, crossings and theme-aware SVG are derived from the model.",
+      "notes": "Keep libavoid routing and application refinements separate. The scene uses the same model and routes for live SVG and standalone exports. Appearance-only changes reuse settled paths."
+    },
+    {
+      "id": "Artifacts",
+      "label": "04 · Preview & files",
+      "parentId": "DiagramStudio",
+      "x": 1260,
+      "y": 110,
+      "width": 370,
+      "height": 724,
+      "description": "Live preview and local file formats derived from the same editable model.",
+      "notes": "Project JSON retains context and editing preferences. Mermaid retains supported structure. SVG and PNG retain appearance. No backend, account or cloud storage is required; files are read/downloaded through the browser."
+    },
+    {
+      "id": "Engines",
+      "label": "Bundled engines · unmodified",
+      "parentId": "DiagramStudio",
+      "x": 60,
+      "y": 900,
+      "width": 770,
+      "height": 190,
+      "description": "Locally bundled upstream parsing, layout and routing libraries.",
+      "notes": "Mermaid 12.0.0, elkjs 0.9.3 (through the ELK integration) and libavoid-js 0.5.0-beta.5 are unmodified. Do not confuse application adapters and routing refinements with vendor patches. Preserve the shipped licences and sources."
+    },
+    {
+      "id": "Knowledge",
+      "label": "Design & verification",
+      "parentId": "DiagramStudio",
+      "x": 860,
+      "y": 900,
+      "width": 770,
+      "height": 190,
+      "description": "Design documentation and verification make the diagram a maintainable project reference.",
+      "notes": "Use the outer project notes as an orientation guide. Verify current code before extending this map. The specifications explain interaction rules; native sessions exercise real pointer, touch, file-picker and download behavior."
+    },
+    {
+      "id": "DiagramStudio",
+      "label": "Southartica · Diagram Studio",
+      "parentId": null,
+      "x": 20,
+      "y": 20,
+      "width": 1640,
+      "height": 1100,
+      "description": "Southartica Diagram Studio is a local browser application for turning Mermaid flowcharts into editable diagrams. Mermaid seeds the structure and initial layout; a versioned diagram model then owns nodes, connections, zones, manual geometry, descriptions, notes and theme settings. The editor draws interactive SVG and exports project JSON, Mermaid, SVG or PNG without a server or external runtime services.",
+      "notes": "Architecture snapshot: 2026-10-04.\n\nREAD THIS DIAGRAM\nRead the four main stages from left to right. Solid arrows show source, diagram data or edit transactions. Dotted arrows show delegation to bundled upstream engines. Undirected lines show design and verification support. This is a responsibility/data-flow view, not a complete JavaScript import graph. Select a component or connection and open Details > Context for its description and maintenance notes.\n\nTHE AUTHORITATIVE DOCUMENT\nThe companion .mermaid-project.json is the complete editable document. Its DiagramStudio zone carries this overall description and notes; components and edges carry their own context. The project stores the model, not an embedded copy of Mermaid source. Mermaid is generated from the model. Ordinary Mermaid comments do not import into these fields and are discarded by source regeneration. The .mmd file has a brief overview for readers, but JSON is the master copy for context, layout and Blueprint settings.\n\nDESIGN CONTRACTS\nPreserve stable object IDs, hierarchy, object metadata, color overrides, manual dimensions, waypoints, attachment sides/order and route-following label preferences. Source edits preserve context for matching IDs. New diagrams and newly opened Mermaid files start with Clean. Theme changes affect defaults only and must not move geometry or routes. A fill change must not create a text-color override.\n\nROUTING CONTRACTS\nlibavoid finds obstacle avoiding paths. Our routing adapter supplies shapes, pins, sides and waypoints, then evaluates bounded refinement trials. Automatic connector ordering may improve a crossing only when it does not introduce a detour, overlap, retrace or unrelated route change. Manual order is authoritative. Waypoints follow a common endpoint translation; otherwise they keep their world coordinates. Keep manual label positions. A leader appears when the label's route attachment point lies outside its box. Do not replace libavoid or patch vendor libraries to solve presentation problems.\n\nMAINTENANCE MAP\napp.mjs coordinates commands, previews, history, save/open and exports. controls.mjs implements contextual menus, popovers and responsive actions. core.mjs owns model validation, source generation and History. geometry.mjs/editing.mjs handle clearance, containment and resize constraints. mermaid-adapter.mjs parses and merges source and requests initial/explicit layouts. routing.mjs delegates to libavoid; attachments.mjs, waypoints.mjs and route-joins.mjs retain user intent. labels.mjs places labels/leaders; bridges.mjs distinguishes crossings; scene.mjs creates the live and exported SVG; themes.mjs resolves palette defaults and contrast. viewer.html/studio.css supply the shell and responsive presentation.\n\nVERIFICATION\nRun npm test and the browser/UI harnesses. Run the native control, attachment, zone and theme sessions against a local HTTP server. Check desktop, keyboard and mobile touch behavior, Undo/Redo, source application, save/reopen, and SVG/PNG exports. The theme feature's last baseline passed 365 checks; this is a dated baseline, not a permanent test count. Keep meaningful native user scenarios and review screenshots as well as assertions.\n\nFUTURE WORK\nF1 manual waypoints/side forcing, F2 label placement, connector ordering, F4 zone alignment, F5 fit/padding, contextual editing and themes are present. F3 preferred start node and explicit feedback-edge guidance for initial layout remain deferred. Revisit that design independently of this manually arranged architecture diagram. Update this diagram and its component notes when responsibilities or contracts change.\n\nLIBRARY BOUNDARY\nMermaid 12.0.0, bundled ELK/elkjs and libavoid-js 0.5.0-beta.5 are upstream code with no custom patches. Preserve vendor notices, licences, release/source archives and pinned dependencies. Vendor integrity tests compare libavoid JavaScript/WASM with its release archive."
+    }
+  ],
+  "edges": [
+    {
+      "id": "Define",
+      "source": "Definition",
+      "target": "Importer",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "north",
+      "description": "A definition is parsed only when the user opens or applies source.",
+      "notes": "Invalid/unsupported source retains the last usable diagram and the source draft."
+    },
+    {
+      "id": "ImportModel",
+      "source": "Importer",
+      "target": "Model",
+      "label": "seed / apply",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "west",
+      "description": "Parsed structure and initial positions seed the editable model.",
+      "notes": "The application controller installs/merges the adapter result as an undoable operation. Matching IDs retain object context and preferences."
+    },
+    {
+      "id": "Commands",
+      "source": "Controls",
+      "target": "Controller",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "west",
+      "description": "Contextual controls send commands to the application controller.",
+      "notes": "Toolbars, menus and Properties share operations. Keep captured targets and validation consistent."
+    },
+    {
+      "id": "Edit",
+      "source": "Controller",
+      "target": "Transactions",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "north",
+      "targetSide": "south",
+      "description": "The controller applies changes through safe transactions.",
+      "notes": "A continuous preview or complete gesture becomes one history entry; Cancel restores the opening snapshot."
+    },
+    {
+      "id": "Commit",
+      "source": "Transactions",
+      "target": "Model",
+      "label": "validate / commit",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "north",
+      "targetSide": "south",
+      "description": "Validated edits update the authoritative model.",
+      "notes": "Retain hierarchy and manual preferences; enforce geometry contracts and grow enclosing frames only when needed."
+    },
+    {
+      "id": "Route",
+      "source": "Model",
+      "target": "Router",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "west",
+      "description": "Model geometry and user routing constraints determine connection routes.",
+      "notes": "Colors and theme changes must not alter routing inputs or recompute geometry."
+    },
+    {
+      "id": "Label",
+      "source": "Router",
+      "target": "Labels",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "north",
+      "description": "Settled routes determine label frames, leaders and crossing presentation.",
+      "notes": "Manual label preferences remain intact; bridge drawing does not alter routes."
+    },
+    {
+      "id": "Draw",
+      "source": "Labels",
+      "target": "Scene",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "north",
+      "description": "Routes and label placement are assembled into the SVG scene.",
+      "notes": "Use the current palette and explicit overrides; keep selection handles separate from exported content."
+    },
+    {
+      "id": "Preview",
+      "source": "Scene",
+      "target": "Canvas",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "west",
+      "description": "The SVG scene is displayed as the live interactive canvas.",
+      "notes": "The viewport is a derived view. Gesture coordinates must be converted to model space."
+    },
+    {
+      "id": "ExportImage",
+      "source": "Scene",
+      "target": "Images",
+      "label": "",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "west",
+      "description": "The same scene is exported as standalone SVG or local PNG.",
+      "notes": "Exclude editor-only handles and preserve themes, routes and leaders."
+    },
+    {
+      "id": "SaveOpen",
+      "source": "Model",
+      "target": "ProjectFile",
+      "label": "save / open",
+      "direction": "both",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "east",
+      "description": "Project JSON saves and restores the full model.",
+      "notes": "The connection summarizes local file persistence; the controller performs validation, downloads and browser file-picker reads. It is not a backend database.",
+      "waypoints": [
+        {
+          "x": 843.9999554532789,
+          "y": 89.99999262212394
+        },
+        {
+          "x": 1647.9999226440877,
+          "y": 89.99999262212394
+        },
+        {
+          "x": 1647.9999226440877,
+          "y": 219.9999820024539
+        }
+      ],
+      "labelPosition": {
+        "fraction": 0.6209964444872837,
+        "offsetAlong": 0,
+        "offsetNormal": -0.0000614823002393905
+      }
+    },
+    {
+      "id": "ExportSource",
+      "source": "Model",
+      "target": "MermaidFile",
+      "label": "structure",
+      "direction": "forward",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "west",
+      "description": "Mermaid source is generated from supported model structure.",
+      "notes": "Description/notes, manual geometry and theme are retained by project JSON, not ordinary source export.",
+      "waypoints": [
+        {
+          "x": 839.9999554253324,
+          "y": 299.9999825613839
+        },
+        {
+          "x": 1247.9999505905878,
+          "y": 299.9999825613839
+        }
+      ],
+      "labelPosition": {
+        "fraction": 0.24534165351769924,
+        "offsetAlong": 9.911122624248437e-7,
+        "offsetNormal": 0.000030725169002349145
+      }
+    },
+    {
+      "id": "LayoutEngine",
+      "source": "Importer",
+      "target": "MermaidELK",
+      "label": "delegate",
+      "direction": "forward",
+      "style": "dashed",
+      "routing": "orthogonal",
+      "sourceSide": "south",
+      "targetSide": "north",
+      "description": "The import/layout adapter delegates parsing and automatic layout to Mermaid/ELK.",
+      "notes": "Initial import and explicit Auto layout use these unmodified bundled engines.",
+      "waypoints": [
+        {
+          "x": 439.99996713491583,
+          "y": 724.9999367291238
+        },
+        {
+          "x": 244.99999843499597,
+          "y": 724.9999367291238
+        }
+      ],
+      "labelPosition": {
+        "fraction": 0.8428245900330391,
+        "offsetAlong": 0,
+        "offsetNormal": 0
+      }
+    },
+    {
+      "id": "RouteEngine",
+      "source": "Router",
+      "target": "Avoid",
+      "label": "delegate",
+      "direction": "forward",
+      "style": "dashed",
+      "routing": "orthogonal",
+      "sourceSide": "east",
+      "targetSide": "north",
+      "description": "The routing adapter delegates obstacle avoiding path finding to libavoid.",
+      "notes": "Refinement trials adjust adapter inputs and acceptance criteria; no vendor patches are used.",
+      "waypoints": [
+        {
+          "x": 1235.9999342698318,
+          "y": 220.00000044714403
+        },
+        {
+          "x": 1235.9999342698318,
+          "y": 854.9999568506039
+        },
+        {
+          "x": 644.9999704884958,
+          "y": 854.9999568506039
+        }
+      ],
+      "labelPosition": {
+        "fraction": 0.844097865583055,
+        "offsetAlong": 1.1368683772161603e-13,
+        "offsetNormal": -0.00006148230022517964
+      }
+    },
+    {
+      "id": "Guide",
+      "source": "Specs",
+      "target": "Transactions",
+      "label": "",
+      "direction": "none",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "north",
+      "targetSide": "east",
+      "description": "Design documentation guides editing and model contracts.",
+      "notes": "Association, not a runtime dependency or execution step.",
+      "waypoints": [
+        {
+          "x": 839.9999391884157,
+          "y": 865.9999396355598
+        },
+        {
+          "x": 839.9999391884157,
+          "y": 405.9999748481499
+        }
+      ]
+    },
+    {
+      "id": "Verify",
+      "source": "Checks",
+      "target": "Scene",
+      "label": "",
+      "direction": "none",
+      "style": "normal",
+      "routing": "orthogonal",
+      "sourceSide": "north",
+      "targetSide": "south",
+      "description": "Regression checks verify scene behavior and editor contracts.",
+      "notes": "Association, not a runtime service. Native sessions also exercise model edits, file formats and routing.",
+      "waypoints": [
+        {
+          "x": 1251.999944330572,
+          "y": 879.9999602041838
+        },
+        {
+          "x": 1251.999944330572,
+          "y": 704.9999378469837
+        },
+        {
+          "x": 1044.9999832321,
+          "y": 704.9999378469837
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "direction": "LR",
+    "layout": "adaptive",
+    "grid": false,
+    "guides": false,
+    "fontSize": 18,
+    "view": {
+      "x": 43.609090909090945,
+      "y": 34.14545454545455,
+      "scale": 0.9927272727272727
+    },
+    "theme": "blueprint"
+  }
+}

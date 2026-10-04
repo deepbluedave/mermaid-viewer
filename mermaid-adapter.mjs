@@ -83,6 +83,7 @@ export async function layoutModel(model) {
   return model;
 }
 export function mergeSource(previous, incoming) {
+  if(previous.settings.theme!==undefined)incoming.settings.theme=previous.settings.theme;
   incoming.settings.fontSize=diagramFontSize(previous);incoming.settings.guides=previous.settings.guides!==false;
   for (const n of [...incoming.nodes,...incoming.zones]) {
     const old = [...previous.nodes,...previous.zones].find(o=>o.id===n.id);
