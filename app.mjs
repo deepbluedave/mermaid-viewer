@@ -1,19 +1,23 @@
-import { emptyModel, copy, items, object, shapes, textWidth, resizeNode, moveSelection, movableIds, expandZones, reparent, deleteSelection, nextId, arrange, toMermaid, validateModel, History, depth,ensureNodeSpacing,ensureLabelFit,separateSelection,dropSelection,dropParents,diagramFontSize,objectColors,containers,isContainer,containingParent,setNodeContainer,descendants,zonePadding,MAX_ZONE_PADDING,fitZonesToContents } from './core.mjs?v=whole-words';
-import {resizeObject,resizeNodeTo,alignmentGuides} from './editing.mjs?v=whole-words';
-import { initializeMermaid, importMermaid, layoutModel, mergeSource } from './mermaid-adapter.mjs?v=whole-words';
+import { emptyModel, copy, items, object, shapes, textWidth, resizeNode, moveSelection, movableIds, expandZones, reparent, deleteSelection, nextId, arrange, toMermaid, validateModel, History, depth,ensureNodeSpacing,ensureLabelFit,separateSelection,dropSelection,dropParents,diagramFontSize,objectColors,containers,isContainer,containingParent,setNodeContainer,descendants,zonePadding,MAX_ZONE_PADDING,fitZonesToContents } from './core.mjs?v=refinements';
+import {resizeObject,resizeNodeTo,alignmentGuides} from './editing.mjs?v=refinements';
+import { initializeMermaid, importMermaid, layoutModel, mergeSource } from './mermaid-adapter.mjs?v=refinements';
 import { AvoidLib } from './vendor/libavoid/dist/index.js';
-import { DiagramRouter, sidePoint } from './routing.mjs?v=whole-words';
-import { createScene, svgElement, exportSvg } from './scene.mjs?v=whole-words';
-import {waypointConflicts,waypointInsertionIndex,translateWaypoints,MAX_WAYPOINTS} from './waypoints.mjs?v=whole-words';
-import {layoutEdgeLabels,manualLabelPosition} from './labels.mjs?v=whole-words';
-import {attachmentKey,reorderAttachment,resetAttachmentOrder,pruneAttachmentOrders} from './attachments.mjs?v=whole-words';
+import { DiagramRouter, sidePoint } from './routing.mjs?v=refinements';
+import { createScene, svgElement, exportSvg } from './scene.mjs?v=refinements';
+import {waypointConflicts,waypointInsertionIndex,translateWaypoints,MAX_WAYPOINTS} from './waypoints.mjs?v=refinements';
+import {layoutEdgeLabels,manualLabelPosition} from './labels.mjs?v=refinements';
+import {attachmentKey,reorderAttachment,resetAttachmentOrder,pruneAttachmentOrders} from './attachments.mjs?v=refinements';
 import {createEditingControls} from './controls.mjs';
 import {themes,diagramTheme} from './themes.mjs';
+import {createProjectFiles} from './file-ui.mjs';
+import {newSessionId} from './files.mjs';
+import {copyFragment,readFragment,pasteFragment,fragmentBounds} from './clipboard.mjs';
 const $=id=>document.getElementById(id);
 const canvas=$('canvas'),world=$('world'),viewport=$('viewport'),editor=$('editor'),properties=$('properties');
 let model=emptyModel(),selection=new Set(),tool='select',gesture=null,busy=true,sourceDirty=false,spaceHeld=false,router=null,routes=new Map(),frame=null,dirty=false;
 let pendingPropertyEdit=null,pendingFontSize=null;
 let editingControls=null,controlEdit=null,propertyHost=properties;
+let files=null,documentId=newSessionId(),lastPaste='',pasteCount=0;
 let propertiesNeedRefresh=false;
 let drawnView='';
 let connectSource=null,hoverId=null,dropTarget=null;
@@ -38,16 +42,17 @@ function updateView() {
   for(const handle of world.querySelectorAll('.route-segment-handle')){handle.querySelector('circle').setAttribute('r',6/v.scale);handle.querySelector('path').setAttribute('d',`M${-3/v.scale},0 H${3/v.scale} M0,${-3/v.scale} V${3/v.scale}`);}
   for(const handle of world.querySelectorAll('[data-reconnect]'))handle.setAttribute('r',6/v.scale);
   const viewKey=`${v.x},${v.y},${v.scale}`;
-  if(viewKey!==drawnView){drawnView=viewKey;editingControls?.viewChanged();}else editingControls?.position();
+  if(viewKey!==drawnView){drawnView=viewKey;editingControls?.viewChanged();files?.changed();}else editingControls?.position();
 }
+function pendingUndo(){return Boolean(pendingPropertyEdit?.before&&JSON.stringify(pendingPropertyEdit.before)!==JSON.stringify(model));}
 function updateControls() {
-  $('btn-undo').disabled=busy||!history.past.length;$('btn-redo').disabled=busy||!history.future.length;
+  if(files)dirty=files.state().dirty;
+  $('btn-undo').disabled=busy||!(history.past.length||pendingUndo());$('btn-redo').disabled=busy||!history.future.length;
   $('btn-delete').disabled=busy||!selection.size;$('btn-discard').disabled=busy||!sourceDirty;
-  $('btn-delete').textContent=activeWaypoint?'Delete waypoint':'Delete';
   $('btn-delete').title=activeWaypoint?'Delete waypoint':'Delete selected objects';$('btn-delete').setAttribute('aria-label',$('btn-delete').title);
   $('direction').value=model.settings.direction;$('layout-mode').value=model.settings.layout;$('snap-grid').checked=model.settings.grid;
   $('alignment-guides').checked=model.settings.guides!==false;if(pendingFontSize===null)$('font-size').value=diagramFontSize(model);
-  $('counts').textContent=`${model.nodes.length} nodes · ${model.edges.length} edges · ${model.zones.length} zones${dirty?' · Unsaved changes':''}`;
+  $('counts').textContent=`${model.nodes.length} nodes · ${model.edges.length} edges · ${model.zones.length} zones`;
   const selected=selectedObject(),geometry=properties.querySelector('.geometry');if(selected&&geometry)geometry.textContent=`Position ${Math.round(selected.x)}, ${Math.round(selected.y)} · Size ${Math.round(selected.width)} × ${Math.round(selected.height)}`;
   if(selected&&!model.edges.includes(selected))for(const dimension of ['width','height']){const input=$(`property-${dimension}`);if(input&&!(pendingPropertyEdit?.id===selected.id&&pendingPropertyEdit.field===dimension))input.value=Math.round(selected[dimension]);}
   if(controlEdit&&selected){
@@ -60,7 +65,7 @@ function updateControls() {
       const key=row.dataset.colorField,value=key==='backgroundColor'?colors.background:colors.font;
       if(pendingPropertyEdit?.field!==key){row.querySelector('[type=text]').value=value;row.querySelector('[type=color]').value=value;}
       row.querySelector('.color-origin').textContent=selected[key]===undefined?'Theme':'Custom';
-      row.querySelector('[data-reset-color]').disabled=busy||selected[key]===undefined;
+      row.querySelector('[data-reset-color]').disabled=busy||selected[key]===undefined;row.querySelector('[data-reset-color]').hidden=selected[key]===undefined;
     }
   }
   if(selection.size>1){const selected=items(model).filter(n=>selection.has(n.id)),roots=selected.filter(n=>!selected.some(other=>other.id!==n.id&&descendants(model,other.id).has(n.id)));for(const b of properties.querySelectorAll('[data-arrange-minimum]'))b.disabled=busy||roots.length<Number(b.dataset.arrangeMinimum);}
@@ -72,8 +77,8 @@ function updateControls() {
     buttons[0].disabled=busy||Boolean(gesture)||index===0;buttons[1].disabled=busy||Boolean(gesture)||index===group.entries.length-1;
     panel.querySelector(`#btn-reset-${end}-attachment-order`).disabled=busy||Boolean(gesture)||!group.manual;
   }
-  $('canvas-help').textContent={select:'Drag into or out of containers · Select a connection to edit its route',pan:'Drag to pan · Scroll to zoom · V returns to selection',node:'Click to add a node · Nodes keep a 24-unit gap · Escape cancels',connect:connectSource?'Choose the target node · Escape cancels':'Click a source, then a target · Or drag from a handle',zone:'Click to add a zone · Drag nodes and zones into it',waypoint:'Click to place a waypoint · Adding one uses orthogonal routing · Escape cancels'}[tool];
-  editingControls?.render();
+  $('canvas-help').textContent={select:'Drag into or out of containers · Select a connection to edit its route',pan:'Drag to pan · Scroll to zoom · V returns to selection',node:'Click to add a node · Nodes keep a 24-unit gap · Escape cancels',connect:connectSource?'Drag or click a target · Release to connect · Escape cancels':'Drag from any source object to a target · Or click both',zone:'Click to add a zone · Drag nodes and zones into it',waypoint:'Click to place a waypoint · Adding one uses orthogonal routing · Escape cancels'}[tool];
+  editingControls?.render();files?.render();
 }
 function draw({inspect=true,reroute=true}={}) {
   if(inspect)flushPropertyEdit();
@@ -81,7 +86,7 @@ function draw({inspect=true,reroute=true}={}) {
   if(activeWaypoint&&(!selection.has(activeWaypoint.edgeId)||selection.size!==1||!object(model,activeWaypoint.edgeId)?.waypoints?.[activeWaypoint.index]))activeWaypoint=null;
   if(activeLabel&&(!selection.has(activeLabel)||selection.size!==1||!object(model,activeLabel)?.label))activeLabel=null;
   if(reroute)routes=router.route(model,{freezeOrder:Boolean(gesture&&['move','resize','waypoint'].includes(gesture.type))});
-  world.replaceChildren(createScene(model,routes,selection,{tool,connectSource,hoverId,dropTarget,activeWaypoint}));updateView();updateControls();if(inspect&&!panelsSuspended){renderProperties();renderHierarchy();}
+  world.replaceChildren(createScene(model,routes,selection,{tool,connectSource,hoverId,connectTarget:gesture?.type==='connect'?hoverId:null,dropTarget,activeWaypoint}));updateView();updateControls();if(inspect&&!panelsSuspended){renderProperties();renderHierarchy();}files?.changed();
 }
 function safeDraw(options) {try{draw(options)}catch(e){error(e)}}
 function commit(before,message,{forceSource=false,inspect=true,reroute=true}={}) {
@@ -116,13 +121,13 @@ function applyPropertyValue(id,field,value){
   else if(field.startsWith('padding-')){const size=Number(value);if(!String(value).trim()||!Number.isFinite(size)||size<0||size>MAX_ZONE_PADDING)throw new Error(`Enter padding between 0 and ${MAX_ZONE_PADDING}.`);current.padding={...zonePadding(current),[field.slice(8)]:size};}
   else if(value===null&&['backgroundColor','fontColor'].includes(field))delete current[field];
   else current[field]=value;
-  if(field==='label'){if(model.nodes.includes(current))resizeNode(current,diagramFontSize(model));if(model.zones.includes(current))current.width=Math.max(current.width,textWidth(value,diagramFontSize(model))+32);}
+  if(field==='label'||field==='showDescription'||field==='description'&&current.showDescription){if(model.nodes.includes(current))resizeNode(current,diagramFontSize(model));if(model.zones.includes(current)&&!current.showDescription)current.width=Math.max(current.width,textWidth(current.label,diagramFontSize(model))+32);}
 }
 function previewPropertyEdit(edit){
   if(busy||gesture)return;queuePropertyEdit(edit);const pending=pendingPropertyEdit,field=pending.field||'label';if(!pending.before){pending.before=copy(model);pending.dirtyBefore=dirty;}
   if(['backgroundColor','fontColor'].includes(field)&&!/^#[\da-f]{6}$/i.test(pending.value))return;
   const appearance=['backgroundColor','fontColor'].includes(field);
-  const last=copy(model);try{applyPropertyValue(pending.id,field,pending.value);if(field==='label')ensureNodeSpacing(model,{preferredIds:descendants(model,pending.id)});if(!appearance)expandZones(model);validateModel(model);safeDraw({inspect:false,reroute:!appearance});dirty=JSON.stringify(model)!==JSON.stringify(pending.before)||pending.dirtyBefore;syncSource();updateControls();renderHierarchy();}catch(e){model=last;safeDraw({inspect:false});error(e);}
+  const last=copy(model);try{applyPropertyValue(pending.id,field,pending.value);if(field==='label'||field==='description'&&object(model,pending.id)?.showDescription)ensureNodeSpacing(model,{preferredIds:descendants(model,pending.id)});if(!appearance)expandZones(model);validateModel(model);safeDraw({inspect:false,reroute:!appearance});dirty=JSON.stringify(model)!==JSON.stringify(pending.before)||pending.dirtyBefore;syncSource();updateControls();renderHierarchy();}catch(e){model=last;safeDraw({inspect:false});error(e);}
 }
 function flushPropertyEdit({font=true}={}){
   if(font)flushFontSize();if(!pendingPropertyEdit||busy||gesture)return;
@@ -170,6 +175,8 @@ function cancelControlDraft(){
 function executeControl(command,target,value){
   const id=target.id,ids=new Set(target.ids||[]),n=object(model,id);
   switch(command){
+    case 'show-description':mutate(n.showDescription?'Label displayed.':'Description displayed.',()=>applyPropertyValue(id,'showDescription',!n.showDescription));break;
+    case 'recent':files.showRecent();break;
     case 'set-shape':mutate('Node shape updated.',()=>{object(model,id).shape=value;resizeNode(object(model,id),diagramFontSize(model));});break;
     case 'set-style':mutate('Line style updated.',()=>object(model,id).style=value);break;
     case 'set-arrows':mutate('Arrow direction updated.',()=>object(model,id).direction=value);break;
@@ -191,11 +198,20 @@ function executeControl(command,target,value){
     case 'fit-diagram':fit();break;
     case 'tool':setTool(value);break;
     case 'details':renderProperties();break;
-    case 'new':newDiagram();break;
-    case 'open':$('file-input').click();break;
+    case 'new':files.newDiagram();break;
+    case 'open':files.open();break;
     case 'save':saveProject();break;
+    case 'save-as':files.save(true);break;
+    case 'download-copy':files.downloadCopy();break;
+    case 'autosave':files.toggleAutosave();break;
+    case 'recovery':files.showRecovery();break;
+    case 'copy':copySelection(target.ids);break;
+    case 'paste':case 'paste-here':pasteSelection(target.point);break;
+    case 'undo':undo();break;
+    case 'redo':undo(true);break;
     case 'export-svg':case 'export-png':case 'export-mermaid':$('export-format').value=command.slice(7);exportDiagram();break;
     case 'source':case 'hierarchy':showPanel(command);break;
+    case 'toggle-properties':{flushPropertyEdit();const panel=document.querySelector('.properties-panel');if(matchMedia('(max-width:850px)').matches){panel.hidden=false;panel.classList.toggle('is-open');}else panel.hidden=!panel.hidden;updateControls();break;}
     case 'set-flow':mutate('Flow direction set. Use Auto layout to rearrange.',()=>model.settings.direction=value);break;
     case 'set-theme':if(themes.some(t=>t.id===value)&&value!==diagramTheme(model).id)changeAppearance(`${themes.find(t=>t.id===value).name} theme applied. Custom colors retained.`,()=>model.settings.theme=value);break;
     case 'reset-color':if(['backgroundColor','fontColor'].includes(value))changeAppearance('Theme color restored.',()=>delete object(model,id)[value]);break;
@@ -203,7 +219,10 @@ function executeControl(command,target,value){
     case 'auto-layout':$('btn-layout').click();break;
   }
 }
-function field(label,control){const wrap=document.createElement('div');wrap.className='property-field';const caption=document.createElement('label');const id=label==='Parent'?'property-parent-zone':`property-${label.toLowerCase().replace(/\W/g,'-')}`;control.id=id;control.disabled=busy;caption.htmlFor=id;caption.textContent=label;wrap.append(caption,control);propertyHost.append(wrap);return control;}
+function field(label,control){const wrap=document.createElement('div');wrap.className='property-field';if(control.tagName==='SELECT'||['number','checkbox'].includes(control.type))wrap.classList.add('inline-field');const caption=document.createElement('label');const id=label==='Parent'?'property-parent-zone':`property-${label.toLowerCase().replace(/\W/g,'-')}`;control.id=id;control.disabled=busy;caption.htmlFor=id;caption.textContent=label;wrap.append(caption,control);propertyHost.append(wrap);return control;}
+function fitTextArea(input){input.style.height='auto';input.style.height=Math.min(input.scrollHeight+2,input.id==='property-notes'?180:120)+'px';}
+function fitPropertyText(){if(properties.getClientRects().length)for(const input of properties.querySelectorAll('textarea'))fitTextArea(input);}
+function pairFields(...controls){const pair=document.createElement('div');pair.className='property-pair';for(const control of controls)pair.append(control.parentElement);propertyHost.append(pair);}
 function propertyGroup(name){const section=document.createElement('section');section.className='property-group';section.dataset.group=name;const heading=document.createElement('h3');heading.textContent=name;section.append(heading);properties.append(section);propertyHost=section;return section;}
 function selectControl(label,value,options,onChange){const input=document.createElement('select');for(const [key,text]of options){const option=document.createElement('option');option.value=key;option.textContent=text;input.append(option);}input.value=value||'';field(label,input);input.addEventListener('change',()=>onChange(input.value));return input;}
 function renderProperties(){
@@ -225,7 +244,7 @@ function renderProperties(){
   const identity=document.createElement('div');identity.className='object-id';identity.textContent=`${model.edges.includes(n)?'Edge':model.zones.includes(n)?'Zone':'Node'} · ${id}`;properties.append(identity);
   const target={id,ids:[id]};propertyGroup('Label');
   const label=document.createElement('textarea');label.value=n.label;field('Label',label);
-  label.addEventListener('input',()=>previewPropertyEdit({id,value:label.value}));
+  label.addEventListener('input',()=>{fitTextArea(label);previewPropertyEdit({id,value:label.value});});
   label.addEventListener('change',()=>{queuePropertyEdit({id,value:label.value});flushPropertyEdit();});label.addEventListener('blur',flushPropertyEdit);
   if(model.edges.includes(n)){
     propertyGroup('Connection label');
@@ -234,8 +253,8 @@ function renderProperties(){
     const hint=document.createElement('p');hint.className='small-note';hint.textContent='Drag the label, or click it and use arrow keys. A dotted leader appears when the label is away from its connection. Manual placement allows overlaps.';propertyHost.append(hint);
   }
   propertyGroup('Context');
-  for(const name of ['description','notes']){const input=document.createElement('textarea');input.value=n[name]||'';input.rows=name==='notes'?4:2;field(name[0].toUpperCase()+name.slice(1),input);input.addEventListener('input',()=>queuePropertyEdit({id,field:name,value:input.value}));input.addEventListener('change',()=>{queuePropertyEdit({id,field:name,value:input.value});flushPropertyEdit();});input.addEventListener('blur',flushPropertyEdit);}
-  const hint=document.createElement('p');hint.className='small-note';hint.textContent='Descriptions and notes are retained in project files.';propertyHost.append(hint);
+  if(!model.edges.includes(n)){const toggle=document.createElement('input');toggle.type='checkbox';toggle.checked=Boolean(n.showDescription);field('Show description',toggle);toggle.addEventListener('change',()=>executeControl('show-description',target));}
+  for(const name of ['description','notes']){const input=document.createElement('textarea');input.value=n[name]||'';input.rows=name==='notes'?3:2;field(name[0].toUpperCase()+name.slice(1),input);input.addEventListener('input',()=>{fitTextArea(input);previewPropertyEdit({id,field:name,value:input.value});});input.addEventListener('change',()=>{queuePropertyEdit({id,field:name,value:input.value});flushPropertyEdit();});input.addEventListener('blur',flushPropertyEdit);}
   if(model.edges.includes(n)) {
     propertyGroup('Structure');
     const endpoints=items(model).map(o=>[o.id,`${o.label.replace(/\n/g,' ')} (${o.id})`]);
@@ -243,7 +262,7 @@ function renderProperties(){
     selectControl('Target',n.target,endpoints,value=>mutate('Connection target updated.',()=>{const e=object(model,id);e.target=value;e.targetSide=null;pruneAttachmentOrders(model);}));
     propertyGroup('Appearance');
     const arrows=selectControl('Direction',n.direction,[['forward','One arrow'],['none','No arrows'],['both','Two arrows']],value=>executeControl('set-arrows',target,value));arrows.previousElementSibling.textContent='Arrows';
-    selectControl('Line style',n.style,[['normal','Normal'],['dashed','Dashed'],['thick','Thick']],value=>executeControl('set-style',target,value));
+    const lineStyle=selectControl('Line style',n.style,[['normal','Normal'],['dashed','Dashed'],['thick','Thick']],value=>executeControl('set-style',target,value));pairFields(arrows,lineStyle);
     propertyGroup('Connection route');
     selectControl('Routing',n.routing,[['orthogonal','Orthogonal'],['straight','Straight']],value=>{if(value==='straight'&&n.waypoints?.length){error(new Error('Reset route before choosing Straight to remove manual waypoints.'));$('property-routing').value=n.routing;return;}mutate('Routing updated.',()=>object(model,id).routing=value);});
     const sides=[['','Automatic'],['north','Top'],['south','Bottom'],['west','Left'],['east','Right']];
@@ -267,7 +286,8 @@ function renderProperties(){
       const picker=document.createElement('input');picker.type='color';picker.value=value;picker.disabled=busy;picker.setAttribute('aria-label',`${name} picker`);row.append(picker);
       row.dataset.colorField=key;
       const origin=document.createElement('div');origin.className='color-inheritance';const badge=document.createElement('span');badge.className='color-origin';badge.textContent=n[key]===undefined?'Theme':'Custom';
-      const reset=document.createElement('button');reset.textContent='Reset to theme';reset.dataset.resetColor=key;reset.id=`reset-property-${key}`;reset.setAttribute('aria-label',`Reset ${key==='fontColor'?'text color':'background color'} to theme`);reset.disabled=n[key]===undefined;reset.addEventListener('click',()=>{executeControl('reset-color',target,key);$(hex.id)?.focus({preventScroll:true});});origin.append(badge,reset);row.append(origin);
+      hex.previousElementSibling.textContent=key==='fontColor'?'Text':'Fill';const colorLabel=key==='fontColor'?'Text color':'Fill color';hex.setAttribute('aria-label',colorLabel);hex.title=colorLabel;picker.title=colorLabel;picker.setAttribute('aria-label',colorLabel+' picker');
+      const reset=document.createElement('button');reset.textContent='↺';reset.dataset.resetColor=key;reset.id=`reset-property-${key}`;const resetLabel=`Reset ${key==='fontColor'?'text color':'background color'} to theme`;reset.setAttribute('aria-label',resetLabel);reset.title=resetLabel;reset.disabled=n[key]===undefined;reset.hidden=n[key]===undefined;reset.addEventListener('click',()=>{executeControl('reset-color',target,key);$(hex.id)?.focus({preventScroll:true});});origin.append(badge,reset);row.append(origin);
       const queue=()=>{if(/^#[\da-f]{6}$/i.test(hex.value.trim()))picker.value=hex.value.trim();queuePropertyEdit({id,field:key,value:hex.value.trim()});};hex.addEventListener('input',()=>{queue();previewPropertyEdit({id,field:key,value:hex.value.trim()});});hex.addEventListener('change',()=>{queue();flushPropertyEdit();});hex.addEventListener('blur',flushPropertyEdit);
       picker.addEventListener('input',()=>{hex.value=picker.value;queue();previewPropertyEdit({id,field:key,value:picker.value});});picker.addEventListener('change',()=>{hex.value=picker.value;queue();flushPropertyEdit();});picker.addEventListener('blur',flushPropertyEdit);
     }
@@ -280,6 +300,7 @@ function renderProperties(){
       const input=document.createElement('input');input.type='number';input.min=model.nodes.includes(n)?1:dimension==='width'?160:100;input.step=1;input.value=Math.round(n[dimension]);field(dimension==='width'?'Width':'Height',input);
       input.addEventListener('input',()=>{queuePropertyEdit({id,field:dimension,value:input.value});});input.addEventListener('change',()=>{queuePropertyEdit({id,field:dimension,value:input.value});flushPropertyEdit();});input.addEventListener('blur',flushPropertyEdit);
     }
+    pairFields($('property-width'),$('property-height'));
     if(model.nodes.includes(n)){const fitLabel=document.createElement('button');fitLabel.id='btn-fit-label';fitLabel.textContent='Fit to label';fitLabel.addEventListener('click',()=>executeControl('fit-label',target));propertyHost.append(fitLabel);}
     else{
       const fit=document.createElement('button');fit.id='btn-fit-zone';fit.textContent='Fit to contents';fit.addEventListener('click',()=>executeControl('fit-zone',target));propertyHost.append(fit);
@@ -291,7 +312,9 @@ function renderProperties(){
     const geometry=document.createElement('div');geometry.className='geometry';geometry.textContent=`Position ${Math.round(n.x)}, ${Math.round(n.y)} · Size ${Math.round(n.width)} × ${Math.round(n.height)}`;propertyHost.append(geometry);
     const connections=model.edges.filter(e=>e.source===id||e.target===id);if(connections.length){propertyGroup('Connections');for(const e of connections){const b=document.createElement('button');b.className='flow-row';b.textContent=`${e.source===id?'→':'←'} ${object(model,e.source===id?e.target:e.source)?.label}${e.label?' · '+e.label:''}`;b.addEventListener('click',()=>selectAndReveal(e.id));propertyHost.append(b);}}
   }
-  for(const name of ['Label','Appearance','Geometry','Structure','Connection route','Connection label','Context','Connections']){const group=[...properties.children].find(el=>el.dataset.group===name);if(group)properties.append(group);}
+  for(const name of ['Label','Context','Appearance','Geometry','Structure','Connection route','Connection label','Connections']){const group=[...properties.children].find(el=>el.dataset.group===name);if(group)properties.append(group);}
+  for(const p of properties.querySelectorAll('.property-group>.small-note'))if(p.textContent.length>85){const help=document.createElement('details'),summary=document.createElement('summary');help.className='property-help';const group=p.parentElement.dataset.group;summary.textContent=group==='Connection route'?(p.textContent.startsWith('Move an attachment')?'Attachment order':'Waypoints and sides'):group==='Connection label'?'Label placement':'Zone sizing';p.replaceWith(help);help.append(summary,p);}
+  fitPropertyText();
   propertyHost=properties;
   if(focusState&&currentId===previousId){const input=$(focusState.id);if(input){input.focus({preventScroll:true});if(focusState.start!=null&&input.setSelectionRange)input.setSelectionRange(focusState.start,focusState.end);}}
 }
@@ -341,7 +364,8 @@ document.addEventListener('pointermove',event=>{
 document.addEventListener('pointerup',()=>{paletteStart=null;setTimeout(()=>{blockedPaletteClick=null;},0);});
 document.addEventListener('pointercancel',()=>{paletteStart=null;blockedPaletteClick=null;});
 document.addEventListener('click',event=>{if(blockedPaletteClick&&event.target.closest('[data-tool]')?.dataset.tool===blockedPaletteClick){event.preventDefault();event.stopImmediatePropagation();}blockedPaletteClick=null;},true);
-function addConnection(source,target,sourceSide=null,targetSide=null){let edge;mutate('Connection added.',()=>{edge={id:nextId(model,'Edge'),source,target,label:'',direction:'forward',style:'normal',routing:'orthogonal',sourceSide,targetSide};model.edges.push(edge);selection=new Set([edge.id]);});connectSource=null;if(edge&&model.edges.includes(edge))setTool('select');else safeDraw({reroute:false});}
+function connectionAt(clientX,clientY){const hit=document.elementFromPoint(clientX,clientY),handle=hit?.closest('[data-connect]'),id=handle?.dataset.connect||hit?.closest('[data-object-id]')?.dataset.objectId;return items(model).some(n=>n.id===id)?{id,side:handle?.dataset.side||null}:null;}
+function beginConnection(event,source,side=null,clickTarget=null,targetSide=null){capture(event,{type:'connect',source,side,clickTarget,targetSide});connectSource=source;hoverId=null;selection=new Set([source]);safeDraw({reroute:false});viewport.focus();status(clickTarget?'Release over the target to connect.':'Drag to a target and release, or click the target. Escape cancels.');}
 function beginPointer(event){
   if(busy||gesture||!event.isPrimary||event.button!==0||event.target.closest('.zoom-toolbar'))return;
   if(editingControls&&!editingControls.beforeAction())return;
@@ -358,10 +382,10 @@ function beginPointer(event){
   const waypoint=tool==='select'?target.closest('[data-waypoint]'):null;if(waypoint){const id=waypoint.dataset.waypoint,index=Number(waypoint.dataset.waypointIndex);select(id);activeWaypoint={edgeId:id,index};safeDraw({reroute:false});capture(event,{type:'waypoint',id,index,insert:false});viewport.focus();return;}
   const segment=target.closest('[data-route-segment]');if(segment){const id=segment.dataset.routeSegment,edge=object(model,id);if((edge.waypoints||[]).length>=MAX_WAYPOINTS){error(new Error(`A connection can have at most ${MAX_WAYPOINTS} waypoints.`));return;}capture(event,{type:'waypoint',id,index:waypointInsertionIndex(routes.get(id),edge.waypoints,point),insert:true});viewport.focus();return;}
   const reconnect=target.closest('[data-reconnect]');if(reconnect){capture(event,{type:'connect',edgeId:reconnect.dataset.reconnect,end:reconnect.dataset.end});return;}
-  const handle=target.closest('[data-connect]');if(handle){if(tool==='connect'&&connectSource){addConnection(connectSource,handle.dataset.connect,null,handle.dataset.side);return;}capture(event,{type:'connect',source:handle.dataset.connect,side:handle.dataset.side});return;}
+  const handle=target.closest('[data-connect]');if(handle){if(tool==='connect'&&connectSource&&handle.dataset.connect!==connectSource)beginConnection(event,connectSource,null,handle.dataset.connect,handle.dataset.side);else beginConnection(event,handle.dataset.connect,handle.dataset.side);return;}
   const resize=target.closest('[data-resize]');if(resize){capture(event,{type:'resize',id:resize.dataset.resize,handle:resize.dataset.handle});return;}
   const hit=target.closest('[data-object-id]'),id=hit?.dataset.objectId,item=id?object(model,id):null;
-  if(tool==='connect'){if(item&&!model.edges.includes(item)){if(connectSource)addConnection(connectSource,id);else{connectSource=id;selection=new Set([id]);safeDraw({reroute:false});status('Source chosen. Click the target to connect; Escape cancels.');}}else{connectSource=null;selection.clear();safeDraw({reroute:false});}viewport.focus();return;}
+  if(tool==='connect'){if(item&&!model.edges.includes(item))beginConnection(event,connectSource||id,null,connectSource?id:null);else{connectSource=null;selection.clear();safeDraw({reroute:false});}viewport.focus();return;}
   if(item){
     if(event.shiftKey&&model.zones.includes(item)&&!target.closest('[data-zone-header]')){capture(event,{type:'marquee',extend:new Set(selection),zoneId:id});viewport.focus();return;}
     if(event.shiftKey){select(id,true);if(!selection.has(id))return;}else if(!selection.has(id))select(id);
@@ -403,7 +427,7 @@ function moveGesture(event){
     selection=new Set(g.extend);for(const n of items(model))if(n.x>=x&&n.y>=y&&n.x+n.width<=x+w&&n.y+n.height<=y+h)selection.add(n.id);
     safeDraw({inspect:false,reroute:false});world.append(svgElement('rect',{class:'marquee editor-only',x,y,width:w,height:h}));
   }else if(g.type==='connect'){
-    safeDraw({inspect:false,reroute:false});let start;
+    hoverId=connectionAt(event.clientX,event.clientY)?.id||null;safeDraw({inspect:false,reroute:false});let start;
     if(g.edgeId){const edge=object(model,g.edgeId),path=routes.get(g.edgeId);start=g.end==='source'?path.at(-1):path[0];}
     else{const node=object(model,g.source);start=g.side?sidePoint(node,g.side):{x:node.x+node.width/2,y:node.y+node.height/2};}
     world.append(svgElement('path',{class:'connection-preview editor-only',d:`M${start.x},${start.y} L${point.x},${point.y}`}));
@@ -424,15 +448,14 @@ function finishGesture(event){
     else{safeDraw({reroute:false});status('Placement cancelled: drop onto the canvas.');}
     return;
   }
-  if(g.type==='connect'&&g.moved){
-    const hit=document.elementFromPoint(event.clientX,event.clientY),handle=hit?.closest('[data-connect]'),objectHit=hit?.closest('[data-object-id]');
-    const target=handle?.dataset.connect||objectHit?.dataset.objectId;const side=handle?.dataset.side||null;
-    if(target&&items(model).some(n=>n.id===target)){
+  if(g.type==='connect'&&(g.moved||g.clickTarget)){
+    const targetHit=connectionAt(event.clientX,event.clientY),target=targetHit?.id,side=targetHit?.side||(!g.moved?g.targetSide:null);
+    if(target&&(g.moved||target===g.clickTarget)){
       if(g.edgeId){const edge=object(model,g.edgeId);edge[g.end]=target;edge[g.end+'Side']=side;pruneAttachmentOrders(model);selection=new Set([edge.id]);}
       else{const edge={id:nextId(model,'Edge'),source:g.source,target,label:'',direction:'forward',style:'normal',routing:'orthogonal',sourceSide:g.side,targetSide:side};model.edges.push(edge);selection=new Set([edge.id]);}
       releaseCapture();connectSource=null;if(!g.edgeId){tool='select';hoverId=null;}commit(g.before,g.edgeId?'Connection reattached.':'Connection added.');return;
     }
-    status('Connection cancelled: drop onto a node or its handle.');
+    connectSource=null;hoverId=null;selection=new Set(g.selectionBefore);status('Connection cancelled. Drag to a node or zone to connect.');
   }
   if(g.type==='connect'&&!g.moved&&!g.edgeId){connectSource=g.source;selection=new Set([g.source]);}
   if(g.type==='move'&&g.moved){dropSelection(model,g.selected,items(g.before),g.dropParents);translateWaypoints(g.before,model);}
@@ -442,7 +465,7 @@ function finishGesture(event){
   if(['move','resize','waypoint','label'].includes(g.type)&&g.moved)commit(g.before,g.type==='move'?'Selection moved.':g.type==='resize'?'Object resized.':g.type==='label'?'Label position updated.':'Waypoint updated.');else safeDraw({reroute:false});
 }
 viewport.addEventListener('pointerup',finishGesture);
-function cancelGesture(){if(!gesture)return;if(frame){cancelAnimationFrame(frame);frame=null;}const g=gesture;model=g.before;selection=g.selectionBefore;activeWaypoint=g.waypointBefore;activeLabel=g.labelBefore;releaseCapture();safeDraw();status('Gesture cancelled.');}
+function cancelGesture(){if(!gesture)return;if(frame){cancelAnimationFrame(frame);frame=null;}const g=gesture;model=g.before;selection=g.selectionBefore;activeWaypoint=g.waypointBefore;activeLabel=g.labelBefore;if(g.type==='connect'){connectSource=null;hoverId=null;}releaseCapture();safeDraw();status('Gesture cancelled.');}
 viewport.addEventListener('pointercancel',cancelGesture);viewport.addEventListener('lostpointercapture',()=>{if(gesture)cancelGesture();});window.addEventListener('blur',()=>{spaceHeld=false;paletteStart=null;cancelGesture();});
 viewport.addEventListener('dblclick',event=>{if(busy||tool!=='select'||event.target.closest('[data-waypoint],[data-route-segment],[data-reconnect]'))return;const id=event.target.closest('[data-object-id]')?.dataset.objectId;if(id){select(id);editingControls?.editLabel(id);}});
 function zoomAt(scale,point={x:viewport.clientWidth/2,y:viewport.clientHeight/2}){const v=model.settings.view,next=Math.max(.02,Math.min(8,scale)),ratio=next/v.scale;v.x=point.x-(point.x-v.x)*ratio;v.y=point.y-(point.y-v.y)*ratio;v.scale=next;updateView();}
@@ -453,9 +476,10 @@ function undo(redo=false){if(busy||gesture||(editingControls&&!editingControls.b
 async function runAsync(message,fn,{forceSource=false}={}){if(busy||gesture||(editingControls&&!editingControls.beforeAction()))return false;flushPropertyEdit();const before=copy(model),oldSelection=new Set(selection);loading(true,message);try{await fn();validateModel(model);router.route(model);commit(before,message,{forceSource});if(forceSource)syncSource(true);$('error-banner').hidden=true;return true;}catch(e){model=before;selection=oldSelection;safeDraw();error(e);return false;}finally{loading(false);}}
 async function applySource(){flushPropertyEdit();const draft=editor.value;if(!draft.trim()){error(new Error('Enter a Mermaid flowchart, or choose New for an empty diagram.'));return;}let fresh=false;const applied=await runAsync('Source applied.',async()=>{const parsed=await importMermaid(draft,{layout:model.settings.layout}),ids=new Set(items(model).map(n=>n.id));fresh=!items(parsed).some(n=>ids.has(n.id));model=mergeSource(model,parsed);selection=new Set([...selection].filter(id=>object(model,id)));},{forceSource:true});if(applied&&fresh)fit();}
 function newDiagram(){if(busy||(editingControls&&!editingControls.beforeAction()))return;if(gesture)cancelGesture();flushPropertyEdit();const before=copy(model);model=emptyModel();selection.clear();activeWaypoint=null;activeLabel=null;waypointEdge=null;collapsedZones.clear();connectSource=null;hoverId=null;tool='select';commit(before,'New diagram. Add nodes and zones, or paste Mermaid.',{forceSource:true});syncSource(true);$('error-banner').hidden=true;viewport.focus();}
-async function loadExample(name){if(!name)return;const loaded=await runAsync('Example loaded.',async()=>{const response=await fetch(`./diagrams/${name}.mmd`);if(!response.ok)throw new Error('The local example could not be loaded.');model=await importMermaid(await response.text());selection.clear();},{forceSource:true});if(loaded)fit();$('example').value='';}
+async function loadExample(name){if(!name)return;try{const response=await fetch(`./diagrams/${name}.mmd`);if(!response.ok)throw new Error('The local example could not be loaded.');await files.load(new File([await response.text()],name+'.mmd',{type:'text/plain'}));}catch(e){error(e);}finally{$('example').value='';}}
 function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);}
-function saveProject(){if(busy||gesture||(editingControls&&!editingControls.beforeAction()))return;flushPropertyEdit();try{validateModel(model);download(new Blob([JSON.stringify(model,null,2)],{type:'application/json'}),'diagram.mermaid-project.json');dirty=false;updateControls();status('Project downloaded with its editable layout.');}catch(e){error(e)}}
+function saveProject(){return files.save();}
+
 async function exportDiagram(){if(busy||gesture||(editingControls&&!editingControls.beforeAction()))return;flushPropertyEdit();try{
   const type=$('export-format').value;
   if(type==='mermaid'){download(new Blob([toMermaid(model)],{type:'text/plain;charset=utf-8'}),'diagram.mmd');status('Mermaid source exported. Manual positions are saved in project files.');return;}
@@ -463,10 +487,9 @@ async function exportDiagram(){if(busy||gesture||(editingControls&&!editingContr
   if(type==='svg'){download(blob,'diagram.svg');status('SVG exported with the current arrangement.');return;}
   const url=URL.createObjectURL(blob);try{const image=new Image();image.src=url;await image.decode();const output=document.createElement('canvas'),factor=Math.min(2,16000/Math.max(svg.width,svg.height));output.width=Math.ceil(svg.width*factor);output.height=Math.ceil(svg.height*factor);const context=output.getContext('2d');context.fillStyle='#fff';context.fillRect(0,0,output.width,output.height);context.drawImage(image,0,0,output.width,output.height);const png=await new Promise(resolve=>output.toBlob(resolve,'image/png'));if(!png)throw new Error('PNG generation failed.');download(png,'diagram.png');status('PNG exported with the current arrangement.');}finally{URL.revokeObjectURL(url);}
 }catch(e){error(e)}}
-$('file-input').addEventListener('change',async event=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;let repaired=false;const project=file.name.endsWith('.json'),opened=await runAsync('File opened.',async()=>{const text=await file.text();if(project){model=validateModel(JSON.parse(text));const before=JSON.stringify(model.nodes);ensureLabelFit(model);ensureNodeSpacing(model);expandZones(model);repaired=JSON.stringify(model.nodes)!==before;}else{editor.value=text;sourceDirty=true;model=await importMermaid(text);}selection.clear();connectSource=null;hoverId=null;},{forceSource:true});if(opened){if(project){dirty=repaired;updateControls();if(repaired)status('Project opened. Labels were fitted and the 24-unit gap checked; save to retain the adjustments.');}else fit();}});
-editor.addEventListener('input',()=>{sourceDirty=true;syncSource();status('Source draft edited. Apply it when ready.');});
-$('btn-apply').addEventListener('click',applySource);$('btn-discard').addEventListener('click',()=>{syncSource(true);status('Source draft discarded.');});
-$('btn-new').addEventListener('click',newDiagram);$('btn-open').addEventListener('click',()=>$('file-input').click());$('btn-save').addEventListener('click',saveProject);$('btn-export').addEventListener('click',exportDiagram);
+editor.addEventListener('input',()=>{sourceDirty=true;syncSource();status('Source draft edited. Apply it when ready.');files.changed();});
+$('btn-apply').addEventListener('click',applySource);$('btn-discard').addEventListener('click',()=>{syncSource(true);files.changed();status('Source draft discarded.');});
+$('btn-new').addEventListener('click',()=>files.newDiagram());$('btn-open').addEventListener('click',()=>files.open());$('btn-save').addEventListener('click',saveProject);$('btn-export').addEventListener('click',exportDiagram);
 function showPanel(name){const same=!$('source-panel').hidden&&!$(name==='source'?'source-content':'hierarchy-content').hidden;$('source-panel').hidden=same;$('source-content').hidden=name!=='source';$('hierarchy-content').hidden=name!=='hierarchy';$('btn-source').setAttribute('aria-expanded',String(!same&&name==='source'));$('btn-hierarchy').setAttribute('aria-expanded',String(!same&&name==='hierarchy'));}
 $('btn-source').addEventListener('click',()=>showPanel('source'));$('btn-hierarchy').addEventListener('click',()=>showPanel('hierarchy'));
 $('example').addEventListener('change',()=>loadExample($('example').value));
@@ -482,7 +505,8 @@ $('btn-fit').addEventListener('click',fit);$('btn-zoom-in').addEventListener('cl
 $('dismiss-error').addEventListener('click',()=>$('error-banner').hidden=true);
 document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
 document.addEventListener('keydown',event=>{
-  const editing=event.target.matches('input,textarea,select');const mod=event.metaKey||event.ctrlKey;
+  if(files.dialogOpen())return;
+  const editing=textEditing(event.target);const mod=event.metaKey||event.ctrlKey;
   if(mod&&event.key.toLowerCase()==='s'){event.preventDefault();saveProject();return;}
   if(event.key==='Escape'){paletteStart=null;if(gesture)cancelGesture();else if(connectSource){connectSource=null;selection.clear();safeDraw({reroute:false});status('Connection cancelled. Choose a source.');}else{selection.clear();setTool('select');}return;}
   if(editing||busy)return;
@@ -498,13 +522,63 @@ document.addEventListener('keydown',event=>{
 });
 document.addEventListener('keyup',event=>{if(event.code==='Space')spaceHeld=false;});
 new ResizeObserver(()=>updateView()).observe(viewport);
+// Hidden sheets have no measurable text width. Fit existing context when shown,
+// and refit after a responsive width change without replacing focused fields.
+let propertyTextWidth=0;
+new ResizeObserver(()=>{const width=properties.getBoundingClientRect().width;if(width!==propertyTextWidth){propertyTextWidth=width;fitPropertyText();}}).observe(properties);
+
+function prepareFileAction(){if(busy||gesture||(editingControls&&!editingControls.beforeAction()))return false;flushPropertyEdit();try{validateModel(model);return true;}catch(e){error(e);return false;}}
+files=createProjectFiles({
+  snapshot:()=>controlEdit?.before||gesture?.before||model,
+  sourceDraft:()=>sourceDirty?editor.value:null,
+  restoreDraft(draft){if(typeof draft==='string'){editor.value=draft;sourceDirty=true;syncSource();}},
+  prepare:prepareFileAction,update:updateControls,status,error,download,lock:loading,
+  clear:newDiagram,
+  newIdentity(){documentId=newSessionId();lastPaste='';pasteCount=0;},
+  async load(text,project){
+    const opened=await runAsync('File opened.',async()=>{
+      if(project){model=validateModel(JSON.parse(text));ensureLabelFit(model);ensureNodeSpacing(model);expandZones(model);}
+      else model=await importMermaid(text);
+      selection.clear();connectSource=null;hoverId=null;activeWaypoint=null;activeLabel=null;collapsedZones.clear();tool='select';
+    },{forceSource:true});
+    if(opened){history.past=[];history.future=[];if(!project)fit();updateControls();}return opened;
+  }
+});
+function textEditing(target){return target?.matches?.('input,textarea,select')||target?.isContentEditable;}
+function canClipboard(target){return !textEditing(target)&&!busy&&!gesture&&!files.dialogOpen();}
+function copiedText(ids=selection){if(!prepareFileAction())return null;return copyFragment(model,new Set(ids),documentId);}
+async function copySelection(ids=selection){
+  try{const text=copiedText(ids);if(!text)return;if(!navigator.clipboard?.writeText)throw new Error('Use Ctrl/Cmd+C on the canvas to copy in this browser.');await navigator.clipboard.writeText(text);status('Diagram selection copied, including descendants and internal connections.');}
+  catch(e){error(new Error(e.name==='NotAllowedError'?'Clipboard access was blocked. Use Ctrl/Cmd+C on the canvas.':e.message));}
+}
+function pasteText(text,point=null){
+  if(!prepareFileAction())return;
+  try{
+    const fragment=readFragment(text),bounds=fragmentBounds(fragment),v=model.settings.view;
+    pasteCount=text===lastPaste?pasteCount+1:1;lastPaste=text;
+    let dx=36*pasteCount,dy=36*pasteCount;
+    if(!point&&bounds){const visible=bounds.x+bounds.width>-v.x/v.scale&&bounds.x<(viewport.clientWidth-v.x)/v.scale&&bounds.y+bounds.height>-v.y/v.scale&&bounds.y<(viewport.clientHeight-v.y)/v.scale;if(!visible)point={x:(viewport.clientWidth/2-v.x)/v.scale+(pasteCount-1)*36,y:(viewport.clientHeight/2-v.y)/v.scale+(pasteCount-1)*36};}
+    mutate('Diagram section pasted. Undo removes the whole paste.',()=>{
+      const pasted=pasteFragment(model,fragment,documentId,{dx,dy,point});model=pasted.model;selection=pasted.selection;
+      activeWaypoint=null;activeLabel=null;connectSource=null;hoverId=null;tool='select';
+      const selected=items(model).filter(n=>selection.has(n.id));if(selected.length&&!selected.some(n=>(n.x+n.width)*v.scale+v.x>20&&n.x*v.scale+v.x<viewport.clientWidth-20&&(n.y+n.height)*v.scale+v.y>20&&n.y*v.scale+v.y<viewport.clientHeight-20)){const anchor=selected[0];v.x=viewport.clientWidth/2-(anchor.x+anchor.width/2)*v.scale;v.y=viewport.clientHeight/2-(anchor.y+anchor.height/2)*v.scale;model.settings.view={...v};}
+    },{spacing:false});viewport.focus();
+  }catch(e){error(e);}
+}
+async function pasteSelection(point=null){
+  if(!prepareFileAction())return;
+  try{if(!navigator.clipboard?.readText)throw new Error('Use Ctrl/Cmd+V on the canvas to paste in this browser.');const token=documentId,text=await navigator.clipboard.readText();if(token!==documentId){status('Paste cancelled because the open diagram changed.');return;}pasteText(text,point);}
+  catch(e){error(new Error(e.name==='NotAllowedError'?'Clipboard access was blocked. Use Ctrl/Cmd+V on the canvas.':e.message));}
+}
+document.addEventListener('copy',event=>{if(!canClipboard(event.target)||!selection.size||!event.clipboardData)return;try{const text=copiedText();if(text){event.clipboardData.setData('text/plain',text);event.preventDefault();status('Diagram selection copied.');}}catch(e){error(e);}});
+document.addEventListener('paste',event=>{if(!canClipboard(event.target)||!event.clipboardData)return;event.preventDefault();pasteText(event.clipboardData.getData('text/plain'));});
 editingControls=createEditingControls({
-  state:()=>({model,selection,activeWaypoint,tool,gesture,busy,routes,groups:router?.groups||new Map()}),
+  state:()=>({model,selection,activeWaypoint,tool,gesture,busy,routes,files:files.state(),history,pendingUndo:pendingUndo(),groups:router?.groups||new Map()}),
   execute:executeControl,select,diagramPoint,cancelGesture,beginPointer,
   flushProperties:flushPropertyEdit,
   activateWaypoint(id,index){select(id);activeWaypoint={edgeId:id,index};safeDraw({reroute:false});},
   activateLabel(id){select(id);activeLabel=id;safeDraw({reroute:false});},
   beginDraft:beginControlDraft,previewDraft:previewControlDraft,finishDraft:finishControlDraft,cancelDraft:cancelControlDraft
 });
-async function start(){try{initializeMermaid();await AvoidLib.load(new URL('./vendor/libavoid/dist/libavoid.wasm',import.meta.url).href);router=new DiagramRouter(AvoidLib.getInstance());const response=await fetch('./diagrams/zones-and-subzones.mmd');if(!response.ok)throw new Error('The starter diagram could not be loaded.');model=await importMermaid(await response.text());syncSource(true);draw();loading(false);fit();status('Ready. Import, arrange, and evolve your diagram.');}catch(e){loading(false);error(e);}}
+async function start(){try{initializeMermaid();await AvoidLib.load(new URL('./vendor/libavoid/dist/libavoid.wasm',import.meta.url).href);router=new DiagramRouter(AvoidLib.getInstance());const response=await fetch('./diagrams/zones-and-subzones.mmd');if(!response.ok)throw new Error('The starter diagram could not be loaded.');model=await importMermaid(await response.text());syncSource(true);draw();loading(false);fit();files.start();status('Ready. Import, arrange, and evolve your diagram.');}catch(e){loading(false);error(e);}}
 loading(true,'Starting local engines…');start();

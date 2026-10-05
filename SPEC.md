@@ -23,6 +23,7 @@ After import, the editable diagram model is the source of truth. The initial Mer
 
 Source fidelity means preserving the supported meaning and structure of the current diagram. Preserving the original Mermaid text is not a requirement.
 
+- Nodes and zones can opt into `showDescription` (boolean, default false). Display description text instead of the label on the canvas, retaining the label for hierarchy/source identity. Wrap at spaces. Parent descriptions occupy a top header with content clearance; geometry, routes, clipboard and image export use the displayed text.
 - Nodes have stable IDs, labels, shapes, descriptions, notes, positions, automatic or manual sizes, background/font colors, and optional container membership. Nodes can also be parents, using an optional `container` flag.
 - Edges have stable IDs, source and target references, labels, descriptions, notes, direction, and line style.
 - Zones have stable IDs, titles, descriptions, notes, positions, sizes, background/font colors, and parent/child relationships.
@@ -98,7 +99,7 @@ Users can edit a source draft and explicitly apply it. Draft typing does not rer
 
 ### Connections
 
-- Connect by clicking a source and then a target, or dragging between contextual node handles. Use a crosshair cursor. Show handles only for the hovered/source node, with a preview and clear source/target guidance. Escape cancels a pending source. Each successfully created connection returns to Select with the edge selected; another connection requires activating Connect again. Incomplete or invalid connection attempts keep Connect available.
+- Connect by pressing a node or zone body, dragging to a highlighted target and releasing. Retain source/target clicks and dragging between contextual handles, including parent nodes. Use a crosshair cursor. Show handles only for the hovered/source node, with a preview and clear source/target guidance. Escape cancels a pending source. Each successfully created connection returns to Select with the edge selected; another connection requires activating Connect again. Incomplete or invalid connection attempts keep Connect available.
 - Edit its label, description, and notes, reconnect either endpoint, or delete it.
 - Support directed, undirected, and bidirectional connections.
 - Support normal, dashed, and thick line styles.
@@ -131,21 +132,21 @@ Users can edit a source draft and explicitly apply it. Draft typing does not rer
 
 ## Toolbar and properties
 
-Control placement and interaction are specified in [Editing controls](EDITING-UI-SPEC.md). Use that specification for the selection bar, action menus, attachment controls, narrow layout, and acceptance tests.
+Control placement and interaction are specified in [Editing controls](EDITING-UI-SPEC.md). Use that specification for the compact header, inspector selection actions, action menus, attachment controls, narrow layout, and acceptance tests.
 
 Provide consistent controls for:
 
 - Select and Pan.
 - Add node, Connect, and Add zone.
 - Undo, Redo, and Delete.
-- Align and Distribute in the selection bar for multiple selections.
+- Align and Distribute in the inspector selection actions for multiple selections.
 - Zoom controls and Fit diagram on the canvas.
 - Flow direction and layout controls.
 - Auto layout.
 - Open/import, Save project, and Export.
 - New, to start with an empty diagram as one undoable action.
 
-A selection bar exposes common actions for the selected node, connection, zone, group, or waypoint. More opens the full action menu. Right-click and long-press open actions for the clicked object or canvas position. Attachment controls open beside an endpoint. Properties groups precise fields and detailed information. On narrow screens, Details opens it as a sheet. Users must not need to edit Mermaid syntax to perform the supported visual operations.
+The sticky Properties heading exposes common actions for the selected node, connection, zone, group, or waypoint. More opens the full action menu. Right-click and long-press open actions for the clicked object or canvas position. Attachment controls open beside an endpoint. Properties groups precise fields and detailed information. On narrow screens, Properties or Details opens it as a sheet. File, Edit, View and Diagram menus share one compact desktop header with editing tools and Save; narrow screens use two rows with a tool chooser and Selection actions. Properties puts Description and Notes directly below Label, pairs dimensions and colors, and grows text fields while typing. Users must not need to edit Mermaid syntax to perform the supported visual operations.
 
 Labels preview immediately for nodes, zones, and edges while retaining field focus/caret. Coalesce the continuous input session into one Undo action on commit. Label, description, notes, and size typing must commit before leaving the field, changing selection/tools, or saving/exporting. Disable editing controls while the local engines are starting or an asynchronous layout/import is running.
 
@@ -156,7 +157,7 @@ Use familiar shortcuts for Delete, Escape, Undo/Redo, and arrow-key nudging. Too
 ### Appearance and text
 
 - Provide background and font color pickers and six-digit hex fields for nodes and zones in Properties. Valid picker input and hex values preview immediately in the diagram while retaining the focused control; a continuous input session commits as one Undo action. Partial invalid hex text keeps the last valid preview, and an invalid final value restores the original state. Child zones derive a slightly darker default background from their parent and inherit its title font color, unless explicitly overridden. Header/title backing is always a darker shade of the selected background. Apply the font color to the title. Preserve the translucent title backing above routes.
-- Provide a global Text size control in the toolbar, from 10 to 48 pixels, defaulting to 13. Apply it to node labels, zone titles, and edge labels while leaving interface text unchanged.
+- Provide a global Text size control in the Diagram menu, from 10 to 48 pixels, defaulting to 13. Apply it to node labels, zone titles, and edge labels while leaving interface text unchanged.
 - Accommodate larger labels through wrapping, label/shape minimums, title bounds, label placement, zone expansion, and rerouting. Retain manual size preferences and current pan/zoom so increasing text size does not immediately shrink the view. Fit remains an explicit command.
 - Appearance edits are undoable and survive Save/Open, matching-ID source application, and Auto layout. SVG and PNG reflect the current font size and colors. Mermaid export contains the supported structure; the project file retains editor appearance.
 
@@ -170,6 +171,17 @@ Do not implement a custom route-finding algorithm. Integration code may translat
 
 Auto layout operates on the current diagram structure, including additions, deletions, zones, and node containers. After shape/title sizing and container expansion, enforce at least 24 units between unrelated siblings, including expanded container borders. Move compound groups rigidly during this correction; preserve free routing across zones. It is one undoable action. Changing automatic layout preferences must not silently discard manual arrangements; those preferences are applied through Auto layout.
 
+## Diagram clipboard
+
+- Provide Copy/Paste through Ctrl/Cmd+C/V, Edit and applicable action menus; provide Paste here at the captured canvas point.
+- Copy one or multiple objects. Include all descendants of selected zones/container nodes, even when collapsed; deduplicate selected ancestor/child combinations.
+- Include connections only when both endpoints are copied. Preserve explicit colors, labels, description/notes, shape, dimensions, manual sizing, nesting, side choices, attachment-order keys, waypoints and manual label placement.
+- Assign fresh IDs for every paste and remap parents/endpoints/order keys. Retain relative arrangement; apply current routing/clearance. Destination defaults apply to inherited theme and font settings.
+- Paste visibly near its original section, with repeated offsets, or in the current view if the source coordinates are offscreen. Paste here centres the section under the pointer. Select the result, record one Undo step and schedule autosave. Copy creates no model edit.
+- Use a versioned text fragment on the system clipboard to support separate projects/tabs. Validate it before changing the diagram; reject malformed and oversized payloads atomically. Menu permission failures direct the user to keyboard clipboard events.
+- Duplicate edge-only selections between their existing endpoints only in the same open document identity; another project requires copied endpoint nodes. Never bind a connection to an unrelated document merely because its IDs match.
+- Keep native text clipboard behaviour in inputs, textareas, selects and editable text. A delayed clipboard read must not modify a subsequently opened document.
+
 ## Undo and redo
 
 Every completed model edit is undoable, including moves and their membership changes, shape/label/context/color/font changes, connection changes, resizing, deletion, source application, alignment/distribution, and Auto layout.
@@ -178,11 +190,11 @@ Every completed model edit is undoable, including moves and their membership cha
 - Undo restores both structure and layout; redo reapplies them.
 - Cancelled gestures and invalid source applications do not create history entries.
 - Panning and zooming do not consume diagram-edit history.
-- Persistent undo history across project reloads is not required for the first version.
+- Open/reload starts a new Undo history. New remains undoable but detaches the file connection; undoing it cannot reconnect the previous file. File connections and writes are never changed by ordinary Undo/Redo.
 
 ## Saving and exporting
 
-- Save a versioned project file containing the canonical diagram model and layout settings needed to restore the editable diagram.
+- Keep a versioned project file containing the canonical diagram model and layout settings needed to restore the editable diagram.
 - Reopening a project restores its nodes, edges, nested zones, labels, shapes, manual positions, sizes, and diagram settings without running a new automatic layout.
 - An opened saved project starts with a clean save indicator. Legacy geometry violating minimum node clearance is corrected and marked for saving; valid saved geometry remains exact.
 - Descriptions and notes on all objects, node/zone colors, manual node size preferences, global font size, guide preference, node container flag, and original node manual dimensions (`containerSize`) are optional fields in version 1 projects; older projects remain readable. Missing font size defaults to 13 pixels and missing guide preference to enabled; missing colors retain the standard appearance. Preserve these fields through save/open, Undo/Redo, Auto layout, and matching-ID source application. Mermaid and image exports do not encode these context fields.
@@ -191,6 +203,22 @@ Every completed model edit is undoable, including moves and their membership cha
 - Importing that Mermaid export starts a new editable diagram with an automatic layout. Reopening the project file restores the saved manual arrangement.
 - Export the current arrangement as SVG and PNG, including all diagram content and excluding selection handles and other editing controls.
 - Keep save/export operations distinct from Auto layout.
+
+### Working files, autosave and recovery
+
+- File → Recent files lists up to ten successful opens/saves, most recent first. Persist handles in IndexedDB, deduplicate using file identity, reopen fresh disk content and request read access only from user action. Fallback entries are labelled browser copies and remain detached. Provide per-entry removal. Do not add cancelled or invalid imports.
+
+- Detect secure-context File System Access support. Open JSON through its picker and retain the original handle only after successful validation/import. Existing saved geometry stays exact unless required label/clearance repairs make the project dirty.
+- Save/Ctrl/Cmd+S writes the connected file. Untitled projects choose a file. Save as writes and then switches the connection; cancellation/failure preserves the previous connection. Download a copy leaves the binding and dirty state intact.
+- Treat Mermaid and example files as imports into a new document; create a JSON working file on first save instead of replacing Mermaid source with JSON.
+- Provide optional File-menu autosave, stored as a per-browser user preference, initially off and retained across New, Open, recovery and refresh. Allow changing the preference without a file connection; schedule writes only with a connected writable file. Debounce validated completed edits for about one second. Include valid focused label/description/notes typing, Undo/Redo and saved view changes, retaining focus and one typing-session Undo step. Exclude cancelled gestures and unconfirmed popup previews.
+- Serialize writes. Capture each document generation, handle and content snapshot; skip stale automatic snapshots. A transition waits for outstanding writes and prevents edits during the transition. A snapshot from the previous document must never reach the next file.
+- Advance the saved checkpoint only after write/close succeeds. Newer edits remain dirty. Show filename and explicit unsaved/saving/saved/paused states. Download fallback reports a copy, not a verified disk save.
+- Check the connected file's current contents before writing. External changes pause writing and offer Reload, Save as, or an explicit Overwrite. Validate Reload before discarding the current model. Failures/permission loss retain edits, pause retries and offer manual Save or a copy; timer saves never prompt for permission.
+- New/Open protects unsaved model changes and unapplied source. A cancelled picker or failed import preserves the model, file binding and draft. Apply a source draft before saving it as project content; it is not silently included in JSON.
+- Store a separate per-tab browser recovery copy of validated unsaved edits and unapplied source. Offer Restore/Discard for the current tab after refresh/crash and expose other available records through File → Browser recovery. Do not automatically offer another active tab's record or erase it when restoring a copy. Label recovery separately from disk saves, and restore without assuming a file handle or permission. Save reconnects via an explicit file choice. Storage failure must not interrupt editing or disk saves.
+- Keep handles, autosave preference, document identity, clipboard data and recovery metadata out of version 1 project JSON. Retain offline/local operation.
+- Fall back to file upload and downloaded project copies when the API or its picker is unavailable. Do not attempt disk autosave in that mode, while retaining the user preference; keep all editing and export functions available.
 
 ## Local operation
 
@@ -232,3 +260,6 @@ The following are outside the first version:
 
 19. Drag nodes onto ordinary nodes of every supported shape, into/out of zones, and between parents: adopt the intended target, reject cycles and corners outside curved outlines, preserve the drop centre, demote a node whose final child leaves, and undo the gesture as one edit.
 20. Drag Node/Zone toolbar buttons onto the canvas at different zoom/pan/grid/font settings, into existing containers or onto ordinary nodes. Show a placement preview and target, create one object on release, preserve click placement, and cancel on Escape, lost capture, or release outside the canvas without recording an edit.
+
+21. Open a JSON working file, Save edits to the original, enable idle autosave while typing focused context, and confirm successful-close checkpoints, Undo/Redo disk updates, failures, lost permission, external change resolutions and safe New/Open/Save as transitions. Recover after refresh with the browser autosave preference retained and retained source draft; check upload/download fallback.
+22. Copy single/multiple nodes, nested collapsed containers and internal edges. Paste repeatedly and at a context point, including across documents with different themes/fonts; preserve data and remap IDs/order/parents. Verify one Undo/Redo, autosave, offscreen visibility, edge-only document restrictions, delayed clipboard access and native text copy/paste.

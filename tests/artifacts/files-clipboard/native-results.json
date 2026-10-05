@@ -1,0 +1,118 @@
+{
+  "checks": [
+    {
+      "name": "Native Cmd+C copies a nested zone with all descendants and internal edges",
+      "pass": true,
+      "evidence": {
+        "nodes": 3,
+        "zones": 2,
+        "edges": 2
+      }
+    },
+    {
+      "name": "Native Cmd+V pastes a complete section into an empty diagram",
+      "pass": true,
+      "evidence": {
+        "counts": "5 nodes · 4 edges · 0 zones",
+        "dirty": "Unsaved changes",
+        "selected": 5
+      }
+    },
+    {
+      "name": "Native File menu exposes Save, Save as, copy download and optional autosave",
+      "pass": true,
+      "evidence": "New diagramOpen…Save project⌘SSave as…Download a copyAutosave to working fileExport›"
+    },
+    {
+      "name": "Native 320px chrome and File menu preserve touch targets and viewport bounds",
+      "pass": true,
+      "evidence": {
+        "scrollWidth": 320,
+        "targets": [
+          {
+            "height": 44,
+            "name": "File",
+            "width": 44
+          },
+          {
+            "height": 44,
+            "name": "Edit",
+            "width": 44
+          },
+          {
+            "height": 44,
+            "name": "View",
+            "width": 47.203125
+          },
+          {
+            "height": 44,
+            "name": "Diagram",
+            "width": 67.25
+          },
+          {
+            "height": 44,
+            "name": "Select ▾",
+            "width": 92
+          },
+          {
+            "height": 44,
+            "name": "Undo",
+            "width": 44
+          },
+          {
+            "height": 44,
+            "name": "Redo",
+            "width": 44
+          },
+          {
+            "height": 44,
+            "name": "Selection actions",
+            "width": 44
+          },
+          {
+            "height": 44,
+            "name": "Properties",
+            "width": 44
+          },
+          {
+            "height": 44,
+            "name": "Save project",
+            "width": 44
+          }
+        ],
+        "width": 320,
+        "menu": {
+          "bottom": 446,
+          "left": 50.765625,
+          "right": 294.765625,
+          "top": 58
+        }
+      }
+    }
+  ],
+  "observations": [
+    {
+      "operation": "Native selection copy transported into another tab",
+      "format": "diagram-studio-fragment",
+      "nodes": 5,
+      "edges": 4,
+      "sourceBefore": "9 nodes · 9 edges · 6 zones",
+      "sourceAfter": "14 nodes · 13 edges · 6 zones"
+    },
+    {
+      "operation": "Native Undo/Redo of complete paste",
+      "undo": "9 nodes · 9 edges · 6 zones",
+      "redo": "14 nodes · 13 edges · 6 zones"
+    },
+    {
+      "operation": "Native text clipboard in Notes",
+      "copied": "Native notes clipboard check",
+      "pasted": "Pasted notes stay text",
+      "countsUnchanged": "14 nodes · 13 edges · 6 zones"
+    }
+  ],
+  "limitations": [
+    "The browser automation filechooser event does not expose native File System Access OS choosers. Direct-file API, permission and failure paths are covered in storage.html with controlled handles, complemented by real filesystem controller writes.",
+    "Cross-tab clipboard transport uses the browser automation clipboard broker between tabs; native Cmd+C/V generate the payload and invoke the application handlers."
+  ]
+}

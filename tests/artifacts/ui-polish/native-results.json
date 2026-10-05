@@ -1,0 +1,110 @@
+{
+  "date": "2026-10-04",
+  "method": "In-app browser native mouse, keyboard and file chooser. Desktop 1280×720; responsive frame 390×660 and 320×660. Touch handler regressions are in the UI harness; no physical mobile device was used.",
+  "passed": 22,
+  "total": 22,
+  "results": [
+    {
+      "name": "Native node body release creates one parallel edge, keeps positions and returns Select",
+      "pass": true
+    },
+    {
+      "name": "One native Undo restores exact node body connection routes",
+      "pass": true
+    },
+    {
+      "name": "Native Redo restores the created connection",
+      "pass": true
+    },
+    {
+      "name": "Native empty drop creates no edge and leaves Connect armed",
+      "pass": true
+    },
+    {
+      "name": "Native zone body to zone body release connects and returns Select",
+      "pass": true
+    },
+    {
+      "name": "Native context typing grows the field while retaining focus",
+      "pass": true,
+      "focus": true,
+      "height": 99,
+      "value": "Validates incoming requests and dispatches work.\nChecks authentication before routing.\nRejects malformed input."
+    },
+    {
+      "name": "Native Description editing commits as one Undo step",
+      "pass": true
+    },
+    {
+      "name": "Native Shape action updates precise field through the compact header",
+      "pass": true
+    },
+    {
+      "name": "Custom color alone exposes its reset",
+      "pass": true
+    },
+    {
+      "name": "Reset returns one color to Theme and hides its reset",
+      "pass": true
+    },
+    {
+      "name": "More toggles closed on the second invocation",
+      "pass": true
+    },
+    {
+      "name": "Keyboard Left returns from Export to its parent item",
+      "pass": true
+    },
+    {
+      "name": "Native submenu arrow keys preserve selected node positions and history availability",
+      "pass": true
+    },
+    {
+      "name": "Native mouse body release in a 390-pixel viewport creates a connection and exits Connect",
+      "pass": true
+    },
+    {
+      "name": "Mobile Properties closes to a visible focused invoker",
+      "pass": true
+    },
+    {
+      "name": "Saved mobile context expands after opening the sheet",
+      "pass": true,
+      "measuredNotes": {
+        "height": 105,
+        "scrollHeight": 103,
+        "clientHeight": 103
+      }
+    },
+    {
+      "name": "Theme chooser fits the 320-pixel viewport",
+      "pass": true
+    },
+    {
+      "name": "Actual native Save/Open/Save preserves the complete model, including context, geometry and view",
+      "pass": true
+    },
+    {
+      "name": "Actual File → Export SVG contains five nodes and four routes without editor handles",
+      "pass": true
+    },
+    {
+      "name": "Actual File → Export PNG has a valid PNG signature and complete raster dimensions",
+      "pass": true,
+      "width": 1946,
+      "height": 766
+    },
+    {
+      "name": "Standalone desktop and narrow review consoles have no warnings or errors",
+      "pass": true
+    },
+    {
+      "name": "Native Cmd+S in the File menu downloads the project and closes the menu",
+      "pass": true
+    }
+  ],
+  "console": {
+    "desktop": [],
+    "narrow": []
+  }
+}

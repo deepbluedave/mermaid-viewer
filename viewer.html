@@ -5,42 +5,53 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'">
   <title>Mermaid Diagram Studio</title>
-  <link rel="stylesheet" href="studio.css?v=themes">
+  <link rel="stylesheet" href="studio.css?v=refinements">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><span class="brand-mark" aria-hidden="true">◇</span><div><strong>Diagram Studio</strong><span>Mermaid to your own arrangement</span></div></div>
+    <div class="brand" title="Diagram Studio"><span class="brand-mark" aria-hidden="true">◇</span><strong>Diagram Studio</strong></div>
+    <nav class="app-menus" role="menubar" aria-label="Application menus">
+      <button disabled id="btn-project-menu" role="menuitem" aria-haspopup="menu" aria-expanded="false">File</button>
+      <button disabled id="btn-edit-menu" role="menuitem" aria-haspopup="menu" aria-expanded="false">Edit</button>
+      <button disabled id="btn-view-menu" role="menuitem" aria-haspopup="menu" aria-expanded="false">View</button>
+      <button disabled id="btn-diagram-menu" role="menuitem" aria-haspopup="menu" aria-expanded="false">Diagram</button>
+    </nav>
+    <nav class="toolbar" aria-label="Diagram tools">
+      <button disabled id="btn-tool-menu" class="narrow-only" aria-haspopup="menu" aria-expanded="false">Select ▾</button>
+      <div class="tool-group wide-tools" role="group" aria-label="Editing tools">
+        <button disabled data-tool="select" aria-pressed="true" title="Select and move (V)">↖ <span>Select</span></button>
+        <button disabled data-tool="pan" aria-pressed="false" title="Pan (H or hold Space)">✥ <span>Pan</span></button>
+        <button disabled data-tool="node" aria-pressed="false" title="Add node (N): click then place, or drag onto the canvas">□ <span>Node</span></button>
+        <button disabled data-tool="zone" aria-pressed="false" title="Add zone (Z): click then place, or drag onto the canvas">▧ <span>Zone</span></button>
+        <button disabled data-tool="connect" aria-pressed="false" title="Connect (C): drag from a source object and release over a target, or click both">↗ <span>Connect</span></button>
+      </div>
+      <div class="tool-group history-tools" role="group" aria-label="History and deletion">
+        <button id="btn-undo" class="icon-button" aria-label="Undo" title="Undo (Ctrl/Cmd+Z)" disabled>↶</button>
+        <button id="btn-redo" class="icon-button" aria-label="Redo" title="Redo (Ctrl/Cmd+Shift+Z)" disabled>↷</button>
+        <button id="btn-delete" class="icon-button" aria-label="Delete selected objects" title="Delete selected objects" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7M14 10v7"/></svg></button>
+      </div>
+      <button disabled id="btn-mobile-selection" class="narrow-only icon-button" aria-label="Selection actions" title="Selection actions" aria-haspopup="menu" aria-expanded="false">•••</button>
+      <button disabled id="btn-mobile-properties" class="narrow-only icon-button" aria-label="Properties" title="Properties" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M14 4v16M17 8h1M17 12h1M17 16h1"/></svg></button>
+    </nav>
+    <div class="file-toolbar" role="group" aria-label="File actions"><button disabled id="btn-open" class="save-button" title="Open diagram" aria-label="Open diagram"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8V5h6l2 3h10v3M3 8h8M3 11h19l-4 10H2l1-10Z"/></svg><span>Open</span></button>
+    <button disabled id="btn-save" class="save-button" title="Save project (Ctrl/Cmd+S)" aria-label="Save project"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12l4 4v12a2 2 0 0 1-2 2Z"/><path d="M7 3v6h9V3M7 21v-8h10v8"/></svg><span>Save</span></button></div>
+  </header>
+  <!-- Persistent command state and handlers are shared by File and Diagram actions. -->
+  <div id="command-controls" hidden>
     <div class="file-actions">
       <button disabled id="btn-new">New</button>
-      <button disabled id="btn-open">Open…</button>
-      <button disabled id="btn-save">Save project</button>
       <select disabled id="export-format" aria-label="Export format"><option value="svg">SVG image</option><option value="png">PNG image</option><option value="mermaid">Mermaid source</option></select>
       <button disabled id="btn-export">Export</button>
       <button disabled id="btn-hierarchy" aria-expanded="true">Hierarchy</button>
       <button disabled id="btn-source" aria-expanded="false">Source</button>
     </div>
-    <button disabled id="btn-project-menu" class="narrow-only" aria-haspopup="menu" aria-expanded="false">Project ▾</button>
-    <span class="local-badge">LOCAL · OFFLINE</span>
-  </header>
-  <nav class="toolbar" aria-label="Diagram tools">
-    <button disabled id="btn-tool-menu" class="narrow-only" aria-haspopup="menu" aria-expanded="false">↖ Select ▾</button>
-    <div class="tool-group wide-tools" role="group" aria-label="Editing tools">
-      <button disabled data-tool="select" aria-pressed="true" title="Select and move (V)">↖ Select</button>
-      <button disabled data-tool="pan" aria-pressed="false" title="Pan (H or hold Space)">✥ Pan</button>
-      <button disabled data-tool="node" aria-pressed="false" title="Add node (N): click then place, or drag onto the canvas">□ Node</button>
-      <button disabled data-tool="connect" aria-pressed="false" title="Connect (C)">↗ Connect</button>
-      <button disabled data-tool="zone" aria-pressed="false" title="Add zone (Z): click then place, or drag onto the canvas">▧ Zone</button>
-    </div>
-    <div class="tool-group"><button id="btn-undo" title="Undo (Ctrl/Cmd+Z)" disabled>Undo</button><button id="btn-redo" title="Redo (Ctrl/Cmd+Shift+Z)" disabled>Redo</button><button id="btn-delete" disabled>Delete</button></div>
     <div class="tool-group" hidden>
       <select disabled id="alignment" aria-label="Alignment and distribution"><option value="">Arrange…</option><option value="left">Align left</option><option value="center-x">Align centres horizontally</option><option value="right">Align right</option><option value="top">Align top</option><option value="center-y">Align centres vertically</option><option value="bottom">Align bottom</option><option value="distribute-x">Distribute horizontally</option><option value="distribute-y">Distribute vertically</option></select>
     </div>
     <div class="tool-group layout-tools"><label for="direction">Flow</label><select disabled id="direction" aria-label="Flow direction"><option>TD</option><option>LR</option><option>BT</option><option>RL</option></select><select disabled id="layout-mode" aria-label="Layout style"><option value="adaptive">Adaptive</option><option value="hierarchical">Hierarchical</option></select><button disabled id="btn-layout">Auto layout</button></div>
     <div class="tool-group font-tools"><label for="font-size">Text</label><input disabled id="font-size" type="number" min="10" max="48" step="1" value="13" aria-label="Diagram font size"><span>px</span></div>
     <button disabled id="btn-theme" class="theme-tools" aria-haspopup="dialog" aria-expanded="false">Theme · Clean</button>
-    <button disabled id="btn-diagram-menu" class="narrow-only" aria-haspopup="menu" aria-expanded="false">Diagram ▾</button>
-  </nav>
-  <nav id="selection-bar" class="selection-bar" aria-label="Selection actions"><span id="selection-name">Select an object to edit it</span><div id="selection-actions"></div><button disabled id="btn-selection-more" aria-haspopup="menu" aria-expanded="false">More ▾</button></nav>
+  </div>
   <main>
     <aside id="source-panel" class="source-panel">
       <div id="hierarchy-content">
@@ -62,16 +73,24 @@
     <section id="viewport" aria-label="Diagram canvas" tabindex="0">
       <svg id="canvas" xmlns="http://www.w3.org/2000/svg" role="graphics-document" aria-label="Editable diagram"><g id="world"></g></svg>
       <div id="canvas-help">Drag nodes or zones · Shift-drag to select · Scroll to zoom</div>
+      <div id="file-notice" class="file-notice" role="status" aria-live="polite" hidden></div>
       <div id="loading" role="status">Starting local engines…</div>
       <div class="zoom-toolbar"><button disabled id="btn-zoom-out" aria-label="Zoom out" title="Zoom out">−</button><span id="zoom-text">100%</span><button disabled id="btn-zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button disabled id="btn-fit">Fit diagram</button><label class="grid-control"><input disabled id="snap-grid" type="checkbox"> Snap grid</label><label class="grid-control"><input disabled id="alignment-guides" type="checkbox" checked> Guides</label></div>
     </section>
-    <aside class="properties-panel" aria-label="Object properties"><div class="panel-heading"><h2>Properties</h2><span id="selection-count">No selection</span><button id="btn-close-properties" aria-label="Close Properties" title="Close Properties">Close</button></div><div id="properties"><p class="empty-properties">Select a node, connection, or zone to edit its properties.</p></div><div class="keyboard-help"><strong>At your fingertips</strong><p>V Select · H Pan · N Node · C Connect · Z Zone</p><p>Arrow keys nudge · Shift for larger steps<br>Escape cancels · Delete removes</p></div></aside>
+    <aside class="properties-panel" aria-label="Object properties">
+      <div class="inspector-heading"><div class="panel-heading"><h2>Properties</h2><span id="selection-count">No selection</span><button id="btn-close-properties" aria-label="Close Properties" title="Close Properties">×</button></div>
+        <nav id="selection-bar" class="selection-bar" aria-label="Selection actions" hidden><span id="selection-name">Select an object to edit it</span><div class="selection-buttons"><div id="selection-actions"></div><button disabled id="btn-selection-more" class="icon-button" aria-label="More selection actions" title="More selection actions" aria-haspopup="menu" aria-expanded="false">•••</button></div></nav>
+      </div>
+      <div id="properties"><p class="empty-properties">Select a node, connection, or zone to edit its properties.</p></div>
+      <details class="keyboard-help"><summary>Keyboard shortcuts</summary><p>V Select · H Pan · N Node · C Connect · Z Zone</p><p>Arrow keys nudge · Shift for larger steps<br>Escape cancels · Delete removes</p><p>Ctrl/Cmd+Z Undo · Ctrl/Cmd+S Save</p></details>
+    </aside>
   </main>
-  <footer><span id="status" role="status">Loading…</span><span id="counts"></span></footer>
+  <footer><span id="status" role="status">Loading…</span><span id="file-info"><span id="file-name">Untitled</span> · <span id="file-state" role="status">Loading…</span></span><span id="counts"></span></footer>
+  <dialog id="file-dialog" aria-labelledby="file-dialog-title" aria-describedby="file-dialog-message"><h2 id="file-dialog-title"></h2><p id="file-dialog-message"></p><div id="file-dialog-list" hidden></div><div id="file-dialog-actions"></div></dialog>
   <div id="error-banner" role="alert" hidden><span id="error-message"></span><button disabled id="dismiss-error" aria-label="Dismiss error">×</button></div>
   <input disabled id="file-input" type="file" accept=".json,.mmd,.mermaid,.txt" hidden>
   <script src="./vendor/mermaid.min.js"></script>
   <div id="editing-overlay" class="editing-overlay" hidden></div>
-  <script type="module" src="./app.mjs?v=themes"></script>
+  <script type="module" src="./app.mjs?v=refinements"></script>
 </body>
 </html>

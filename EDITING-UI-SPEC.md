@@ -40,19 +40,16 @@ Use this layout when the window is wider than 850 CSS pixels.
 
 | Location | Contents | Purpose |
 | --- | --- | --- |
-| File bar, at the top | New, Open, Save project, Export, Hierarchy, Source | Manage the project and its views. |
-| Main toolbar, below the file bar | Select, Pan, Node, Connect, Zone, Undo, Redo, Delete, flow direction, layout choice, Auto layout, Text size, Theme | Choose a tool or change the whole diagram. |
-| Selection bar, below the main toolbar | Selection name, common actions, More | Edit the current selection. |
+| Single application header | Compact branding; File, Edit, View, Diagram; Select, Pan, Node, Zone, Connect; Undo, Redo, Delete; Open, Save | Manage the project and choose an editing tool without separate full-width control rows. |
+| Sticky Properties heading | Selection name, common actions, More | Edit the current selection. Align and Distribute appear for multiple selections. |
 | Lower-right corner of the canvas | Zoom out, zoom value, Zoom in, Fit diagram, Snap grid, Guides | Change the view and editing aids. |
-| Properties, on the right | Fields grouped as specified in section 9 | Enter precise values and detailed information. |
+| Properties, on the right | Fields grouped as specified in section 9 | Enter precise values and context. |
 | Beside a selected attachment | Attachment controls | Change that attachment's side or order. |
 | At the point of a right-click | Action menu | Act on the object or canvas location under the pointer. |
 
-Move Arrange from the main toolbar to the selection bar. Show Align and Distribute when the selection contains movable objects.
+The desktop header is 56 CSS pixels high. Selection changes never move the canvas vertically. Common actions belong to the inspector rather than a separate full-width selection row. When Properties is hidden through View, header buttons retain access to Selection actions and Properties.
 
-Reserve the selection bar's height. Changing the selection must not move the canvas up or down. With no selection, show **Select an object to edit it** and More.
-
-Keep the selection bar outside the canvas. The first version does not put a floating action bar over selected objects.
+File contains New diagram, Open, Recent files, Save project, Save as, Download a copy, an optional Autosave checkbox and an Export submenu for SVG, PNG and Mermaid. Edit contains Undo, Redo, Copy and Paste. The footer identifies the working file and its save state. Unsaved transitions use a keyboard-accessible dialog; file failures, external changes and recovery use an actionable canvas notice that preserves existing control focus. View contains Hierarchy, Mermaid source, Properties and Fit diagram. Diagram contains Theme, Flow direction, Layout style, Auto layout and Text size. Open and Save are paired in the header. Creation tools are ordered Node, Zone, Connect. Submenus fly out beside their parent without replacing it; shape choices show decorative miniature previews. Layout preferences do not rearrange objects until Auto layout is chosen.
 
 ### 3.2 Narrow layout
 
@@ -60,24 +57,21 @@ Use this layout when the window is 850 CSS pixels wide or less.
 
 | Location | Contents | Purpose |
 | --- | --- | --- |
-| File bar, at the top | App name and Project menu | The menu contains New, Open, Save project, Export, Hierarchy, and Source. |
-| Main toolbar, below the file bar | Current tool, Undo, Redo, Delete, Diagram menu | The tool button offers Select, Pan, Node, Connect, and Zone. Diagram contains Theme, flow direction, layout choice, Auto layout, and Text size. |
-| Selection bar, below the canvas | Selection name, common actions, More | Edit the selection without opening Properties. |
+| Header, first row | Compact branding, File, Edit, View, Diagram, Save | The same menus as desktop. Hide the app-name and Save text at small widths while retaining accessible names. |
+| Header, second row | Current tool, Undo, Redo, Selection actions, Properties | The tool chooser offers Select, Pan, Node, Zone and Connect. Selection actions opens the complete applicable object menu. |
+| Properties sheet | Sticky selection actions followed by precise fields | Open through the header Properties button or an object's Details action. |
 
-- Put the selection bar below the canvas and above the status area. Reserve space for it.
-- Keep More visible at all times.
-- Show the first two selection actions that fit. Put the remaining actions in More.
-- Keep each touch target at least 44 by 44 CSS pixels.
-- Close Properties by default. Open it as a bottom sheet through Details.
-- Give the Properties sheet a visible Close button. Limit its height to 80% of the window height. Scroll its fields inside the sheet.
-- Escape closes the Properties sheet. Commit its pending fields by their existing rules. Keep the selection.
-- Keep view controls above the selection bar. Prevent the two sets of controls from covering each other.
-- Fit popovers and menus within the window. Scroll a long menu inside its frame.
-- Opening or closing controls must not run Auto layout or Fit diagram.
+- Reserve 108 CSS pixels for the two header rows. Keep the canvas directly beneath them; no bottom selection bar is reserved.
+- Keep each header, menu and action touch target at least 44 by 44 CSS pixels.
+- Close Hierarchy/Source and Properties by default. View opens the source/hierarchy overlay; Properties opens a bottom sheet.
+- Give the Properties sheet a visible Close button. Limit its height to 80% of the window height and scroll the fields inside it.
+- Escape closes the Properties sheet and returns focus to the visible header Properties button. Commit pending fields by their existing rules and retain selection.
+- Fit popovers and menus within the window. Scroll long menus inside their frame.
+- Opening, closing or resizing controls must not run Auto layout or Fit diagram. Preserve desktop panel visibility when switching between narrow and wide layouts.
 
 Use the action order in section 4 on both layouts. A narrow layout changes visibility, not the command's meaning.
 
-## 4. Selection bar
+## 4. Selection actions
 
 Show the object type and its label. For example, show **Node · Launch drones** or **Zone · Climate loop**. Show the full label in an accessible name if the visible text is shortened. Use the object type when its label is empty.
 
@@ -125,13 +119,15 @@ Color opens Background color and Text color. Provide a picker and a six-digit he
 
 Theme opens four diagram preview cards: Clean, Blueprint, Botanical, and Paper. Apply a chosen theme immediately as one Undo step. Keep the chooser open for comparison. Preserve explicit object color overrides and all geometry, routes, waypoints and label placements.
 
-Show Theme or Custom beside each object color in Color and Properties. Provide Reset to theme for each color. Reset only that field. A fill edit must not create a text override. Automatic text must remain readable on the displayed background. Explicit text colors remain the user's choice. Cancel restores a Color edit, including resets. Applying an untouched Color popup must not add overrides or an Undo record.
+Show Theme or Custom beside each object color in Color and Properties. Show Reset to theme only for custom colors. Reset only that field. A fill edit must not create a text override. Automatic text must remain readable on the displayed background. Explicit text colors remain the user's choice. Cancel restores a Color edit, including resets. Applying an untouched Color popup must not add overrides or an Undo record.
 
 Line style offers Normal, Dashed, and Thick. Arrows offers One arrow, No arrows, and Two arrows. One arrow points from source to target.
 
 Align offers Left, Horizontal center, Right, Top, Vertical center, and Bottom. Distribute offers Across and Down. These choices use the existing alignment and distribution operations.
 
 Connect from here enters Connect with the clicked node as its source. Keep the source visible. The next valid object becomes the target. Escape cancels the pending connection.
+
+In Connect mode, pressing anywhere on a node or zone body and dragging to another object creates a preview and highlights the valid target. Release over the target creates one connection and returns to Select with the connection selected. This includes parent-node bodies and zone targets; routing, parallel edges, self-loops and explicit handle sides keep their existing meaning. A source press/release without movement also retains click-to-click creation. Empty drops, Escape, pointer cancellation or capture loss clear the preview without creating an edit; an invalid drop leaves Connect available for a retry. Long-press still opens actions, and a second touch cancels a pending drag.
 
 Details opens Properties. If a menu action needs a specific field, reveal that field. For a connection, Source and Target remain editable in Properties. For a node or zone, Parent remains editable there.
 
@@ -229,15 +225,15 @@ Keep the existing fields and commands. Put them in the following groups. A commo
 | Group | Fields and commands | Purpose |
 | --- | --- | --- |
 | Label | Label or zone title | Edit multiline text. |
+| Context | Description and Notes | Keep explanatory information immediately beneath Label. |
 | Appearance | Node shape; node/zone background and text colors; connection line style and arrows | Enter or review display choices. |
 | Geometry | Width and Height; current position as read-only text; Fit to label or Fit to contents; zone padding | Enter precise dimensions and spacing. |
 | Structure | Parent; Container node; connection Source and Target | Change containment or connection endpoints. |
 | Connection route | Straight/Orthogonal; Source and Target attachments; side order; waypoint list and conflicts; Reset route | Review and adjust routing preferences. |
 | Connection label | Automatic/manual placement status; Reset label position | Review label placement. |
-| Context | Description and Notes | Keep explanatory information. |
 | Connections | Connections for a selected node or zone | Select a related connection. |
 
-Show only applicable groups. Keep selection changes, current values, disabled states, and previews in sync across all control locations.
+Show only applicable groups. Label and Context come first for nodes, zones and connections. Use compact inline shape/parent fields, paired Width/Height and Fill/Text controls, and short text areas that grow to fit entered content while retaining focus. Refit existing text when a hidden Properties sheet opens or the panel width changes. Keep long notes scrollable after the height limit. Show color resets only for overrides; put repeated explanatory help in expandable details. Keep selection changes, current values, disabled states and previews in sync across all control locations.
 
 The multi-selection Properties view keeps its alignment, distribution, and zone-fit actions. Details for a mixed selection opens this view. It does not silently choose one object.
 
@@ -268,7 +264,9 @@ The new control locations must use the following rules.
 - Use Shift+F10 or the Menu key to open the current selection's action menu from the canvas.
 - With no selection, keyboard canvas creation uses the visible canvas center.
 - Let keyboard users reach all selection-bar actions and attachment controls.
-- Use arrow keys to move through menu items. Enter or Space activates an item. Escape closes the menu.
+- File/View/Diagram use a roving tab stop: Left/Right switches the focused menu and Down opens it. Open desktop menus also switch when hovering another menu title.
+- Up/Down, Home/End and text typeahead move through menu items. Enter or Space activates an item. Right opens a submenu; Left or Escape returns to its parent. Escape closes the top-level menu. Tab closes it and advances focus; edit dialogs retain their focus trap.
+- Invoking the same menu again toggles it closed. Menu navigation must not reach canvas movement/tool shortcuts or create Undo records.
 - Return keyboard focus to the invoking control after a menu closes. If that control was deleted, return focus to the canvas.
 - Keep normal arrow-key diagram movement available when a menu or editor does not have focus.
 - Give every icon button a visible tooltip and an accessible name. State current choices and unavailable actions to assistive technology.
@@ -280,7 +278,7 @@ Use real mouse, touch, keyboard, file-picker, and export actions. Record a proje
 
 | ID | Scenario | Required result |
 | --- | --- | --- |
-| UI-01 | Select a node. Change Shape and Color from the selection bar. Start a connection with Connect. | Complete the work with Properties closed. Existing shape, color, and connection rules hold. |
+| UI-01 | Select a node. Change Shape and Color from the sticky Properties actions or the header Selection actions menu. Start a connection with Connect. | Every action is available with the inspector open or closed. Existing shape, color, and connection rules hold. |
 | UI-02 | Change one connection through the bar, its action menu, and Properties. | Each surface shows the same values. Each action uses the same operation and Undo behavior. |
 | UI-03 | Right-click a selected group, then an unselected object. | The group keeps its selection. The unselected object becomes the sole selection. No object moves. |
 | UI-04 | Right-click empty canvas at 25%, 100%, and 200% zoom. Create a node and a zone. | Each object uses the clicked diagram position, current snapping, and correct parent membership. |
@@ -293,13 +291,15 @@ Use real mouse, touch, keyboard, file-picker, and export actions. Record a proje
 | UI-11 | Edit a label or color from a menu. Try Apply, outside-click, Cancel, Escape, and invalid padding. | Valid preview is visible. Apply and outside-click each commit once. Cancellation restores the opening state. Invalid values stay editable. |
 | UI-12 | Move a connection label away from and back over its route. Reset its label position and route separately. | Leader lines follow the existing rule. Each reset changes only its named preferences. |
 | UI-13 | Long-press an object, label, waypoint, attachment, and empty canvas. Then try a drag and a second touch. | The correct menu opens. Movement or a second touch cancels the pending menu. No unintended edit or extra tap occurs. |
-| UI-14 | Use a 390 by 844 window. Edit a node, connection, zone, and group through the bar and More. | Every action is reachable. Touch targets meet the minimum size. Controls stay within the window. Properties does not occupy the canvas by default. |
-| UI-15 | Use a 1024 by 768 window and a wide desktop window. Switch selection types and open menus near each corner. | The bar keeps a stable height. Menus stay visible. Controls do not cover their target unnecessarily. |
+| UI-14 | Use a 390 by 844 window. Edit a node, connection, zone, and group through Selection actions and More. | Every action is reachable. Touch targets meet the minimum size. Controls stay within the window. Properties does not occupy the canvas by default. |
+| UI-15 | Use a 1024 by 768 window and a wide desktop window. Switch selection types and open menus near each corner. | The header keeps a stable height and selection actions remain in Properties. Menus stay visible. Controls do not cover their target unnecessarily. |
 | UI-16 | Use only a keyboard to open More and an attachment popover, edit values, cancel, and delete. | Commands and focus are correct. Existing diagram shortcuts still work outside the controls. |
 | UI-17 | Open menus or edit popovers during save/export and asynchronous operations. | Valid edits commit once before saving. Invalid edits block the request. Busy states restore correctly. No editor controls appear in exports. |
 | UI-18 | Delete a waypoint, connection, node, and zone through their menus. Undo each action. | Each command deletes its named target. Zone and container contents follow the existing retention rules. |
 | UI-19 | Save and reopen the edited project. Apply matching-ID source. Undo and Redo edits from each surface. | Geometry and applicable manual preferences survive. The project format remains compatible. |
 | UI-20 | Run the existing model, routing, browser, and native regression suites. | Existing operations still pass. Record and resolve any new regression before release. |
+
+Additional polish acceptance: verify Description/Notes precede appearance, dimensions and colors share rows, custom-only resets, content growth after opening a hidden sheet, one desktop header, and unchanged model/history during menu navigation. Verify body-drag creation for node/node, node/zone, zone/parent and parent/node, valid target highlighting, release-only commit, click-to-click fallback, Undo/Redo and cancellation. Test widths 320, 390, 600, 850, 1024, 1280 and 1800, including 44px narrow-layout controls and sheet focus return.
 
 ## 13. Delivery order
 
@@ -312,3 +312,11 @@ Use real mouse, touch, keyboard, file-picker, and export actions. Record a proje
 7. Review screenshots of a busy diagram and the narrow layout.
 
 The implemented update is ready for user review when all first-version controls and acceptance scenarios are complete.
+
+## File and clipboard controls
+
+File and clipboard semantics are specified in [SPEC.md](SPEC.md). Autosave is a persistent browser preference. It remains selectable without a working file; actual writes require a supported browser and a connected file. It never requests permission from a timer. Restore recovery is clearly separate from Saved and restores with no assumed connection.
+
+Node/zone/connection and multi-selection action menus include Copy and Paste/Paste here before Details/Delete. Copy targets the captured selection; Paste here uses the captured diagram point, not the menu's DOM position. Copy/Paste also appear in Edit with their shortcuts. Text fields keep native copy/paste. File notices must not be rebuilt during a pointer action when their content is unchanged; queued file reads/writes must not steal typing focus or split an input session's Undo step.
+
+Nodes and zones expose a Show description checkbox in Properties and object menus. Preserve the label in hierarchy/source. Use wrapped description text on the canvas and in image exports; reserve space above children for parent descriptions.

@@ -1,5 +1,5 @@
-import {pruneAttachmentOrders} from './attachments.mjs?v=whole-words';
-import { emptyModel, resizeNode, expandZones, validateModel, configureTextMeasure, textWidth,ensureNodeSpacing,diagramFontSize,copy,shapes,ensureLayoutSpacing } from './core.mjs?v=whole-words';
+import {pruneAttachmentOrders} from './attachments.mjs?v=refinements';
+import { emptyModel, resizeNode, expandZones, validateModel, configureTextMeasure, textWidth,ensureNodeSpacing,diagramFontSize,copy,shapes,ensureLayoutSpacing } from './core.mjs?v=refinements';
 let renderCount = 0;
 const shapeTypes = { square:'rectangle', rect:'rectangle', round:'rounded', rounded:'rounded', diamond:'diamond', circle:'circle', cylinder:'cylinder' };
 export function initializeMermaid() {
@@ -59,7 +59,7 @@ export async function importMermaid(source, { direction, layout = 'adaptive' } =
 }
 export async function layoutModel(model) {
   const manualRoutes=new Map(model.edges.filter(e=>e.waypoints).map(e=>[e.id,copy(e.waypoints)]));
-  const { toMermaid } = await import('./core.mjs?v=whole-words');
+  const { toMermaid } = await import('./core.mjs?v=refinements');
   const source = `---\nconfig:\n  layout: ${model.settings.layout === 'hierarchical' ? 'elk.mrtree' : 'elk'}\n  themeVariables:\n    fontSize: ${diagramFontSize(model)}px\n---\n${toMermaid(model)}`;
   const id = `layout-${++renderCount}`;
   const { svg:markup } = await mermaid.render(id,source);
@@ -89,7 +89,7 @@ export function mergeSource(previous, incoming) {
     const old = [...previous.nodes,...previous.zones].find(o=>o.id===n.id);
     if (old) {
       n.description=old.description||'';n.notes=old.notes||'';
-      for(const key of ['backgroundColor','fontColor','manualSize','attachmentOrder'])if(old[key]!==undefined)n[key]=copy(old[key]);
+      for(const key of ['backgroundColor','fontColor','manualSize','attachmentOrder','showDescription'])if(old[key]!==undefined)n[key]=copy(old[key]);
       if(incoming.zones.includes(n)&&previous.zones.includes(old)&&old.padding!==undefined)n.padding=copy(old.padding);
       if(n.container&&old.containerSize)n.containerSize=copy(old.containerSize);
       const cx=old.x+old.width/2,cy=old.y+old.height/2;

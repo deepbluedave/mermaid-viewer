@@ -1,5 +1,5 @@
-import { labelLines, textWidth,diagramFontSize,containers,containerTitleBox } from './core.mjs?v=whole-words';
-import { labelAnchor } from './routing.mjs?v=whole-words';
+import { labelLines, textWidth,diagramFontSize,containers,containerTitleBox,zoneTitleMetrics } from './core.mjs?v=refinements';
+import { labelAnchor } from './routing.mjs?v=refinements';
 
 const overlaps=(a,b,padding=4)=>a.x+a.width>b.x-padding&&a.x<b.x+b.width+padding&&a.y+a.height>b.y-padding&&a.y<b.y+b.height+padding;
 function segmentIntersectsBox(a,b,box,padding=0) {
@@ -12,7 +12,7 @@ function segmentIntersectsBox(a,b,box,padding=0) {
   }
   return true;
 }
-export function zoneTitleBox(z,fontSize=13) {const width=textWidth(z.label,fontSize)+12;return{x:z.x+(z.width-width)/2,y:z.y+5,width,height:fontSize+8};}
+export function zoneTitleBox(z,fontSize=13) {const metrics=zoneTitleMetrics(z,fontSize),width=Math.max(0,...metrics.lines.map(line=>textWidth(line,fontSize)))+12;return{x:z.x+(z.width-width)/2,y:z.y+5,width,height:metrics.height-10};}
 
 export function routeFrame(points, fraction) {
   const lengths=points.slice(1).map((p,i)=>Math.hypot(p.x-points[i].x,p.y-points[i].y));

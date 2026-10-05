@@ -1,8 +1,8 @@
-import {clearanceTranslation,NODE_GAP,containingZone} from './geometry.mjs?v=whole-words';
-import {translateWaypoints,MAX_WAYPOINTS} from './waypoints.mjs?v=whole-words';
-import {pruneAttachmentOrders} from './attachments.mjs?v=whole-words';
+import {clearanceTranslation,NODE_GAP,containingZone} from './geometry.mjs?v=refinements';
+import {translateWaypoints,MAX_WAYPOINTS} from './waypoints.mjs?v=refinements';
+import {pruneAttachmentOrders} from './attachments.mjs?v=refinements';
 import {diagramTheme,zoneThemeColor,readableColor,themes} from './themes.mjs';
-export {NODE_GAP} from './geometry.mjs?v=whole-words';
+export {NODE_GAP} from './geometry.mjs?v=refinements';
 export const shapes = ['rectangle', 'rounded', 'diamond', 'circle', 'cylinder'];
 export const directions = ['TD', 'LR', 'BT', 'RL'];
 export const copy = value => structuredClone(value);
@@ -10,7 +10,9 @@ export function emptyModel() {
   return { version: 1, nodes: [], zones: [], edges: [], settings: { direction: 'TD', layout: 'adaptive', grid: false, guides: true, fontSize:13, view: { x: 0, y: 0, scale: 1 } } };
 }
 export const diagramFontSize = model => model.settings.fontSize ?? 13;
-export const zoneHeaderHeight = model => Math.max(30,diagramFontSize(model)+16);
+export const displayText = n => n.showDescription ? n.description || '' : n.label;
+export function zoneTitleMetrics(n,fontSize=13){const lines=n.showDescription?wrapText(displayText(n),Math.max(fontSize,n.width-32),fontSize):String(n.label).split('\n'),lineHeight=Math.ceil(fontSize*1.35);return{lines,lineHeight,height:n.showDescription?Math.max(30,lines.length*lineHeight+14):Math.max(30,fontSize+16)};}
+export const zoneHeaderHeight = (model,n=null) => n?zoneTitleMetrics(n,diagramFontSize(model)).height:Math.max(30,diagramFontSize(model)+16);
 export function darkenColor(hex,amount=.08){return '#'+hex.slice(1).match(/../g).map(channel=>Math.round(parseInt(channel,16)*(1-amount)).toString(16).padStart(2,'0')).join('');}
 export function objectColors(model,n,seen=new Set()) {
   const theme=diagramTheme(model);
@@ -59,13 +61,13 @@ export function nodeMetrics(node,fontSize=13) {
   const manual=node.manualSize,lineHeight=Math.ceil(fontSize*1.35);
   if(manual&&['circle','diamond'].includes(node.shape)){
     const w=Math.max(80,manual.width),h=Math.max(60,manual.height),diameter=Math.max(w,h);
-    const candidates=shapeTextCandidates(node.label,fontSize,node.shape==='circle'?diameter*.72-24:w*.6-24).map(c=>{
+    const candidates=shapeTextCandidates(displayText(node),fontSize,node.shape==='circle'?diameter*.72-24:w*.6-24).map(c=>{
       if(node.shape==='circle'){const required=Math.max(80,Math.hypot(c.textW+24,c.textH+24)+8);return{...c,width:Math.max(diameter,required),height:Math.max(diameter,required),growth:required/diameter};}
       const width=Math.max(w,(c.textW+24)/.7),height=Math.max(h,(c.textH+20)/(.94-(c.textW+24)/width));return{...c,width,height,growth:Math.max(width/w,height/h)};
     });
     const fits=candidates.filter(c=>c.growth<=1+1e-7),narrow=node.shape==='diamond'?candidates.filter(c=>c.width<=w+1e-7):[],options=narrow.length?narrow:candidates,best=(fits.length?fits.sort((a,b)=>a.lines.length-b.lines.length||a.growth-b.growth):options.sort((a,b)=>a.growth-b.growth||a.lines.length-b.lines.length))[0];return{lines:best.lines,lineHeight,width:best.width,height:best.height};
   }
-  const lines=manual?wrapText(node.label,Math.max(48,manual.width-32),fontSize):labelLines(node.label),textW=Math.max(0,...lines.map(l=>textWidth(l,fontSize))),textH=lines.length*lineHeight;
+  const lines=manual?wrapText(displayText(node),Math.max(48,manual.width-32),fontSize):labelLines(displayText(node)),textW=Math.max(0,...lines.map(l=>textWidth(l,fontSize))),textH=lines.length*lineHeight;
   const w=Math.max(120,textW+32),h=Math.max(54,textH+28);let width=w,height=h;
   if(node.shape==='circle')width=height=Math.hypot(w,h)+12;
   else if(node.shape==='diamond'){width=w*2;height=h*2;}
@@ -78,20 +80,20 @@ export const isContainer=(model,n)=>Boolean(n&&(model.zones.includes(n)||n.conta
 export function isAncestor(model,id,childId){let parent=object(model,childId)?.parentId;const seen=new Set();while(parent&&!seen.has(parent)){if(parent===id)return true;seen.add(parent);parent=object(model,parent)?.parentId;}return false;}
 export const related=(model,a,b)=>a.id===b.id||isAncestor(model,a.id,b.id)||isAncestor(model,b.id,a.id);
 const insetRatio=n=>n.shape==='circle'?.2:n.shape==='diamond'?.26:0;
-function minimumTitleWidth(n,fontSize){const wordWidth=Math.max(0,...String(n.label).split(/\s+/).map(word=>textWidth(word,fontSize)));return Math.max(160,(wordWidth+32)/(1-2*insetRatio(n)));}
-export function containerTitleMetrics(n,fontSize=13){const ratio=insetRatio(n),lines=wrapText(n.label,Math.max(fontSize,n.width*(1-2*ratio)-32),fontSize),lineHeight=Math.ceil(fontSize*1.35);return{lines,lineHeight,height:Math.max(30,lines.length*lineHeight+14)};}
-export function containerTitleBox(model,n){const ratio=insetRatio(n),height=model.zones.includes(n)?zoneHeaderHeight(model):containerTitleMetrics(n,diagramFontSize(model)).height;return{x:n.x+n.width*ratio,y:n.y+n.height*ratio+(n.shape==='cylinder'?12:0),width:n.width*(1-2*ratio),height};}
+function minimumTitleWidth(n,fontSize){const wordWidth=Math.max(0,...String(displayText(n)).split(/\s+/).map(word=>textWidth(word,fontSize)));return Math.max(160,(wordWidth+32)/(1-2*insetRatio(n)));}
+export function containerTitleMetrics(n,fontSize=13){const ratio=insetRatio(n),lines=wrapText(displayText(n),Math.max(fontSize,n.width*(1-2*ratio)-32),fontSize),lineHeight=Math.ceil(fontSize*1.35);return{lines,lineHeight,height:Math.max(30,lines.length*lineHeight+14)};}
+export function containerTitleBox(model,n){const ratio=insetRatio(n),height=model.zones.includes(n)?zoneHeaderHeight(model,n):containerTitleMetrics(n,diagramFontSize(model)).height;return{x:n.x+n.width*ratio,y:n.y+n.height*ratio+(n.shape==='cylinder'?12:0),width:n.width*(1-2*ratio),height};}
 export const DEFAULT_ZONE_PADDING=Object.freeze({top:14,right:20,bottom:20,left:20});
 export const MAX_ZONE_PADDING=1000;
 export const zonePadding=n=>({...DEFAULT_ZONE_PADDING,...n.padding});
-export function zoneMinimumSize(model,n){const p=zonePadding(n),header=zoneHeaderHeight(model);return{width:Math.max(160,textWidth(n.label,diagramFontSize(model))+32,p.left+p.right+1),height:Math.max(100,header+60,header+p.top+p.bottom+1)};}
+export function zoneMinimumSize(model,n){const p=zonePadding(n),header=zoneHeaderHeight(model,n),text=n.showDescription?Math.max(0,...displayText(n).split(/\s+/).map(word=>textWidth(word,diagramFontSize(model)))):textWidth(n.label,diagramFontSize(model));return{width:Math.max(160,text+32,p.left+p.right+1),height:Math.max(100,header+60,header+p.top+p.bottom+1)};}
 // Fit only the frame. A nested child's frame counts as content; its own manual
 // size stays intact unless that zone is also explicitly selected for fitting.
 export function zoneChildBounds(model,n){
   const children=items(model).filter(c=>c.parentId===n.id),p=zonePadding(n);
   if(!children.length)return null;
   const left=Math.min(...children.map(c=>c.x)),top=Math.min(...children.map(c=>c.y)),right=Math.max(...children.map(c=>c.x+c.width)),bottom=Math.max(...children.map(c=>c.y+c.height));
-  return{x:left-p.left,y:top-zoneHeaderHeight(model)-p.top,width:right-left+p.left+p.right,height:bottom-top+zoneHeaderHeight(model)+p.top+p.bottom};
+  return{x:left-p.left,y:top-zoneHeaderHeight(model,n)-p.top,width:right-left+p.left+p.right,height:bottom-top+zoneHeaderHeight(model,n)+p.top+p.bottom};
 }
 export function zoneFitBounds(model,n){
   const bounds=zoneChildBounds(model,n),minimum=zoneMinimumSize(model,n);
@@ -113,7 +115,7 @@ function insideNode(n,x,y){
 }
 export function containingParent(model,item,excluded=new Set(),reference=containers(model),{allowNodes=false}={}){
   const x=item.x+item.width/2,y=item.y+item.height/2;
-  return reference.filter(n=>{if(excluded.has(n.id))return false;if(!n.shape)return x>=n.x&&x<=n.x+n.width&&y>=n.y+zoneHeaderHeight(model)&&y<=n.y+n.height;if(!n.container)return allowNodes&&insideNode(n,x,y);const b=containerContentBox(model,n);return x>=b.x&&x<=b.x+b.width&&y>=b.y&&y<=b.y+b.height;}).sort((a,b)=>depth(model,b)-depth(model,a)||a.width*a.height-b.width*b.height)[0]?.id||null;
+  return reference.filter(n=>{if(excluded.has(n.id))return false;if(!n.shape)return x>=n.x&&x<=n.x+n.width&&y>=n.y+zoneHeaderHeight(model,n)&&y<=n.y+n.height;if(!n.container)return allowNodes&&insideNode(n,x,y);const b=containerContentBox(model,n);return x>=b.x&&x<=b.x+b.width&&y>=b.y&&y<=b.y+b.height;}).sort((a,b)=>depth(model,b)-depth(model,a)||a.width*a.height-b.width*b.height)[0]?.id||null;
 }
 export function setNodeContainer(model,id,enabled,{expand=true,centred=false}={}){
   const n=object(model,id);if(!model.nodes.includes(n))throw new Error('Choose a node.');
@@ -307,6 +309,7 @@ export function validateModel(input) {
     for(const field of ['description','notes'])if(n[field]!==undefined&&(typeof n[field]!=='string'||n[field].length>(field==='notes'?100000:20000)))throw new Error(`Invalid object ${field}.`);
   }
   for (const n of items(model)) {
+    if(n.showDescription!==undefined&&typeof n.showDescription!=='boolean')throw new Error('Invalid description display setting.');
     for(const field of ['backgroundColor','fontColor'])if(n[field]!==undefined&&(typeof n[field]!=='string'||!/^#[\da-f]{6}$/i.test(n[field])))throw new Error('Use a six-digit hex color, such as #3b82f6.');
     for (const field of ['x', 'y', 'width', 'height']) if (!Number.isFinite(n[field]) || Math.abs(n[field]) > 1e6) throw new Error('Invalid object geometry.');
     if (n.width <= 0 || n.height <= 0) throw new Error('Object sizes must be positive.');

@@ -1,0 +1,28 @@
+{
+  "source": "/Users/dallen/Downloads/diagram.mermaid-project (35).json",
+  "objects": 5,
+  "edges": 4,
+  "nativeDownload": true,
+  "checks": [
+    {
+      "name": "Production file controller autosaves the complete real downloaded diagram",
+      "pass": true
+    },
+    {
+      "name": "Returning to the original model writes the exact complete snapshot back to disk",
+      "pass": true
+    },
+    {
+      "name": "External change is preserved and autosave pauses",
+      "pass": true
+    },
+    {
+      "name": "Explicit overwrite resumes the original working-file connection",
+      "pass": true
+    }
+  ],
+  "errors": [
+    "This file changed on disk. Choose Reload, Save as, or Overwrite."
+  ],
+  "limitation": "The disk write uses the production controller with a Node filesystem adapter. Native browser File System Access handles and OS permission dialogs are exercised through controlled UI-harness handles, not automated OS choosers."
+}

@@ -1,22 +1,26 @@
-import { object, items, descendants, zonePadding, objectColors, MAX_ZONE_PADDING } from './core.mjs?v=whole-words';
-import { attachmentKey } from './attachments.mjs?v=whole-words';
-import { MAX_WAYPOINTS } from './waypoints.mjs?v=whole-words';
+import { object, items, descendants, zonePadding, objectColors, MAX_ZONE_PADDING } from './core.mjs?v=refinements';
+import { attachmentKey } from './attachments.mjs?v=refinements';
+import { MAX_WAYPOINTS } from './waypoints.mjs?v=refinements';
 import {themes,diagramTheme} from './themes.mjs';
-import {svgElement} from './scene.mjs?v=whole-words';
+import {svgElement} from './scene.mjs?v=refinements';
 
 const $ = id => document.getElementById(id);
 const shapeNames = [['rectangle', 'Rectangle'], ['rounded', 'Rounded rectangle'], ['diamond', 'Diamond'], ['circle', 'Circle'], ['cylinder', 'Database cylinder']];
 const sideNames = [['', 'Automatic'], ['north', 'Top'], ['east', 'Right'], ['south', 'Bottom'], ['west', 'Left']];
 const alignNames = [['left', 'Left'], ['center-x', 'Horizontal center'], ['right', 'Right'], ['top', 'Top'], ['center-y', 'Vertical center'], ['bottom', 'Bottom']];
-const toolNames = [['select', 'Select'], ['pan', 'Pan'], ['node', 'Node'], ['connect', 'Connect'], ['zone', 'Zone']];
+const toolNames = [['select', 'Select'], ['pan', 'Pan'], ['node', 'Node'], ['zone', 'Zone'], ['connect', 'Connect']];
 
 // Each surface captures a target, then calls the application's existing operation.
 // Menus never infer a canvas point from the position of their DOM element.
 export function createEditingControls(api) {
-  const overlay = $('editing-overlay'), bar = $('selection-actions'), viewport = $('viewport');
+  const rootOverlay = $('editing-overlay'), bar = $('selection-actions'), viewport = $('viewport');
+  let overlay=rootOverlay;
   let open = null, barKey = '', touch = null, heldTouch = null, ghostClick = null, blockedClick = false;
+  let menuSearch = '', menuSearchTime = 0;
   const narrow = matchMedia('(max-width: 850px)');
+  let desktopSourceVisible=!$('source-panel').hidden,desktopInspectorVisible=true;
   const state = () => api.state();
+  const modifier=navigator.platform.includes('Mac')?'⌘':'Ctrl+';
   const button = (label, action, id) => {
     const b = document.createElement('button');
     b.textContent = label; b.title = label; if (id) b.id = id;
@@ -39,6 +43,9 @@ export function createEditingControls(api) {
   function reason(command, target) {
     if (state().busy || state().gesture) return 'Wait for the current operation to finish';
     const n = targetItem(target);
+    if(command==='copy'&&!target.ids.length)return 'Select diagram objects to copy';
+    if(command==='undo'&&!state().history.past.length&&!state().pendingUndo)return 'There are no edits to undo';
+    if(command==='redo'&&!state().history.future.length)return 'There are no edits to redo';
     if (command === 'align' && rootCount(target) < 2) return 'Select at least two separate nodes or zones';
     if (command === 'distribute' && rootCount(target) < 3) return 'Select at least three separate nodes or zones';
     if (command === 'reset-route' && !n?.waypoints?.length) return 'This connection has no manual waypoints';
@@ -48,21 +55,28 @@ export function createEditingControls(api) {
   }
   function available(b, command, target) {
     const why = reason(command, target); b.disabled = Boolean(why);
-    b.title = why || b.textContent; b.setAttribute('aria-disabled', String(Boolean(why)));
+    b.title = why || b.getAttribute('aria-label') || b.textContent; b.setAttribute('aria-disabled', String(Boolean(why)));
     if (why) b.setAttribute('aria-description', why); else b.removeAttribute('aria-description');
   }
   function hasZones(target) { return target.ids.some(id => state().model.zones.some(z => z.id === id)); }
-  function definitions(target) {
-    const n = targetItem(target), row = (command, label) => ({command, label});
+  function objectDefinitions(target) {
+    const n = targetItem(target), row = (command, label) => ({command, label,submenu:['shape','style','arrows','align','distribute'].includes(command)});
     switch (target.kind) {
-      case 'node': return [row('label', 'Edit label'), row('shape', 'Shape'), row('color', 'Color'), row('connect', 'Connect from here'), row('fit-label', 'Fit to label'), row('container', n?.container ? 'Disable container' : 'Enable container'), row('details', 'Details'), row('delete', 'Delete node')];
+      case 'node': return [row('label', 'Edit label'), row('shape', 'Shape'), row('color', 'Color'), row('connect', 'Connect from here'), row('fit-label', 'Fit to label'), {command:'show-description',label:'Show description',checked:Boolean(n?.showDescription)}, row('container', n?.container ? 'Disable container' : 'Enable container'), row('details', 'Details'), row('delete', 'Delete node')];
       case 'connection': return [row('label', 'Edit label'), row('style', 'Line style'), row('arrows', 'Arrows'), row('waypoint', target.point ? 'Add waypoint here' : 'Add waypoint'), row('attachments', 'Attachments'), row('reset-label', 'Reset label position'), row('reset-route', 'Reset route'), row('details', 'Details'), row('delete', 'Delete connection')];
       case 'label': return [row('label', 'Edit label'), row('reset-label', 'Reset label position'), row('connection-actions', 'Connection actions')];
       case 'waypoint': return [row('remove-waypoint', 'Remove waypoint'), row('connection-actions', 'Connection actions')];
-      case 'zone': return [row('label', 'Edit label'), row('fit-zone', 'Fit to contents'), row('padding', 'Padding'), row('color', 'Color'), row('details', 'Details'), row('delete', 'Delete zone')];
+      case 'zone': return [row('label', 'Edit label'),{command:'show-description',label:'Show description',checked:Boolean(n?.showDescription)}, row('fit-zone', 'Fit to contents'), row('padding', 'Padding'), row('color', 'Color'), row('details', 'Details'), row('delete', 'Delete zone')];
       case 'multiple': return [row('align', 'Align'), row('distribute', 'Distribute'), ...(hasZones(target) ? [row('fit-zone', 'Fit selected zones')] : []), row('details', 'Details'), row('delete', 'Delete selection')];
       default: return [row('node', target.point ? 'Add node here' : 'Add node'), row('zone', target.point ? 'Add zone here' : 'Add zone'), row('fit-diagram', 'Fit diagram')];
     }
+  }
+  function definitions(target){
+    const entries=objectDefinitions(target);
+    const clipboard=[];if(target.ids.length)clipboard.push({command:'copy',label:'Copy',shortcut:modifier+'C',separated:true});
+    clipboard.push({command:target.point?'paste-here':'paste',label:target.point?'Paste here':'Paste',shortcut:modifier+'V',separated:!target.ids.length});
+    const index=entries.findIndex(e=>['details','delete'].includes(e.command));entries.splice(index<0?entries.length:index,0,...clipboard);
+    return entries;
   }
   function barActions(target) {
     const row = (command, label) => ({command, label});
@@ -76,13 +90,17 @@ export function createEditingControls(api) {
     }
   }
   function dismiss(restore = true) {
-    const old = open; open = null; overlay.hidden = true; overlay.replaceChildren();
-    if (old?.invoker) old.invoker.setAttribute('aria-expanded', 'false');
-    if (restore && old) (old.invoker?.isConnected ? old.invoker : viewport).focus({preventScroll: true});
+    const old = open;
+    for(let panel=open;panel;panel=panel.parentMenu){panel.invoker?.setAttribute('aria-expanded','false');if(panel.element!==rootOverlay)panel.element?.remove();}
+    open=null;overlay=rootOverlay;overlay.hidden=true;overlay.replaceChildren();
+    if(restore&&old)(old.invoker?.isConnected?old.invoker:viewport).focus({preventScroll:true});
   }
+  function inMenus(target){for(let panel=open;panel;panel=panel.parentMenu)if(panel.element?.contains(target)||panel.invoker?.contains(target))return true;return false;}
   function position() {
     if (!open) return;
+    if(open.parentMenu){const active=open,panel=overlay;open=active.parentMenu;overlay=open.element;position();open=active;overlay=panel;}
     let {x, y} = open.anchor;
+    if(open.parentMenu?.element&&open.invoker?.isConnected){const row=open.invoker.getBoundingClientRect(),parent=open.parentMenu.element.getBoundingClientRect();x=parent.right+4;y=row.top;const width=window.visualViewport?.width||innerWidth;if(x+overlay.offsetWidth>width-8)x=parent.left-overlay.offsetWidth-4;if(narrow.matches){x=parent.left+16;y=row.bottom+4;}}
     if (open.type === 'attachment') {
       const path = state().routes.get(open.target.id), p = open.target.end === 'source' ? path?.[0] : path?.at(-1);
       if (p) {
@@ -91,7 +109,7 @@ export function createEditingControls(api) {
         x = side === 'west' ? px - overlay.offsetWidth - 14 : side === 'east' ? px + 14 : px - overlay.offsetWidth / 2;
         y = side === 'north' ? py - overlay.offsetHeight - 14 : side === 'south' ? py + 14 : py - 20;
       }
-    } else if (open.invoker?.isConnected && open.anchor.element) {
+    } else if (!open.parentMenu && open.invoker?.isConnected && open.anchor.element) {
       const b = open.invoker.getBoundingClientRect(); x = b.left; y = b.bottom + 6;
     }
     const visual = window.visualViewport, left = visual?.offsetLeft || 0, top = visual?.offsetTop || 0;
@@ -101,27 +119,46 @@ export function createEditingControls(api) {
     overlay.style.top = `${Math.max(top + 8, Math.min(y, top + height - overlay.offsetHeight - 8))}px`;
   }
   function show(type, target, anchor, invoker, title) {
-    dismiss(false); open = {type, target, anchor, invoker}; overlay.hidden = false;
+    dismiss(false); open = {type, target, anchor, invoker,element:overlay}; overlay.hidden = false;
     overlay.className = `editing-overlay ${type}-popover`; overlay.setAttribute('role', type === 'menu' ? 'menu' : 'dialog');
     overlay.setAttribute('aria-label', title); if (invoker) invoker.setAttribute('aria-expanded', 'true');
     if (type !== 'menu') {const h = document.createElement('h2'); h.textContent = title; overlay.append(h);}
   }
   function anchorFor(invoker) { const b = invoker.getBoundingClientRect(); return {x: b.left, y: b.bottom + 6, element: true}; }
-  function menu(target, anchor, invoker, entries = definitions(target), title = 'Actions') {
+  function menu(target, anchor, invoker, entries = definitions(target), title = 'Actions',parentMenu=null) {
     if (!beforeAction()) return;
-    show('menu', target, anchor, invoker, title);
+    if(parentMenu?.element){overlay=document.createElement('div');overlay.className='editing-overlay menu-popover menu-flyout';overlay.setAttribute('role','menu');overlay.setAttribute('aria-label',title);overlay.id='editing-flyout';document.body.append(overlay);open={type:'menu',target,anchor,invoker,element:overlay};invoker?.setAttribute('aria-expanded','true');}
+    else show('menu', target, anchor, invoker, title);
+    open.entries=entries;open.title=title;open.parentMenu=parentMenu;menuSearch='';
     for (const entry of entries) {
-      const b = button(entry.label, () => activate(entry.command, target, anchor, invoker, entry.value));
+      const b = button('', () => {while(open?.parentMenu&&open.element!==host)backMenu(false);activate(entry.command,target,anchor,entry.submenu?b:invoker,entry.value);});
+      const host=overlay;
+      if(entry.command==='set-shape')b.append(shapePreview(entry.value));
+      const label=document.createElement('span');label.className='menu-label';label.textContent=entry.label;b.append(label);b.setAttribute('aria-label',entry.label);
+      if(entry.shortcut){const shortcut=document.createElement('span');shortcut.className='menu-shortcut';shortcut.textContent=entry.shortcut;shortcut.setAttribute('aria-hidden','true');b.append(shortcut);}
+      if(entry.submenu){const chevron=document.createElement('span');chevron.className='menu-chevron';chevron.textContent='›';chevron.setAttribute('aria-hidden','true');b.append(chevron);b.setAttribute('aria-haspopup','menu');}
       b.dataset.command = entry.command; b.setAttribute('role', entry.selected ? 'menuitemradio' : 'menuitem');
       if (entry.selected !== undefined) { b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', String(entry.selected)); }
+      if (entry.checked !== undefined) {b.setAttribute('role','menuitemcheckbox');b.setAttribute('aria-checked',String(entry.checked));}
       if (entry.command === 'delete') b.classList.add('danger');
-      if (['details', 'delete'].includes(entry.command)) b.classList.add('menu-separated');
+      if (entry.separated || ['details', 'delete'].includes(entry.command)) b.classList.add('menu-separated');
       available(b, entry.command, target); overlay.append(b);
+      if(entry.submenu)b.addEventListener('pointerenter',()=>{if(narrow.matches)return;if(open?.invoker===b)return;while(open?.parentMenu&&open.element!==host)backMenu(false);activate(entry.command,target,anchor,b,entry.value);});
     }
     position(); overlay.querySelector('button:not(:disabled)')?.focus({preventScroll: true});
   }
+  function shapePreview(shape){
+    const svg=svgElement('svg',{class:'menu-shape-preview',viewBox:'0 0 32 24','aria-hidden':'true'});
+    if(shape==='diamond')svg.append(svgElement('polygon',{points:'16,2 30,12 16,22 2,12'}));
+    else if(shape==='circle')svg.append(svgElement('circle',{cx:16,cy:12,r:10}));
+    else if(shape==='cylinder'){svg.append(svgElement('path',{d:'M3 6 A13 4 0 0 1 29 6 V18 A13 4 0 0 1 3 18 Z'}),svgElement('ellipse',{cx:16,cy:6,rx:13,ry:4}));}
+    else svg.append(svgElement('rect',{x:3,y:3,width:26,height:18,rx:shape==='rounded'?6:1}));return svg;
+  }
+  function parentMenu(command){if(open?.type!=='menu')return null;open.focusCommand=command;return open;}
+  function backMenu(focus=true){const parent=open?.parentMenu;if(!parent)return false;open.invoker?.setAttribute('aria-expanded','false');overlay.remove();open=parent;overlay=parent.element;if(focus)overlay.querySelector(`[data-command="${parent.focusCommand}"]`)?.focus({preventScroll:true});return true;}
   function choices(command, values, selected, target, anchor, invoker, title) {
-    menu(target, anchor, invoker, values.map(([value, label]) => ({command, value, label, selected: value === selected})), title);
+    const parent=parentMenu(command==='arrange'&&title==='Distribute'?'distribute':{ 'set-flow':'flow','set-layout':'layout','set-shape':'shape','set-style':'style','set-arrows':'arrows',arrange:'align'}[command]);
+    menu(target, anchor, invoker, values.map(([value, label]) => ({command, value, label, selected: value === selected})), title,parent);
   }
   function activate(command, target, anchor, invoker, value) {
     if (reason(command, target) || !beforeAction()) return;
@@ -137,10 +174,11 @@ export function createEditingControls(api) {
     if (command === 'flow') return choices('set-flow', ['TD', 'LR', 'BT', 'RL'].map(v => [v, {TD:'Top to bottom', LR:'Left to right', BT:'Bottom to top', RL:'Right to left'}[v]]), state().model.settings.direction, target, anchor, invoker, 'Flow direction');
     if (command === 'layout') return choices('set-layout', [['adaptive', 'Adaptive'], ['hierarchical', 'Hierarchical']], state().model.settings.layout, target, anchor, invoker, 'Layout style');
     if (command === 'theme') return themePicker(target,anchor,invoker);
+    if (command === 'export') return menu(target,anchor,invoker,[{command:'export-svg',label:'SVG image'},{command:'export-png',label:'PNG image'},{command:'export-mermaid',label:'Mermaid source'}],'Export',parentMenu('export'));
     dismiss(false); api.execute(command, target, value);
     if (command === 'details') {
-      const panel = document.querySelector('.properties-panel'); panel.classList.add('is-open');
-      (narrow.matches ? $('btn-close-properties') : panel.querySelector('#property-label,.arrange-buttons button'))?.focus({preventScroll:true});
+      const panel = document.querySelector('.properties-panel'); panel.hidden=false;panel.classList.add('is-open');document.body.classList.remove('inspector-hidden');
+      $('btn-mobile-properties').setAttribute('aria-expanded','true');sizeBar();(narrow.matches ? $('btn-close-properties') : panel.querySelector('#property-label,.arrange-buttons button'))?.focus({preventScroll:true});
     } else if (!['connect', 'node', 'zone', 'waypoint', 'open', 'source', 'hierarchy'].includes(command)) (invoker?.isConnected ? invoker : viewport).focus({preventScroll: true});
   }
   function themePicker(target,anchor,invoker){
@@ -258,24 +296,29 @@ export function createEditingControls(api) {
     const target = currentTarget(), n = targetItem(target), actions = barActions(target), key = JSON.stringify([target.kind, target.ids, target.index, hasZones(target)]);
     const name = target.kind === 'multiple' ? `${target.ids.length} objects selected` : target.kind === 'canvas' ? 'Select an object to edit it' : target.kind === 'waypoint' ? `Waypoint ${target.index + 1} · ${n?.label || 'Connection'}` : `${{node:'Node', connection:'Connection', zone:'Zone'}[target.kind]} · ${n?.label || n?.id}`;
     $('selection-name').textContent = name; $('selection-name').title = name; $('selection-name').setAttribute('aria-label', name);
+    $('selection-bar').hidden=target.kind==='canvas';
     if (key !== barKey) {
       barKey = key; bar.replaceChildren();
-      for (const {command, label} of actions) {const b = button(label, () => activate(command, currentTarget(), anchorFor(b), b), `selection-${command}`); b.dataset.command = command; const popup = ['color','attachments','padding'].includes(command) ? 'dialog' : ['shape','style','arrows','align','distribute','connection-actions'].includes(command) ? 'menu' : null; if(popup){b.setAttribute('aria-haspopup',popup);b.setAttribute('aria-expanded','false');} bar.append(b);}
+      const compact={'fit-label':'Fit',style:'Line',waypoint:'+ Point',attachments:'Ends','fit-zone':'Fit'};
+      for (const {command, label} of actions) {const b = button(compact[command]||label, () => {if(open?.invoker===b){if(open.type==='edit')beforeAction(true);else dismiss();return;}activate(command, currentTarget(), anchorFor(b), b);}, `selection-${command}`);b.setAttribute('aria-label',label);b.title=label; b.dataset.command = command; const popup = ['color','attachments','padding'].includes(command) ? 'dialog' : ['shape','style','arrows','align','distribute','connection-actions'].includes(command) ? 'menu' : null; if(popup){b.setAttribute('aria-haspopup',popup);b.setAttribute('aria-expanded','false');} bar.append(b);}
     }
     for (const b of bar.children) available(b, b.dataset.command, target);
     $('btn-selection-more').disabled = state().busy || Boolean(state().gesture);
     $('btn-tool-menu').textContent = `${toolNames.find(([key]) => key === state().tool)?.[1] || 'Place waypoint'} ▾`;
-    for (const id of ['btn-tool-menu', 'btn-project-menu', 'btn-diagram-menu']) $(id).disabled = state().busy || Boolean(state().gesture);
+    for (const id of ['btn-tool-menu', 'btn-project-menu','btn-edit-menu','btn-view-menu', 'btn-diagram-menu','btn-mobile-selection','btn-mobile-properties']) $(id).disabled = state().busy || Boolean(state().gesture);
+    const panel=document.querySelector('.properties-panel'),visible=!panel.hidden&&(!narrow.matches||panel.classList.contains('is-open'));
+    $('btn-mobile-properties').setAttribute('aria-expanded',String(visible));
+    document.body.classList.toggle('inspector-hidden',!narrow.matches&&panel.hidden);
     if (open?.type === 'attachment') renderAttachment();
     if (open?.type === 'menu') for (const b of overlay.querySelectorAll('[data-command]')) available(b, b.dataset.command, open.target);
     sizeBar();
   }
   function sizeBar() {
     for (const b of bar.children) b.hidden = false;
-    if (!narrow.matches) return;
-    const room = $('selection-bar').clientWidth - $('btn-selection-more').offsetWidth - 24;
+    const room = $('selection-bar').clientWidth - $('btn-selection-more').offsetWidth - 4;
+    if(room<=0)return;
     let used = 0;
-    for (const [index, b] of [...bar.children].entries()) { used += b.offsetWidth + 6; b.hidden = index >= 2 || used > room; }
+    for (const b of bar.children) {used+=b.offsetWidth+4;b.hidden=used>room;}
   }
   function contextTarget(event) {
     const el = event.target, part = el.closest('[data-reconnect],[data-waypoint],.edge-label'), hit = el.closest('[data-object-id]');
@@ -296,17 +339,35 @@ export function createEditingControls(api) {
     api.cancelGesture(); const target = contextTarget(event), anchor = {x: event.clientX, y: event.clientY};
     if (target.kind === 'attachment') attachments(target, anchor, null); else menu(target, anchor, null);
   }
-  $('btn-selection-more').addEventListener('click', event => menu(currentTarget(), anchorFor(event.currentTarget), event.currentTarget));
-  $('btn-tool-menu').addEventListener('click', event => menu({kind:'global', ids:[]}, anchorFor(event.currentTarget), event.currentTarget, toolNames.map(([value, label]) => ({command:'tool', value, label, selected: value === state().tool})), 'Tools'));
-  $('btn-project-menu').addEventListener('click', event => menu({kind:'global', ids:[]}, anchorFor(event.currentTarget), event.currentTarget, [['new','New'],['open','Open…'],['save','Save project'],['export-svg','Export SVG image'],['export-png','Export PNG image'],['export-mermaid','Export Mermaid source'],['hierarchy','Hierarchy'],['source','Source']].map(([command,label]) => ({command,label})), 'Project'));
-  $('btn-diagram-menu').addEventListener('click', event => menu({kind:'global', ids:[]}, anchorFor(event.currentTarget), event.currentTarget, [['theme',`Theme · ${diagramTheme(state().model).name}`],['flow','Flow direction'],['layout','Layout style'],['auto-layout','Auto layout'],['font','Text size']].map(([command,label]) => ({command,label})), 'Diagram'));
+  $('btn-selection-more').addEventListener('click', event => toggleMenu(event.currentTarget,()=>menu(currentTarget(), anchorFor(event.currentTarget), event.currentTarget)));
+  $('btn-mobile-selection').addEventListener('click', event => toggleMenu(event.currentTarget,()=>menu(currentTarget(),anchorFor(event.currentTarget),event.currentTarget)));
+  $('btn-mobile-properties').addEventListener('click',event=>{if(!beforeAction())return;api.execute('toggle-properties',currentTarget());const panel=document.querySelector('.properties-panel');if(!panel.hidden&&(!narrow.matches||panel.classList.contains('is-open')))(narrow.matches?$('btn-close-properties'):panel.querySelector('#property-label')||panel)?.focus({preventScroll:true});});
+  $('btn-tool-menu').addEventListener('click', event => toggleMenu(event.currentTarget,()=>menu({kind:'global', ids:[]}, anchorFor(event.currentTarget), event.currentTarget, toolNames.map(([value, label]) => ({command:'tool', value, label, selected: value === state().tool})), 'Tools')));
+  const globals={
+    'btn-project-menu':()=>[{command:'new',label:'New diagram'},{command:'open',label:'Open…'},{command:'recent',label:'Recent files…'},{command:'save',label:'Save project',shortcut:modifier+'S'},{command:'save-as',label:'Save as…'},{command:'download-copy',label:'Download a copy'},{command:'autosave',label:'Autosave',checked:state().files.autosave,separated:true},...(state().files.hasRecovery?[{command:'recovery',label:'Browser recovery…'}]:[]),{command:'export',label:'Export',submenu:true,separated:true}],
+    'btn-edit-menu':()=>[{command:'undo',label:'Undo',shortcut:modifier+'Z'},{command:'redo',label:'Redo',shortcut:modifier+'Shift+Z'},{command:'copy',label:'Copy',shortcut:modifier+'C',separated:true},{command:'paste',label:'Paste',shortcut:modifier+'V'}],
+    'btn-view-menu':()=>[{command:'hierarchy',label:'Hierarchy',checked:!$('source-panel').hidden&&!$('hierarchy-content').hidden},{command:'source',label:'Mermaid source',checked:!$('source-panel').hidden&&!$('source-content').hidden},{command:'toggle-properties',label:'Properties',checked:!document.querySelector('.properties-panel').hidden&&(!narrow.matches||document.querySelector('.properties-panel').classList.contains('is-open'))},{command:'fit-diagram',label:'Fit diagram',separated:true}],
+    'btn-diagram-menu':()=>[{command:'theme',label:`Theme · ${diagramTheme(state().model).name}`},{command:'flow',label:'Flow direction',submenu:true,separated:true},{command:'layout',label:'Layout style',submenu:true},{command:'auto-layout',label:'Auto layout'},{command:'font',label:'Text size',separated:true}]
+  };
+  function rootMenu(){let panel=open;while(panel?.parentMenu)panel=panel.parentMenu;return panel;}
+  function toggleMenu(invoker,show){if(rootMenu()?.invoker===invoker&&open.type==='menu'){dismiss();return;}show();}
+  function globalMenu(invoker){invoker.focus({preventScroll:true});menu(invoker.id==='btn-edit-menu'?currentTarget():{kind:'global',ids:[]},anchorFor(invoker),invoker,globals[invoker.id](),invoker.textContent);}
+  for(const id of Object.keys(globals)){
+    const invoker=$(id);invoker.addEventListener('click',()=>toggleMenu(invoker,()=>globalMenu(invoker)));
+    invoker.tabIndex=id==='btn-project-menu'?0:-1;invoker.addEventListener('focus',()=>{for(const other of Object.keys(globals))$(other).tabIndex=other===id?0:-1;});
+    invoker.addEventListener('pointerenter',()=>{if(!narrow.matches&&open?.type==='menu'&&rootMenu()?.invoker?.closest('.app-menus')&&rootMenu().invoker!==invoker)globalMenu(invoker);});
+    invoker.addEventListener('keydown',event=>{
+      if(['ArrowLeft','ArrowRight'].includes(event.key)){event.preventDefault();event.stopPropagation();const buttons=[...document.querySelectorAll('.app-menus>button')],i=buttons.indexOf(invoker);buttons[(i+(event.key==='ArrowRight'?1:buttons.length-1))%buttons.length].focus();}
+      if(event.key==='ArrowDown'){event.preventDefault();event.stopPropagation();globalMenu(invoker);}
+    });
+  }
   $('btn-theme').addEventListener('click',event=>activate('theme',{kind:'global',ids:[]},anchorFor(event.currentTarget),event.currentTarget));
-  function closeProperties(){api.flushProperties();document.querySelector('.properties-panel').classList.remove('is-open');$('btn-selection-more').focus();}
+  function closeProperties(){api.flushProperties();document.querySelector('.properties-panel').classList.remove('is-open');$('btn-mobile-properties').setAttribute('aria-expanded','false');$('btn-mobile-properties').focus();}
   $('btn-close-properties').addEventListener('click',closeProperties);
   viewport.addEventListener('contextmenu', event => { if (event.target.closest('.zoom-toolbar')) return; event.preventDefault(); context(event); });
   document.addEventListener('pointerdown', event => {
     blockedClick = false;
-    if (!open || overlay.contains(event.target)) return;
+    if (!open || inMenus(event.target)) return;
     if (!beforeAction()) {blockedClick = true; event.preventDefault(); event.stopImmediatePropagation(); return;}
     dismiss(false);
   }, true);
@@ -314,17 +375,34 @@ export function createEditingControls(api) {
   document.addEventListener('keydown', event => {
     if(!open&&narrow.matches&&event.key==='Escape'&&document.querySelector('.properties-panel').classList.contains('is-open')){event.preventDefault();event.stopImmediatePropagation();closeProperties();return;}
     if (open) {
-      if (event.key === 'Escape') {event.preventDefault(); event.stopImmediatePropagation(); if (open.type === 'edit') cancelEdit(); else dismiss(); return;}
+      if (event.key === 'Escape') {event.preventDefault(); event.stopImmediatePropagation(); if (open.type === 'edit') cancelEdit(); else if(open.type!=='menu'||!backMenu())dismiss(); return;}
       if (overlay.contains(event.target)) {
+        // Menu navigation must never reach the canvas's nudge/tool shortcuts.
+        event.stopPropagation();
+        if(open.type==='menu'&&event.key==='ArrowLeft'&&open.parentMenu){event.preventDefault();backMenu();return;}
+        if(open.type==='menu'&&event.key==='ArrowRight'&&event.target.getAttribute('aria-haspopup')==='menu'){event.preventDefault();event.target.click();return;}
+        if(open.type==='menu'&&['ArrowLeft','ArrowRight'].includes(event.key)&&rootMenu()?.invoker?.closest('.app-menus')){event.preventDefault();const buttons=[...document.querySelectorAll('.app-menus>button')],i=buttons.indexOf(rootMenu().invoker);globalMenu(buttons[(i+(event.key==='ArrowRight'?1:buttons.length-1))%buttons.length]);return;}
         if (open.type === 'menu' && ['ArrowDown','ArrowUp','Home','End'].includes(event.key)) {
           event.preventDefault(); const buttons = [...overlay.querySelectorAll('button:not(:disabled)')], index = buttons.indexOf(document.activeElement);
           buttons[event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : buttons.length - 1)) % buttons.length]?.focus();
         }
         if (event.key === 'Tab') {
+          if(open.type==='menu'){
+            event.preventDefault();const from=rootMenu()?.invoker||viewport,fields=[...document.querySelectorAll('button,input,select,textarea,[tabindex="0"]')].filter(el=>!el.disabled&&el.tabIndex>=0&&!inMenus(el)&&el.getClientRects().length),i=fields.indexOf(from),next=fields[(i+(event.shiftKey?fields.length-1:1))%fields.length];dismiss(false);(next||viewport).focus({preventScroll:true});return;
+          }
           const fields = [...overlay.querySelectorAll('button:not(:disabled),input:not(:disabled),textarea,select:not(:disabled)')], index = fields.indexOf(document.activeElement);
           if ((event.shiftKey && index === 0) || (!event.shiftKey && index === fields.length - 1)) {event.preventDefault(); fields[event.shiftKey ? fields.length - 1 : 0]?.focus();}
         }
-        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {if (!beforeAction()) {event.preventDefault(); event.stopImmediatePropagation();} return;}
+        if(open.type==='menu'&&event.key.length===1&&!event.metaKey&&!event.ctrlKey&&!event.altKey){
+          const now=performance.now();menuSearch=now-menuSearchTime<650?menuSearch+event.key.toLowerCase():event.key.toLowerCase();menuSearchTime=now;
+          const buttons=[...overlay.querySelectorAll('button:not(:disabled)')],start=buttons.indexOf(document.activeElement),ordered=[...buttons.slice(start+1),...buttons.slice(0,start+1)];
+          const match=ordered.find(b=>(b.getAttribute('aria-label')||b.textContent).toLowerCase().startsWith(menuSearch));if(match){event.preventDefault();match.focus();}
+        }
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+          event.preventDefault();event.stopImmediatePropagation();
+          if(beforeAction()){dismiss(false);api.execute('save',currentTarget());}
+          return;
+        }
         event.stopPropagation(); return;
       }
     }
@@ -362,7 +440,12 @@ export function createEditingControls(api) {
   window.addEventListener('blur', () => {clearTouch(); heldTouch = null;});
   new ResizeObserver(() => {sizeBar(); position();}).observe($('selection-bar'));
   window.addEventListener('resize', position); window.visualViewport?.addEventListener('resize', position);
-  narrow.addEventListener('change', () => {document.querySelector('.properties-panel').classList.remove('is-open'); position(); sizeBar();});
+  narrow.addEventListener('change', () => {
+    const panel=document.querySelector('.properties-panel');panel.classList.remove('is-open');
+    if(narrow.matches){desktopSourceVisible=!$('source-panel').hidden;desktopInspectorVisible=!panel.hidden;panel.hidden=false;$('source-panel').hidden=true;}
+    else{panel.hidden=!desktopInspectorVisible;$('source-panel').hidden=!desktopSourceVisible;}
+    $('btn-hierarchy').setAttribute('aria-expanded',String(!$('source-panel').hidden&&!$('hierarchy-content').hidden));$('btn-source').setAttribute('aria-expanded',String(!$('source-panel').hidden&&!$('source-content').hidden));render();position();sizeBar();
+  });
   if(narrow.matches){$('source-panel').hidden=true;$('btn-hierarchy').setAttribute('aria-expanded','false');}
   return {render, beforeAction, position, viewChanged() {if (open?.type === 'menu') dismiss(false); else position();}, openAttachment(id, end) {api.select(id);attachments({kind:'connection', id, ids:[id], end}, {x:0,y:0}, null);}, editLabel(id) {edit('label', {kind:'node', id, ids:[id]}, {x:innerWidth / 2 - 140, y:innerHeight / 2 - 100}, null);}};
 }

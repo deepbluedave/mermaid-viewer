@@ -1,8 +1,8 @@
 // Adapter only: route finding is performed by libavoid, never by application code.
-import { items } from './core.mjs?v=whole-words';
-import {waypointConflicts} from './waypoints.mjs?v=whole-words';
-import {findJoinRepairs,acceptJoinRepair,sameRoute} from './route-joins.mjs?v=whole-words';
-import {attachmentGroups,attachmentCandidates,acceptAttachmentSwap} from './attachments.mjs?v=whole-words';
+import { items } from './core.mjs?v=refinements';
+import {waypointConflicts} from './waypoints.mjs?v=refinements';
+import {findJoinRepairs,acceptJoinRepair,sameRoute} from './route-joins.mjs?v=refinements';
+import {attachmentGroups,attachmentCandidates,acceptAttachmentSwap} from './attachments.mjs?v=refinements';
 const sides = { north:{dir:1,opposite:2}, south:{dir:2,opposite:1}, west:{dir:4,opposite:8}, east:{dir:8,opposite:4} };
 const edgeSpacing=12;
 export function sidePoint(n, side, fraction=.5) {

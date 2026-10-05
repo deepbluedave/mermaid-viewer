@@ -1,0 +1,166 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Client",
+      "label": "Customer",
+      "shape": "rounded",
+      "parentId": null,
+      "x": 45,
+      "y": 170,
+      "width": 130,
+      "height": 64,
+      "manualSize": {
+        "width": 130,
+        "height": 64
+      },
+      "description": "Starts an order request.",
+      "notes": "Owner: Web team"
+    },
+    {
+      "id": "Gateway",
+      "label": "Request gateway",
+      "shape": "rounded",
+      "parentId": "Services",
+      "x": 265,
+      "y": 135,
+      "width": 180,
+      "height": 70,
+      "manualSize": {
+        "width": 180,
+        "height": 70
+      },
+      "description": "Validates incoming requests and dispatches work.",
+      "notes": "Owner: Platform\nRunbook: Check authentication and queue health.\nRetry only idempotent operations."
+    },
+    {
+      "id": "Dispatch",
+      "label": "Dispatch",
+      "shape": "circle",
+      "parentId": "Services",
+      "x": 480,
+      "y": 110,
+      "width": 124,
+      "height": 124,
+      "manualSize": {
+        "width": 124,
+        "height": 124
+      },
+      "description": "Chooses synchronous or background delivery.",
+      "notes": "Owner: Platform"
+    },
+    {
+      "id": "Store",
+      "label": "Orders",
+      "shape": "cylinder",
+      "parentId": "Data",
+      "x": 740,
+      "y": 110,
+      "width": 190,
+      "height": 96,
+      "manualSize": {
+        "width": 190,
+        "height": 96
+      },
+      "description": "Stores the current order state.",
+      "notes": "Backups: Daily"
+    },
+    {
+      "id": "Jobs",
+      "label": "Background jobs",
+      "shape": "rectangle",
+      "parentId": "Data",
+      "x": 740,
+      "y": 270,
+      "width": 190,
+      "height": 64,
+      "manualSize": {
+        "width": 190,
+        "height": 64
+      },
+      "description": "Processes queued jobs.",
+      "notes": "Owner: Operations"
+    }
+  ],
+  "zones": [
+    {
+      "id": "Services",
+      "label": "Delivery services",
+      "parentId": null,
+      "x": 230,
+      "y": 55,
+      "width": 410,
+      "height": 335,
+      "description": "Request handling and orchestration.",
+      "notes": "Owner: Platform"
+    },
+    {
+      "id": "Data",
+      "label": "Data and processing",
+      "parentId": null,
+      "x": 700,
+      "y": 55,
+      "width": 270,
+      "height": 335
+    }
+  ],
+  "edges": [
+    {
+      "id": "HTTPS",
+      "source": "Client",
+      "target": "Gateway",
+      "label": "HTTPS",
+      "style": "normal",
+      "direction": "forward",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Route",
+      "source": "Gateway",
+      "target": "Dispatch",
+      "label": "Route request",
+      "style": "normal",
+      "direction": "forward",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Read",
+      "source": "Gateway",
+      "target": "Store",
+      "label": "Read and write",
+      "style": "normal",
+      "direction": "forward",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Queue",
+      "source": "Dispatch",
+      "target": "Jobs",
+      "label": "Queue work",
+      "style": "normal",
+      "direction": "forward",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    }
+  ],
+  "settings": {
+    "direction": "LR",
+    "layout": "adaptive",
+    "grid": false,
+    "guides": true,
+    "fontSize": 16,
+    "theme": "clean",
+    "view": {
+      "x": 18,
+      "y": 35,
+      "scale": 0.72
+    }
+  }
+}

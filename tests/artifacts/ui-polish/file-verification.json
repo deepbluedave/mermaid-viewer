@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Actual native Save/Open/Save preserves the complete model, including context, geometry and view",
+    "pass": true
+  },
+  {
+    "name": "Actual File \u2192 Export SVG contains five nodes and four routes without editor handles",
+    "pass": true
+  },
+  {
+    "name": "Actual File \u2192 Export PNG has a valid PNG signature and complete raster dimensions",
+    "pass": true,
+    "width": 1946,
+    "height": 766
+  }
+]

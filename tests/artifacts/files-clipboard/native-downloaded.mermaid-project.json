@@ -1,0 +1,144 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "Node1",
+      "label": "Customer",
+      "shape": "rounded",
+      "parentId": null,
+      "x": 81,
+      "y": 206,
+      "width": 130,
+      "height": 64,
+      "manualSize": {
+        "width": 130,
+        "height": 64
+      },
+      "description": "Starts an order request.",
+      "notes": "Owner: Web team"
+    },
+    {
+      "id": "Node2",
+      "label": "Request gateway",
+      "shape": "rounded",
+      "parentId": null,
+      "x": 301,
+      "y": 171,
+      "width": 180,
+      "height": 70,
+      "manualSize": {
+        "width": 180,
+        "height": 70
+      },
+      "description": "Validates incoming requests and dispatches work.",
+      "notes": "Owner: Platform\nRunbook: Check authentication and queue health.\nRetry only idempotent operations."
+    },
+    {
+      "id": "Node3",
+      "label": "Dispatch",
+      "shape": "circle",
+      "parentId": null,
+      "x": 516,
+      "y": 146,
+      "width": 124,
+      "height": 124,
+      "manualSize": {
+        "width": 124,
+        "height": 124
+      },
+      "description": "Chooses synchronous or background delivery.",
+      "notes": "Owner: Platform"
+    },
+    {
+      "id": "Node4",
+      "label": "Orders",
+      "shape": "cylinder",
+      "parentId": null,
+      "x": 776,
+      "y": 146,
+      "width": 190,
+      "height": 96,
+      "manualSize": {
+        "width": 190,
+        "height": 96
+      },
+      "description": "Stores the current order state.",
+      "notes": "Backups: Daily"
+    },
+    {
+      "id": "Node5",
+      "label": "Background jobs",
+      "shape": "rectangle",
+      "parentId": null,
+      "x": 776,
+      "y": 306,
+      "width": 190,
+      "height": 64,
+      "manualSize": {
+        "width": 190,
+        "height": 64
+      },
+      "description": "Processes queued jobs.",
+      "notes": "Owner: Operations"
+    }
+  ],
+  "zones": [],
+  "edges": [
+    {
+      "id": "Edge1",
+      "source": "Node1",
+      "target": "Node2",
+      "label": "HTTPS",
+      "style": "normal",
+      "direction": "forward",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Edge2",
+      "source": "Node2",
+      "target": "Node3",
+      "label": "Route request",
+      "style": "normal",
+      "direction": "forward",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Edge3",
+      "source": "Node2",
+      "target": "Node4",
+      "label": "Read and write",
+      "style": "normal",
+      "direction": "forward",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    },
+    {
+      "id": "Edge4",
+      "source": "Node3",
+      "target": "Node5",
+      "label": "Queue work",
+      "style": "normal",
+      "direction": "forward",
+      "routing": "orthogonal",
+      "sourceSide": null,
+      "targetSide": null
+    }
+  ],
+  "settings": {
+    "direction": "TD",
+    "layout": "adaptive",
+    "grid": false,
+    "guides": true,
+    "fontSize": 13,
+    "view": {
+      "x": -0.15005599104142675,
+      "y": 140.57838745800674,
+      "scale": 0.7032474804031354
+    }
+  }
+}
