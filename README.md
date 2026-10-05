@@ -12,6 +12,10 @@ python3 -m http.server 8000 --bind 127.0.0.1
 
 Open [the editor](http://127.0.0.1:8000/viewer.html). No npm install, build, CDN, account, or internet connection is needed to run it. Use HTTP rather than opening the HTML directly: the browser loads local modules, WebAssembly, and example files. Stop the server with Ctrl+C.
 
+## GitHub Pages
+
+The [hosted editor](https://deepbluedave.github.io/mermaid-viewer/) uses GitHub Pages. In repository **Settings → Pages**, choose **Deploy from a branch**, **main**, and **/(root)**. The root `index.html` opens `viewer.html`; `.nojekyll` publishes the static files directly. No build workflow is required. Assets use relative URLs so the viewer also works beneath the `/mermaid-viewer/` project path.
+
 ## Edit a diagram
 
 - Select an object to use the **quick actions in Properties** (or the header **Selection actions** button when the panel is hidden). Change shapes, colors, line styles, arrows, padding, or routes there. Use **More** for all actions, or right-click the object. Double-click a label to edit it. Edit popovers preview changes; **Apply** or a valid click-away makes one Undo step. **Cancel** or Escape restores the opening state. Invalid values keep the editor open.
