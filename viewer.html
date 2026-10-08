@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'">
   <title>Mermaid Diagram Studio</title>
-  <link rel="stylesheet" href="studio.css?v=refinements">
+  <link rel="stylesheet" href="studio.css?v=extensions-10">
 </head>
 <body>
   <header class="topbar">
@@ -40,7 +40,7 @@
   <div id="command-controls" hidden>
     <div class="file-actions">
       <button disabled id="btn-new">New</button>
-      <select disabled id="export-format" aria-label="Export format"><option value="svg">SVG image</option><option value="png">PNG image</option><option value="mermaid">Mermaid source</option></select>
+      <select disabled id="export-format" aria-label="Export format"><option value="svg">SVG image</option><option value="png">PNG image</option><option value="mermaid">Mermaid source</option><option value="mermaid-portable">Portable Mermaid</option></select>
       <button disabled id="btn-export">Export</button>
       <button disabled id="btn-hierarchy" aria-expanded="true">Hierarchy</button>
       <button disabled id="btn-source" aria-expanded="false">Source</button>
@@ -66,7 +66,7 @@
       <label class="visually-hidden" for="editor">Mermaid definition</label>
       <textarea disabled id="editor" spellcheck="false" placeholder="Paste a flowchart or graph here…"></textarea>
       <div class="source-actions"><button disabled id="btn-apply" class="primary">Apply source</button><button id="btn-discard" disabled>Discard draft</button></div>
-      <div class="examples"><label for="example">Examples</label><select disabled id="example"><option value="">Choose an example…</option><option value="zones-and-subzones">Zones and subzones</option><option value="architecture">Architecture</option></select></div>
+
       <p class="small-note">Project files retain the layout. Mermaid exports retain the structure.</p>
       </div>
     </aside>
@@ -85,12 +85,12 @@
       <details class="keyboard-help"><summary>Keyboard shortcuts</summary><p>V Select · H Pan · N Node · C Connect · Z Zone</p><p>Arrow keys nudge · Shift for larger steps<br>Escape cancels · Delete removes</p><p>Ctrl/Cmd+Z Undo · Ctrl/Cmd+S Save</p></details>
     </aside>
   </main>
-  <footer><span id="status" role="status">Loading…</span><span id="file-info"><span id="file-name">Untitled</span> · <span id="file-state" role="status">Loading…</span></span><span id="counts"></span></footer>
+  <footer><span id="status" role="status">Loading…</span><span id="file-info"><span id="file-name">Untitled</span> · <span id="file-state" role="status">Loading…</span></span><span id="webmcp-status" hidden title="WebMCP tools are available to compatible browser agents">Agent tools ready</span><span id="counts"></span></footer>
   <dialog id="file-dialog" aria-labelledby="file-dialog-title" aria-describedby="file-dialog-message"><h2 id="file-dialog-title"></h2><p id="file-dialog-message"></p><div id="file-dialog-list" hidden></div><div id="file-dialog-actions"></div></dialog>
   <div id="error-banner" role="alert" hidden><span id="error-message"></span><button disabled id="dismiss-error" aria-label="Dismiss error">×</button></div>
   <input disabled id="file-input" type="file" accept=".json,.mmd,.mermaid,.txt" hidden>
   <script src="./vendor/mermaid.min.js"></script>
   <div id="editing-overlay" class="editing-overlay" hidden></div>
-  <script type="module" src="./app.mjs?v=refinements"></script>
+  <script type="module" src="./app.mjs?v=extensions-10"></script>
 </body>
 </html>

@@ -61,6 +61,6 @@ test('applying Mermaid edits retains theme and matching-ID overrides, including 
   const previous=fixture(),incoming=fixture();previous.settings.theme='blueprint';previous.nodes[0].backgroundColor='#adbeef';incoming.nodes.push({id:'New',label:'New',shape:'rectangle',parentId:null,x:900,y:100,width:120,height:54});
   const merged=mergeSource(previous,incoming);assert.equal(merged.settings.theme,'blueprint');assert.equal(merged.nodes[0].backgroundColor,'#adbeef');assert.equal(objectColors(merged,merged.nodes.at(-1)).background,diagramTheme(merged).node);assert.equal(merged.nodes.at(-1).backgroundColor,undefined);
 });
-test('themes and custom appearance do not leak into exported Mermaid structure',()=>{
-  const m=fixture(),source=toMermaid(m);m.settings.theme='paper';m.nodes[0].backgroundColor='#010203';assert.equal(toMermaid(m),source);
+test('Mermaid exports carry resolved theme and custom appearance',()=>{
+  const m=fixture(),source=toMermaid(m);m.settings.theme='paper';m.nodes[0].backgroundColor='#010203';const exported=toMermaid(m);assert.notEqual(exported,source);assert(exported.includes('fill:#010203'));assert(exported.includes('diagram-studio-theme'));
 });

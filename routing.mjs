@@ -1,16 +1,23 @@
+import {iconFrame,cloudIntersection} from './node-shapes.mjs?v=extensions-10';
+import {presentationModel} from './presentation.mjs?v=extensions-10';
 // Adapter only: route finding is performed by libavoid, never by application code.
-import { items } from './core.mjs?v=refinements';
-import {waypointConflicts} from './waypoints.mjs?v=refinements';
-import {findJoinRepairs,acceptJoinRepair,sameRoute} from './route-joins.mjs?v=refinements';
-import {attachmentGroups,attachmentCandidates,acceptAttachmentSwap} from './attachments.mjs?v=refinements';
+import { items } from './core.mjs?v=extensions-10';
+import {waypointConflicts} from './waypoints.mjs?v=extensions-10';
+import {findJoinRepairs,acceptJoinRepair,sameRoute} from './route-joins.mjs?v=extensions-10';
+import {attachmentGroups,attachmentCandidates,acceptAttachmentSwap} from './attachments.mjs?v=extensions-10';
 const sides = { north:{dir:1,opposite:2}, south:{dir:2,opposite:1}, west:{dir:4,opposite:8}, east:{dir:8,opposite:4} };
 const edgeSpacing=12;
 export function sidePoint(n, side, fraction=.5) {
+  if(n.shape==='icon'&&!n.container){const frame=iconFrame(n);return sidePoint({...n,...frame,x:n.x+frame.x,y:n.y+frame.y,shape:n.iconForm==='circle'?'circle':n.iconForm==='rounded'?'rounded':'rectangle'},side,fraction);}
   const horizontal=side==='north'||side==='south',positive=side==='east'||side==='south';
   const w=n.width,h=n.height,t=Math.max(0,Math.min(1,fraction)),offset=2*t-1;
   let x=horizontal?w*t:(positive?w:0),y=horizontal?(positive?h:0):h*t;
   // Intersect the chosen horizontal/vertical attachment with the visible outline.
-  if(n.shape==='circle') {
+  if(n.shape==='hexagon'){const cut=Math.min(w*.18,h*.4);if(horizontal)y=(positive?h:0)+(positive?-1:1)*Math.max(0,cut-Math.min(x,w-x))/cut*h/2;else x=positive?w-cut*Math.abs(offset):cut*Math.abs(offset);
+  } else if(n.shape==='person'&&!n.container){const r=Math.min(18,h*.18),top=r*2+4;if(horizontal&&!positive){if(Math.abs(x-w/2)<=r)y=r-Math.sqrt(Math.max(0,r*r-(x-w/2)**2));else y=top;}else if(!horizontal&&y<top){x=w/2+(positive?1:-1)*Math.sqrt(Math.max(0,r*r-(y-r)**2));}
+  } else if(n.shape==='document'&&horizontal&&positive){const t=x/w;y=h-10+(t<.5?40*t*(1-2*t):-40*(t-.5)*(2-2*t));
+  } else if(n.shape==='cloud'){if(horizontal)y=cloudIntersection(side,t)*h;else x=cloudIntersection(side,t)*w;
+  } else if(n.shape==='circle') {
     const radius=Math.sqrt(Math.max(0,1-offset*offset));
     if(horizontal)y=h/2+(positive?1:-1)*h/2*radius;else x=w/2+(positive?1:-1)*w/2*radius;
   } else if(n.shape==='diamond') {
@@ -20,7 +27,7 @@ export function sidePoint(n, side, fraction=.5) {
     if(horizontal)y=positive?h-ry+ry*Math.sqrt(Math.max(0,1-offset*offset)):ry-ry*Math.sqrt(Math.max(0,1-offset*offset));
     else if(y<ry||y>h-ry){const dy=y<ry?(y-ry)/ry:(y-h+ry)/ry;x=w/2+(positive?1:-1)*w/2*Math.sqrt(Math.max(0,1-dy*dy));}
   } else if(n.shape) {
-    const radius=Math.min(n.shape==='rounded'?14:3,w/2,h/2),position=horizontal?x:y,length=horizontal?w:h;
+    const radius=Math.min(n.shape==='stadium'?Math.min(w,h)/2:n.shape==='rounded'||n.container&&['icon','person'].includes(n.shape)?14:3,w/2,h/2),position=horizontal?x:y,length=horizontal?w:h;
     const corner=position<radius?radius-position:position>length-radius?position-length+radius:0;
     const inset=corner?radius-Math.sqrt(Math.max(0,radius*radius-corner*corner)):0;
     if(horizontal)y=positive?h-inset:inset;else x=positive?w-inset:inset;
@@ -59,7 +66,8 @@ export class DiagramRouter {
   constructor(avoid) { this.avoid=avoid; this.router=null; this.routes=new Map();this.groups=new Map();this.orders=new Map();this.cacheKey=null;this.terminalArrivals=new Set(); }
   dispose() { if(this.router) this.router.delete(); this.router=null;this.cacheKey=null; }
   route(model,{freezeOrder=false,optimize=true}={}) {
-    const geometry=JSON.stringify({nodes:[...model.nodes,...model.zones].map(n=>[n.id,n.x,n.y,n.width,n.height,n.shape,n.container,n.attachmentOrder]),edges:model.edges.map(e=>[e.id,e.source,e.target,e.routing,e.sourceSide,e.targetSide,e.waypoints]),freezeOrder,optimize});
+    model=presentationModel(model);
+    const geometry=JSON.stringify({nodes:[...model.nodes,...model.zones].map(n=>[n.id,n.x,n.y,n.width,n.height,n.shape,n.container,n.iconForm,n.iconPosition,n.iconSize,n.attachmentOrder]),edges:model.edges.map(e=>[e.id,e.source,e.target,e.routing,e.sourceSide,e.targetSide,e.waypoints]),freezeOrder,optimize});
     if(geometry===this.cacheKey)return this.routes;
     let orders=freezeOrder?this.orders:new Map(),groups=attachmentGroups(model,orders);
     let terminalArrivals=new Set([...groups.values()].filter(g=>g.manual).flatMap(g=>g.entries.filter(e=>e.end==='source').map(e=>e.edgeId)));
@@ -94,14 +102,14 @@ export class DiagramRouter {
     const shapes=new Map(), objects=new Map(items(model).map(n=>[n.id,n])),attachments=connectionAttachments(groups);
     function rectangle(n) {const p=new a.Point(n.x,n.y),q=new a.Point(n.x+n.width,n.y+n.height);const rect=new a.Rectangle(p,q);p.delete();q.delete();return rect;}
     for(const n of model.nodes.filter(n=>!n.container)) {
-      const poly=rectangle(n),shape=new a.ShapeRef(router,poly);poly.delete();shapes.set(n.id,shape);
+      const obstacle=n.shape==='icon'?{...iconFrame(n),x:n.x+iconFrame(n).x,y:n.y+iconFrame(n).y}:n,poly=rectangle(obstacle),shape=new a.ShapeRef(router,poly);poly.delete();shapes.set(n.id,shape);
     }
     // Container bodies and titles remain traversable. Only leaf nodes and the
     // immediate vicinity of connected outline ports participate as obstacles.
     const connections=new Map(),waypoints=new Map(),reversed=new Set();
     function endpoint(id,attachment) {
-      const n=objects.get(id),shape=shapes.get(id),{point,side,classId}=attachment;
-      if(shape){new a.ShapeConnectionPin(shape,classId,point.x-n.x,point.y-n.y,false,0,sides[side].dir);return new a.ConnEnd(shape,classId);}
+      const n=objects.get(id),shape=shapes.get(id),{point,side,classId}=attachment,frame=n.shape==='icon'&&!n.container?iconFrame(n):{x:0,y:0};
+      if(shape){new a.ShapeConnectionPin(shape,classId,point.x-n.x-frame.x,point.y-n.y-frame.y,false,0,sides[side].dir);return new a.ConnEnd(shape,classId);}
       // The JS binding lacks directional point endpoints. Give each container
       // port a tiny native pin anchor, rather than registering its whole body.
       // Libavoid now controls the border approach exactly as it does for nodes.

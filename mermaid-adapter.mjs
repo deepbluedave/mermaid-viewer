@@ -1,10 +1,13 @@
-import {pruneAttachmentOrders} from './attachments.mjs?v=refinements';
-import { emptyModel, resizeNode, expandZones, validateModel, configureTextMeasure, textWidth,ensureNodeSpacing,diagramFontSize,copy,shapes,ensureLayoutSpacing } from './core.mjs?v=refinements';
+import {localIconPack} from './node-shapes.mjs?v=extensions-10';
+import {importStyles,classStyles} from './appearance.mjs?v=extensions-10';
+import {pruneAttachmentOrders} from './attachments.mjs?v=extensions-10';
+import { emptyModel, resizeNode, expandZones, validateModel, configureTextMeasure, textWidth,ensureNodeSpacing,diagramFontSize,copy,shapes,ensureLayoutSpacing } from './core.mjs?v=extensions-10';
 let renderCount = 0;
-const shapeTypes = { square:'rectangle', rect:'rectangle', round:'rounded', rounded:'rounded', diamond:'diamond', circle:'circle', cylinder:'cylinder' };
+const shapeTypes = { square:'rectangle', rect:'rectangle', round:'rounded', rounded:'rounded', diamond:'diamond', circle:'circle', cylinder:'cylinder', stadium:'stadium',hex:'hexagon',hexagon:'hexagon',doc:'document',document:'document',cloud:'cloud',person:'person' };
 export function initializeMermaid() {
   const context = document.createElement('canvas').getContext('2d');
-  configureTextMeasure((text,size)=>{context.font=`${size}px system-ui, sans-serif`;return context.measureText(text).width;});
+  configureTextMeasure((text,size,style={})=>{context.font=`${style.italic?'italic ':''}${style.bold?'700 ':''}${size}px system-ui, sans-serif`;return context.measureText(text).width;});
+  mermaid.registerIconPacks([{name:'studio',icons:localIconPack}]);
   mermaid.initialize({ startOnLoad:false, securityLevel:'strict', maxEdges:1000, maxTextSize:200000,
     theme:'base', themeVariables:{ primaryColor:'#ffffff', primaryTextColor:'#1e293b', primaryBorderColor:'#64748b', lineColor:'#64748b', clusterBkg:'#eef2f6', clusterBorder:'#94a3b8', edgeLabelBackground:'#ffffff' },
     fontFamily:'system-ui, sans-serif', flowchart:{ useMaxWidth:false, htmlLabels:true, curve:'basis',nodeSpacing:48,rankSpacing:64 } });
@@ -17,7 +20,7 @@ function rejectUnsupported(source) {
   const body = front ? code.slice(front[0].length) : code;
   if (!/^\s*(flowchart|graph)\s+(TD|TB|BT|LR|RL)\b/.test(body)) throw new Error('Import a flowchart or graph with a direction (TD, LR, BT, or RL). Other diagram types are not editable in this version.');
   const statements = body.replace(/"[^"]*"/g,'""').replace(/%%[^\n]*/g,'');
-  if (/(?:^|[;\n])\s*(classDef|class|style|linkStyle|click|direction|accTitle|accDescr)\b/.test(statements) || /:::|@\{|<\/?(?!br\b)[a-z][^>]*>/i.test(body)) throw new Error('Custom styles, callbacks, accessibility metadata, HTML (except <br/>), advanced shapes, and per-zone directions are not supported. Remove these features before importing.');
+  if (/(?:^|[;\n])\s*(click|direction|accTitle|accDescr)\b/.test(statements) || /<\/?(?!br\b)[a-z][^>]*>/i.test(body)) throw new Error('Callbacks, accessibility metadata, HTML (except <br/>), and per-zone directions are not editable.');
 }
 function textLabel(text) {
   // Mermaid's parsed database retains its entity placeholders; decode exactly once.
@@ -40,27 +43,44 @@ export async function importMermaid(source, { direction, layout = 'adaptive' } =
   const vertices = [...db.getVertices().values()].map(v=>({...v}));
   const subgraphs = db.getSubGraphs().map(s=>({...s,nodes:[...s.nodes]}));
   const parsedEdges = db.getEdges().map(e=>({...e}));
-  if ([...vertices,...subgraphs,...parsedEdges].some(item=>item.labelType==='markdown')) throw new Error('Markdown-formatted labels are not supported. Use plain text labels before importing.');
   for (const vertex of vertices) {
-    if (!shapeTypes[vertex.type || 'square']) throw new Error(`Unsupported node shape on ${vertex.id}: ${vertex.type}. Use rectangle, rounded rectangle, diamond, circle, or cylinder.`);
-    if (vertex.link || vertex.icon || vertex.img || vertex.classes?.length || vertex.styles?.length) throw new Error(`Node ${vertex.id} uses unsupported styling, links, or assets.`);
+    if (!vertex.icon&&!shapeTypes[vertex.type || 'square']) throw new Error(`Unsupported node shape on ${vertex.id}: ${vertex.type}.`);
+    if(vertex.link||vertex.img||Object.keys(vertex.props||{}).length)throw new Error(`Node ${vertex.id} uses unsupported links, images or metadata.`);
   }
+  for(const group of subgraphs)if(group.metadata&&Object.keys(group.metadata).some(k=>k!=='view')||group.metadata?.view&&!['collapsed','expanded'].includes(group.metadata.view))throw new Error('Unsupported group metadata.');
+  const format=item=>item.labelType==='markdown'?'markdown':'plain';
+  const label=(text,item)=>{const value=textLabel(text);return item.labelType==='markdown'&&value.startsWith('`')&&value.endsWith('`')?value.slice(1,-1):value;};
+  const classes=db.getClasses();for(const cls of classes.values())importStyles([...(cls.styles||[]),...(cls.textStyles||[])]);
+  const appearance=(item,edge=false)=>importStyles(classStyles(item,classes),edge);
   for (const edge of parsedEdges) if (!['arrow_point','double_arrow_point','arrow_open'].includes(edge.type) || !['normal','dotted','thick'].includes(edge.stroke)) throw new Error(`Connection ${edge.id} uses an unsupported arrowhead or invisible line.`);
   const model = emptyModel(); model.settings.direction = direction || (db.getDirection() === 'TB' ? 'TD' : db.getDirection()); model.settings.layout = layout;
   const parent = new Map(); for (const s of subgraphs) for (const id of s.nodes) parent.set(id,s.id);
   const groupIds = new Set(subgraphs.map(s=>s.id));
-  model.zones = subgraphs.map(s=>({id:s.id,label:textLabel(s.title),parentId:parent.get(s.id)||null,x:0,y:0,width:200,height:140}));
-  model.nodes = vertices.filter(v=>!groupIds.has(v.id)).map(v=>({id:v.id,label:textLabel(v.text ?? v.id),shape:shapeTypes[v.type || 'square'],parentId:parent.get(v.id)||null,x:0,y:0,width:120,height:54}));
-  model.edges = parsedEdges.map(e=>({id:e.id,source:e.start,target:e.end,label:textLabel(e.text),direction:e.type==='double_arrow_point'?'both':e.type==='arrow_open'?'none':'forward',style:e.stroke==='dotted'?'dashed':e.stroke==='thick'?'thick':'normal',routing:'orthogonal',sourceSide:null,targetSide:null}));
+  model.zones = subgraphs.map(s=>({id:s.id,label:label(s.title,s),textFormat:format(s),...appearance({...s,styles:vertices.find(v=>v.id===s.id)?.styles||[],classes:[...(s.classes||[]),...(vertices.find(v=>v.id===s.id)?.classes||[])]}),...(s.metadata?.view?{collapsed:s.metadata.view==='collapsed'}:{}),parentId:parent.get(s.id)||null,x:0,y:0,width:200,height:140}));
+  model.nodes = vertices.filter(v=>!groupIds.has(v.id)).map(v=>({id:v.id,label:label(v.text??v.id,v),textFormat:format(v),...appearance(v),shape:v.icon?'icon':shapeTypes[v.type||'square'],...(v.icon?{icon:v.icon,iconForm:v.form||'none',iconPosition:v.pos==='t'?'top':'bottom',iconSize:v.assetHeight||48}:{}),parentId:parent.get(v.id)||null,x:0,y:0,width:120,height:54}));
+  model.edges = parsedEdges.map(e=>({id:e.id,source:e.start,target:e.end,label:label(e.text,e),textFormat:format(e),...appearance(e,true),direction:e.type==='double_arrow_point'?'both':e.type==='arrow_open'?'none':'forward',style:appearance(e,true).style||(e.stroke==='dotted'?'dashed':e.stroke==='thick'?'thick':'normal'),routing:'orthogonal',sourceSide:null,targetSide:null}));
   const annotations=[...source.matchAll(/^\s*%% diagram-studio-container (.+)$/gm)].map(match=>{try{return JSON.parse(match[1]);}catch{throw new Error('Invalid node container annotation.');}}),seen=new Set();
   for(const annotation of annotations){const zone=model.zones.find(z=>z.id===annotation.id);if(!zone||seen.has(annotation.id)||!shapes.includes(annotation.shape))throw new Error('Invalid node container annotation.');seen.add(annotation.id);model.zones=model.zones.filter(z=>z!==zone);model.nodes.push({...zone,shape:annotation.shape,container:true});}
+  const readAnnotations=kind=>[...source.matchAll(new RegExp('^\\s*%% diagram-studio-'+kind+' (.+)$','gm'))].map(match=>{try{return JSON.parse(match[1]);}catch{throw new Error('Invalid editor metadata.');}});
+  for(const metadata of readAnnotations('theme')){if(metadata.theme!==undefined)model.settings.theme=metadata.theme;if(metadata.fontSize!==undefined)model.settings.fontSize=metadata.fontSize;}
+  for(const metadata of readAnnotations('edge')){const edge=model.edges[metadata.index];if(!edge)throw new Error('Invalid connection annotation.');edge.id=metadata.id;for(const [key,value]of Object.entries(metadata.appearanceDefaults||{}))if(['color','fontColor','borderWidth'].includes(key)&&(typeof edge[key]==='string'?edge[key].toLowerCase()===String(value).toLowerCase():edge[key]===value))delete edge[key];if(metadata.labelBackgroundColor!==undefined)edge.labelBackgroundColor=metadata.labelBackgroundColor;if(metadata.textFormat!==undefined)edge.textFormat=metadata.textFormat;}
+  for(const metadata of readAnnotations('object')){
+    const n=[...model.nodes,...model.zones].find(n=>n.id===metadata.id);if(!n)throw new Error('Invalid object annotation.');
+    for(const [key,value]of Object.entries(metadata.appearanceDefaults||{}))if(['backgroundColor','fontColor','borderColor','borderWidth'].includes(key)&&(typeof n[key]==='string'?n[key].toLowerCase()===String(value).toLowerCase():n[key]===value))delete n[key];
+    if(metadata.textFormat==='plain'&&['icon','person','cloud','document','hexagon'].includes(n.shape))n.label=n.label.replace(/\\([\\*_])/g,'$1');
+    const displayed=n.label,sourceChanged=metadata.displayText!==undefined&&displayed!==metadata.displayText;
+    for(const key of ['icon','iconForm','iconPosition','iconSize','textFormat','collapsed','showDescription','description'])if(metadata[key]!==undefined&&(key!=='textFormat'||!sourceChanged)&&(key!=='collapsed'||n.collapsed===undefined))n[key]=metadata[key];
+    if(metadata.shape!==undefined&&model.nodes.includes(n))n.shape=metadata.shape;
+    if(metadata.showDescription&&typeof metadata.label==='string'){if(sourceChanged)n.description=displayed;n.label=metadata.label;}
+  }
+  validateModel(model);
   await layoutModel(model);
   return validateModel(model);
 }
 export async function layoutModel(model) {
   const manualRoutes=new Map(model.edges.filter(e=>e.waypoints).map(e=>[e.id,copy(e.waypoints)]));
-  const { toMermaid } = await import('./core.mjs?v=refinements');
-  const source = `---\nconfig:\n  layout: ${model.settings.layout === 'hierarchical' ? 'elk.mrtree' : 'elk'}\n  themeVariables:\n    fontSize: ${diagramFontSize(model)}px\n---\n${toMermaid(model)}`;
+  const { toMermaid } = await import('./core.mjs?v=extensions-10');
+  const source = `---\nconfig:\n  layout: ${model.settings.layout === 'hierarchical' ? 'elk.mrtree' : 'elk'}\n  themeVariables:\n    fontSize: ${diagramFontSize(model)}px\n---\n${toMermaid(model,{layout:true})}`;
   const id = `layout-${++renderCount}`;
   const { svg:markup } = await mermaid.render(id,source);
   const parsed = await mermaid.mermaidAPI.getDiagramFromText(source);
@@ -68,12 +88,12 @@ export async function layoutModel(model) {
   const host = document.createElement('div'); host.className='measurement-host'; host.innerHTML=markup; document.body.append(host);
   try {
     const svg = host.querySelector('svg');
-    const elements = [...svg.querySelectorAll('g.node, g.cluster')];
+    const elements = [...svg.querySelectorAll('[id]')];
     for (const n of [...model.nodes,...model.zones]) {
       const data = graph.nodes.find(d=>d.id===n.id); const domId=data?.domId || n.id;
       const element = elements.find(e=>e.id===domId || e.id===`${id}-${domId}`);
       if (!element) throw new Error(`Mermaid did not lay out object ${n.id}.`);
-      const shape = element.querySelector('.label-container') || element.querySelector('rect') || element;
+      const shape = ['person','icon','cloud','document','hexagon'].includes(n.shape)?element:element.querySelector('.label-container') || element.querySelector('rect') || element;
       Object.assign(n,svgBox(shape,svg));
       if (model.nodes.includes(n)) resizeNode(n,diagramFontSize(model));
       else { n.width=Math.max(n.width,160,textWidth(n.label,diagramFontSize(model))+32); n.height=Math.max(n.height,100); }
@@ -83,13 +103,13 @@ export async function layoutModel(model) {
   return model;
 }
 export function mergeSource(previous, incoming) {
-  if(previous.settings.theme!==undefined)incoming.settings.theme=previous.settings.theme;
+  if(incoming.settings.theme===undefined&&previous.settings.theme!==undefined)incoming.settings.theme=previous.settings.theme;
   incoming.settings.fontSize=diagramFontSize(previous);incoming.settings.guides=previous.settings.guides!==false;
   for (const n of [...incoming.nodes,...incoming.zones]) {
     const old = [...previous.nodes,...previous.zones].find(o=>o.id===n.id);
     if (old) {
-      n.description=old.description||'';n.notes=old.notes||'';
-      for(const key of ['backgroundColor','fontColor','manualSize','attachmentOrder','showDescription'])if(old[key]!==undefined)n[key]=copy(old[key]);
+      n.description??=old.description||'';n.notes=old.notes||'';
+      for(const key of ['backgroundColor','fontColor','borderColor','borderWidth','borderStyle','manualSize','attachmentOrder','showDescription','collapsed'])if(n[key]===undefined&&old[key]!==undefined&&(key!=='collapsed'||n.container||incoming.zones.includes(n)))n[key]=copy(old[key]);
       if(incoming.zones.includes(n)&&previous.zones.includes(old)&&old.padding!==undefined)n.padding=copy(old.padding);
       if(n.container&&old.containerSize)n.containerSize=copy(old.containerSize);
       const cx=old.x+old.width/2,cy=old.y+old.height/2;
@@ -98,7 +118,7 @@ export function mergeSource(previous, incoming) {
     }
     if(incoming.nodes.includes(n))resizeNode(n,diagramFontSize(incoming));
   }
-  for (const e of incoming.edges) { const old=previous.edges.find(o=>o.id===e.id); if(old) {e.routing=old.routing;e.sourceSide=old.sourceSide;e.targetSide=old.targetSide;e.description=old.description||'';e.notes=old.notes||'';if(e.source===old.source&&e.target===old.target){if(old.waypoints)e.waypoints=copy(old.waypoints);if(old.labelPosition)e.labelPosition=copy(old.labelPosition);}} }
+  for (const e of incoming.edges) { const old=previous.edges.find(o=>o.id===e.id); if(old) {for(const key of ['color','fontColor','labelBackgroundColor','borderWidth'])if(e[key]===undefined&&old[key]!==undefined)e[key]=old[key];e.routing=old.routing;e.sourceSide=old.sourceSide;e.targetSide=old.targetSide;e.description=old.description||'';e.notes=old.notes||'';if(e.source===old.source&&e.target===old.target){if(old.waypoints)e.waypoints=copy(old.waypoints);if(old.labelPosition)e.labelPosition=copy(old.labelPosition);}} }
   pruneAttachmentOrders(incoming);
   incoming.settings.grid=previous.settings.grid; incoming.settings.view={...previous.settings.view};
   ensureNodeSpacing(incoming,{preferredIds:new Set(incoming.nodes.filter(n=>!previous.nodes.some(old=>old.id===n.id&&old.width===n.width&&old.height===n.height)).map(n=>n.id))});expandZones(incoming); return incoming;

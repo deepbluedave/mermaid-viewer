@@ -1,5 +1,5 @@
-import { labelLines, textWidth,diagramFontSize,containers,containerTitleBox,zoneTitleMetrics } from './core.mjs?v=refinements';
-import { labelAnchor } from './routing.mjs?v=refinements';
+import { labelLines, textWidth,diagramFontSize,containers,containerTitleBox,zoneTitleMetrics,objectTextWidth,wrapObjectText } from './core.mjs?v=extensions-10';
+import { labelAnchor } from './routing.mjs?v=extensions-10';
 
 const overlaps=(a,b,padding=4)=>a.x+a.width>b.x-padding&&a.x<b.x+b.width+padding&&a.y+a.height>b.y-padding&&a.y<b.y+b.height+padding;
 function segmentIntersectsBox(a,b,box,padding=0) {
@@ -12,7 +12,7 @@ function segmentIntersectsBox(a,b,box,padding=0) {
   }
   return true;
 }
-export function zoneTitleBox(z,fontSize=13) {const metrics=zoneTitleMetrics(z,fontSize),width=Math.max(0,...metrics.lines.map(line=>textWidth(line,fontSize)))+12;return{x:z.x+(z.width-width)/2,y:z.y+5,width,height:metrics.height-10};}
+export function zoneTitleBox(z,fontSize=13) {const metrics=zoneTitleMetrics(z,fontSize),width=Math.max(0,...metrics.lines.map(line=>objectTextWidth(z,line,fontSize)))+12;return{x:z.x+(z.width-width)/2,y:z.y+5,width,height:metrics.height-10};}
 
 export function routeFrame(points, fraction) {
   const lengths=points.slice(1).map((p,i)=>Math.hypot(p.x-points[i].x,p.y-points[i].y));
@@ -58,7 +58,7 @@ export function layoutEdgeLabels(model,routes) {
     for(let i=1;i<points.length;i++)segments.push({id:edge.id,a:points[i-1],b:points[i]});
     for(const p of [edge.direction!=='none'?points.at(-1):null,edge.direction==='both'?points[0]:null].filter(Boolean))arrowBoxes.push({x:p.x-11,y:p.y-11,width:22,height:22});
     if(!edge.label)continue;
-    const lines=labelLines(edge.label,28),width=Math.max(...lines.map(l=>textWidth(l,fontSize)))+14,height=lines.length*Math.ceil(fontSize*1.35)+6;
+    const lines=wrapObjectText(edge,fontSize*17,fontSize),width=Math.max(...lines.map(l=>objectTextWidth(edge,l,fontSize)))+14,height=lines.length*Math.ceil(fontSize*1.35)+6;
     const parts=[];
     for(let i=1;i<points.length;i++){
       const a=points[i-1],b=points[i],length=Math.hypot(b.x-a.x,b.y-a.y);if(length<.001)continue;

@@ -1,0 +1,71 @@
+flowchart TD
+  %% diagram-studio-theme {"theme":"clean","fontSize":13}
+  %% diagram-studio-object {"id":"Intake","appearanceDefaults":{"borderWidth":1},"textFormat":"markdown","displayText":"**01 · Dream intake**","description":"At midnight, dreams are welcomed, translated into motifs and stored with their owner’s permission."}
+  %% diagram-studio-object {"id":"Atelier","appearanceDefaults":{"borderWidth":1},"textFormat":"markdown","displayText":"**02 · Story atelier**","description":"A human librarian sets the emotional tone; an AI weaver drafts and revises until the story contains a spark of wonder."}
+  %% diagram-studio-object {"id":"Circulation","appearanceDefaults":{"borderWidth":1},"textFormat":"markdown","displayText":"**03 · Dawn circulation**","description":"Finished stories join a constellation of shelves. Readers borrow a tale and return with tomorrow’s dream."}
+  %% diagram-studio-object {"id":"Dreamer","appearanceDefaults":{},"textFormat":"markdown","displayText":"**Dreamer**","icon":"studio:human","iconForm":"none","iconPosition":"bottom","iconSize":56,"description":"A visitor arrives with a dream remembered in fragments.","shape":"icon"}
+  %% diagram-studio-object {"id":"Catcher","appearanceDefaults":{},"textFormat":"markdown","displayText":"**Dreamcatcher**","icon":"studio:agent","iconForm":"rounded","iconPosition":"bottom","iconSize":56,"description":"An AI listening companion turns whispered images into a small set of story motifs.","shape":"icon"}
+  %% diagram-studio-object {"id":"Vault","appearanceDefaults":{},"textFormat":"markdown","displayText":"Dream vault","description":"Stores the motifs, consent and a trace back to the original dream.","shape":"cylinder"}
+  %% diagram-studio-object {"id":"Librarian","appearanceDefaults":{},"textFormat":"markdown","displayText":"Night librarian","icon":"studio:human","iconForm":"none","iconPosition":"bottom","iconSize":56,"description":"A human curator selects an audience, a tone and a generous ending.","shape":"icon"}
+  %% diagram-studio-object {"id":"Weaver","appearanceDefaults":{},"textFormat":"markdown","displayText":"**Story weaver**","icon":"studio:agent","iconForm":"rounded","iconPosition":"bottom","iconSize":56,"description":"An AI storyteller combines motifs and the librarian’s guidance into a draft.","shape":"icon"}
+  %% diagram-studio-object {"id":"Spark","appearanceDefaults":{},"textFormat":"markdown","displayText":"A spark of\nwonder?","description":"The librarian asks whether the draft surprises, comforts or makes the reader curious.","shape":"diamond"}
+  %% diagram-studio-object {"id":"Manuscript","appearanceDefaults":{},"textFormat":"markdown","displayText":"*Midnight*\nmanuscript","description":"A finished tale with its dream provenance and a human curator’s sign-off.","shape":"document"}
+  %% diagram-studio-object {"id":"Shelf","appearanceDefaults":{},"textFormat":"markdown","displayText":"Constellation\nshelves","description":"A magical shared catalogue: each story appears as a star that can be borrowed.","shape":"cloud"}
+  %% diagram-studio-object {"id":"Readers","appearanceDefaults":{},"textFormat":"markdown","displayText":"Dawn reader","icon":"studio:human","iconForm":"none","iconPosition":"bottom","iconSize":56,"description":"A reader borrows one tale as the sun rises and carries it into the day.","shape":"icon"}
+  subgraph Intake["`**01 · Dream intake**`"]
+    Dreamer["`**Dreamer**`"]
+    Catcher["`**Dreamcatcher**`"]
+    Vault[("`Dream vault`")]
+  end
+  subgraph Atelier["`**02 · Story atelier**`"]
+    Librarian["`Night librarian`"]
+    Weaver["`**Story weaver**`"]
+    Spark{"`A spark of<br/>wonder?`"}
+  end
+  subgraph Circulation["`**03 · Dawn circulation**`"]
+    Manuscript["`*Midnight*<br/>manuscript`"]
+    Shelf["`Constellation<br/>shelves`"]
+    Readers["`Dawn reader`"]
+  end
+  %% diagram-studio-edge {"index":0,"id":"Whisper","textFormat":"markdown","appearanceDefaults":{"borderWidth":1.5}}
+  Dreamer -->|"`whisper`"| Catcher
+  linkStyle 0 stroke:#62677f,color:#4c5068,stroke-width:1.5px
+  %% diagram-studio-edge {"index":1,"id":"Remember","textFormat":"markdown","appearanceDefaults":{"borderWidth":1.5}}
+  Catcher -->|"`preserve`"| Vault
+  linkStyle 1 stroke:#62677f,color:#4c5068,stroke-width:1.5px
+  %% diagram-studio-edge {"index":2,"id":"Motifs","textFormat":"markdown","appearanceDefaults":{"borderWidth":1.5}}
+  Vault -->|"`motifs`"| Weaver
+  linkStyle 2 stroke:#62677f,color:#4c5068,stroke-width:1.5px
+  %% diagram-studio-edge {"index":3,"id":"Guidance","textFormat":"markdown","appearanceDefaults":{"borderWidth":1.5}}
+  Librarian -->|"`set the tone`"| Weaver
+  linkStyle 3 stroke:#62677f,color:#4c5068,stroke-width:1.5px
+  %% diagram-studio-edge {"index":4,"id":"Draft","textFormat":"markdown","appearanceDefaults":{"borderWidth":1.5}}
+  Weaver -->|"`draft`"| Spark
+  linkStyle 4 stroke:#62677f,color:#4c5068,stroke-width:1.5px
+  %% diagram-studio-edge {"index":5,"id":"Approve","textFormat":"markdown","appearanceDefaults":{"borderWidth":1.5}}
+  Spark -->|"`yes`"| Manuscript
+  linkStyle 5 stroke:#62677f,color:#4c5068,stroke-width:1.5px
+  %% diagram-studio-edge {"index":6,"id":"Reimagine","textFormat":"markdown","appearanceDefaults":{"borderWidth":1.5}}
+  Spark -.->|"`not yet`"| Weaver
+  linkStyle 6 stroke:#9195ae,color:#4c5068,stroke-width:1.5px
+  %% diagram-studio-edge {"index":7,"id":"Bind","textFormat":"markdown","appearanceDefaults":{"borderWidth":1.5}}
+  Manuscript -->|"`bind`"| Shelf
+  linkStyle 7 stroke:#62677f,color:#4c5068,stroke-width:1.5px
+  %% diagram-studio-edge {"index":8,"id":"Borrow","textFormat":"markdown","appearanceDefaults":{"borderWidth":1.5}}
+  Shelf -->|"`borrow`"| Readers
+  linkStyle 8 stroke:#62677f,color:#4c5068,stroke-width:1.5px
+  %% diagram-studio-edge {"index":9,"id":"Inspiration","textFormat":"markdown","appearanceDefaults":{}}
+  Readers -.->|"`*new dreams*`"| Dreamer
+  linkStyle 9 stroke:#9195ae,color:#4c5068,stroke-width:1px
+  style Intake fill:#fff5df,color:#354154,stroke:#a56b22,stroke-width:1px
+  style Atelier fill:#f1ebff,color:#354154,stroke:#7952ae,stroke-width:1px
+  style Circulation fill:#e5f5f0,color:#354154,stroke:#29816f,stroke-width:1px
+  style Dreamer fill:#fff5df,color:#354154,stroke:#a56b22,stroke-width:1.5px
+  style Catcher fill:#fff5df,color:#354154,stroke:#a56b22,stroke-width:1.5px
+  style Vault fill:#fff5df,color:#354154,stroke:#a56b22,stroke-width:1.5px
+  style Librarian fill:#f1ebff,color:#354154,stroke:#7952ae,stroke-width:1.5px
+  style Weaver fill:#f1ebff,color:#354154,stroke:#7952ae,stroke-width:1.5px
+  style Spark fill:#f1ebff,color:#354154,stroke:#7952ae,stroke-width:1.5px
+  style Manuscript fill:#e5f5f0,color:#354154,stroke:#29816f,stroke-width:1.5px
+  style Shelf fill:#e5f5f0,color:#354154,stroke:#29816f,stroke-width:1.5px
+  style Readers fill:#e5f5f0,color:#354154,stroke:#29816f,stroke-width:1.5px

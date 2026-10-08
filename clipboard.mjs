@@ -1,4 +1,4 @@
-import {copy,emptyModel,validateModel,items,descendants,separateSelection,ensureLabelFit,expandZones,ensureNodeSpacing} from './core.mjs?v=refinements';
+import {copy,emptyModel,validateModel,items,descendants,separateSelection,ensureLabelFit,expandZones,ensureNodeSpacing} from './core.mjs?v=extensions-10';
 
 const FORMAT='diagram-studio-fragment';
 const MAX_TEXT=12_000_000;

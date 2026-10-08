@@ -1,11 +1,11 @@
-import { object, items, descendants, zonePadding, objectColors, MAX_ZONE_PADDING } from './core.mjs?v=refinements';
-import { attachmentKey } from './attachments.mjs?v=refinements';
-import { MAX_WAYPOINTS } from './waypoints.mjs?v=refinements';
-import {themes,diagramTheme} from './themes.mjs';
-import {svgElement} from './scene.mjs?v=refinements';
+import { object, identityText, items, descendants, zonePadding, objectColors, MAX_ZONE_PADDING } from './core.mjs?v=extensions-10';
+import { attachmentKey } from './attachments.mjs?v=extensions-10';
+import { MAX_WAYPOINTS } from './waypoints.mjs?v=extensions-10';
+import {themes,diagramTheme} from './themes.mjs?v=extensions-10';
+import {svgElement} from './scene.mjs?v=extensions-10';
 
 const $ = id => document.getElementById(id);
-const shapeNames = [['rectangle', 'Rectangle'], ['rounded', 'Rounded rectangle'], ['diamond', 'Diamond'], ['circle', 'Circle'], ['cylinder', 'Database cylinder']];
+import {shapeNames,shapeParts,iconBody} from './node-shapes.mjs?v=extensions-10';
 const sideNames = [['', 'Automatic'], ['north', 'Top'], ['east', 'Right'], ['south', 'Bottom'], ['west', 'Left']];
 const alignNames = [['left', 'Left'], ['center-x', 'Horizontal center'], ['right', 'Right'], ['top', 'Top'], ['center-y', 'Vertical center'], ['bottom', 'Bottom']];
 const toolNames = [['select', 'Select'], ['pan', 'Pan'], ['node', 'Node'], ['zone', 'Zone'], ['connect', 'Connect']];
@@ -62,11 +62,11 @@ export function createEditingControls(api) {
   function objectDefinitions(target) {
     const n = targetItem(target), row = (command, label) => ({command, label,submenu:['shape','style','arrows','align','distribute'].includes(command)});
     switch (target.kind) {
-      case 'node': return [row('label', 'Edit label'), row('shape', 'Shape'), row('color', 'Color'), row('connect', 'Connect from here'), row('fit-label', 'Fit to label'), {command:'show-description',label:'Show description',checked:Boolean(n?.showDescription)}, row('container', n?.container ? 'Disable container' : 'Enable container'), row('details', 'Details'), row('delete', 'Delete node')];
+      case 'node': return [row('label', 'Edit label'), row('shape', 'Shape'), row('color', 'Color'), row('connect', 'Connect from here'), row('fit-label', 'Fit to label'), {command:'show-description',label:'Show description',checked:Boolean(n?.showDescription)}, ...(n?.container?[row('collapse',n.collapsed?'Expand container':'Collapse container')]:[]), row('container', n?.container ? 'Disable container' : 'Enable container'), row('details', 'Details'), row('delete', 'Delete node')];
       case 'connection': return [row('label', 'Edit label'), row('style', 'Line style'), row('arrows', 'Arrows'), row('waypoint', target.point ? 'Add waypoint here' : 'Add waypoint'), row('attachments', 'Attachments'), row('reset-label', 'Reset label position'), row('reset-route', 'Reset route'), row('details', 'Details'), row('delete', 'Delete connection')];
       case 'label': return [row('label', 'Edit label'), row('reset-label', 'Reset label position'), row('connection-actions', 'Connection actions')];
       case 'waypoint': return [row('remove-waypoint', 'Remove waypoint'), row('connection-actions', 'Connection actions')];
-      case 'zone': return [row('label', 'Edit label'),{command:'show-description',label:'Show description',checked:Boolean(n?.showDescription)}, row('fit-zone', 'Fit to contents'), row('padding', 'Padding'), row('color', 'Color'), row('details', 'Details'), row('delete', 'Delete zone')];
+      case 'zone': return [row('label', 'Edit label'),{command:'show-description',label:'Show description',checked:Boolean(n?.showDescription)}, row('collapse',n?.collapsed?'Expand zone':'Collapse zone'),row('fit-zone', 'Fit to contents'), row('padding', 'Padding'), row('color', 'Color'), row('details', 'Details'), row('delete', 'Delete zone')];
       case 'multiple': return [row('align', 'Align'), row('distribute', 'Distribute'), ...(hasZones(target) ? [row('fit-zone', 'Fit selected zones')] : []), row('details', 'Details'), row('delete', 'Delete selection')];
       default: return [row('node', target.point ? 'Add node here' : 'Add node'), row('zone', target.point ? 'Add zone here' : 'Add zone'), row('fit-diagram', 'Fit diagram')];
     }
@@ -79,11 +79,12 @@ export function createEditingControls(api) {
     return entries;
   }
   function barActions(target) {
+    const n=targetItem(target);
     const row = (command, label) => ({command, label});
     switch (target.kind) {
       case 'node': return [row('shape', 'Shape'), row('color', 'Color'), row('connect', 'Connect'), row('fit-label', 'Fit to label')];
       case 'connection': return [row('style', 'Line style'), row('arrows', 'Arrows'), row('waypoint', 'Add waypoint'), row('attachments', 'Attachments')];
-      case 'zone': return [row('fit-zone', 'Fit to contents'), row('padding', 'Padding'), row('color', 'Color')];
+      case 'zone': return [row('collapse',n?.collapsed?'Expand zone':'Collapse zone'),row('fit-zone', 'Fit to contents'), row('padding', 'Padding'), row('color', 'Color')];
       case 'multiple': return [row('align', 'Align'), row('distribute', 'Distribute'), ...(hasZones(target) ? [row('fit-zone', 'Fit zones')] : [])];
       case 'waypoint': return [row('remove-waypoint', 'Remove waypoint'), row('connection-actions', 'Connection actions')];
       default: return [];
@@ -149,10 +150,9 @@ export function createEditingControls(api) {
   }
   function shapePreview(shape){
     const svg=svgElement('svg',{class:'menu-shape-preview',viewBox:'0 0 32 24','aria-hidden':'true'});
-    if(shape==='diamond')svg.append(svgElement('polygon',{points:'16,2 30,12 16,22 2,12'}));
-    else if(shape==='circle')svg.append(svgElement('circle',{cx:16,cy:12,r:10}));
-    else if(shape==='cylinder'){svg.append(svgElement('path',{d:'M3 6 A13 4 0 0 1 29 6 V18 A13 4 0 0 1 3 18 Z'}),svgElement('ellipse',{cx:16,cy:6,rx:13,ry:4}));}
-    else svg.append(svgElement('rect',{x:3,y:3,width:26,height:18,rx:shape==='rounded'?6:1}));return svg;
+    const n={shape:['human','agent'].includes(shape)?'icon':shape,width:28,height:20,iconForm:'none',iconSize:18};
+    const g=svgElement('g',{transform:'translate(2,2)'});for(const p of shapeParts(n))g.append(svgElement(p.tag,p.attrs));
+    if(n.shape==='icon'){const icon=svgElement('g',{transform:'translate(5,0) scale(.8)',style:'color:currentColor'});icon.innerHTML=iconBody(shape==='agent'?'studio:agent':'studio:human');g.append(icon);}svg.append(g);return svg;
   }
   function parentMenu(command){if(open?.type!=='menu')return null;open.focusCommand=command;return open;}
   function backMenu(focus=true){const parent=open?.parentMenu;if(!parent)return false;open.invoker?.setAttribute('aria-expanded','false');overlay.remove();open=parent;overlay=parent.element;if(focus)overlay.querySelector(`[data-command="${parent.focusCommand}"]`)?.focus({preventScroll:true});return true;}
@@ -174,7 +174,7 @@ export function createEditingControls(api) {
     if (command === 'flow') return choices('set-flow', ['TD', 'LR', 'BT', 'RL'].map(v => [v, {TD:'Top to bottom', LR:'Left to right', BT:'Bottom to top', RL:'Right to left'}[v]]), state().model.settings.direction, target, anchor, invoker, 'Flow direction');
     if (command === 'layout') return choices('set-layout', [['adaptive', 'Adaptive'], ['hierarchical', 'Hierarchical']], state().model.settings.layout, target, anchor, invoker, 'Layout style');
     if (command === 'theme') return themePicker(target,anchor,invoker);
-    if (command === 'export') return menu(target,anchor,invoker,[{command:'export-svg',label:'SVG image'},{command:'export-png',label:'PNG image'},{command:'export-mermaid',label:'Mermaid source'}],'Export',parentMenu('export'));
+    if (command === 'export') return menu(target,anchor,invoker,[{command:'export-svg',label:'SVG image'},{command:'export-png',label:'PNG image'},{command:'export-mermaid',label:'Mermaid source'},{command:'export-mermaid-portable',label:'Portable Mermaid'}],'Export',parentMenu('export'));
     dismiss(false); api.execute(command, target, value);
     if (command === 'details') {
       const panel = document.querySelector('.properties-panel'); panel.hidden=false;panel.classList.add('is-open');document.body.classList.remove('inspector-hidden');
@@ -281,20 +281,22 @@ export function createEditingControls(api) {
     if (!e || !state().selection.has(e.id) || !group || (open.endpoint && open.endpoint !== e[target.end])) {dismiss(); return;}
     open.endpoint = e[target.end];
     const key = attachmentKey(e.id, target.end), index = group.entries.findIndex(entry => entry.key === key), horizontal = ['north', 'south'].includes(group.side);
-    overlay.querySelector('h2').textContent = `${target.end === 'source' ? 'Source' : 'Target'} · ${group.n.label || group.n.id}`;
+    overlay.querySelector('h2').textContent = `${target.end === 'source' ? 'Source' : 'Target'} · ${identityText(group.n)||group.n.id}`;
     for (const b of overlay.querySelectorAll('.attachment-tabs button')) b.setAttribute('aria-pressed', String(b.dataset.end === target.end));
     overlay.querySelector('.attachment-summary').textContent = `${sideNames.find(([side]) => side === group.side)?.[1]} side · ${index + 1} of ${group.entries.length} · ${group.manual ? 'Manual order' : 'Automatic order'}`;
+    const projected=group.n.id!==e[target.end];$('attachment-side').disabled=projected;
+    if(projected)overlay.querySelector('.attachment-summary').textContent='Expand this container to edit its hidden node’s attachment.';
     $('attachment-side').value = e[target.end + 'Side'] || '';
     for (const [id, label, limit, why] of [['attachment-earlier', horizontal ? 'Move left' : 'Move up', index === 0, 'Already first'], ['attachment-later', horizontal ? 'Move right' : 'Move down', index === group.entries.length - 1, 'Already last']]) {
-      const b = $(id); b.textContent = label; b.disabled = state().busy || Boolean(state().gesture) || limit; b.title = limit ? why : label;
+      const b = $(id); b.textContent = label; b.disabled = projected || state().busy || Boolean(state().gesture) || limit; b.title = limit ? why : label;
     }
-    $('attachment-reset').disabled = state().busy || Boolean(state().gesture) || !group.manual;
+    $('attachment-reset').disabled = projected || state().busy || Boolean(state().gesture) || !group.manual;
     $('attachment-reset').title = group.manual ? 'Applies to all attachments on this side' : 'This side has automatic order'; position();
   }
   function render() {
     $('btn-theme').textContent=`Theme · ${diagramTheme(state().model).name}`;renderTheme();
     const target = currentTarget(), n = targetItem(target), actions = barActions(target), key = JSON.stringify([target.kind, target.ids, target.index, hasZones(target)]);
-    const name = target.kind === 'multiple' ? `${target.ids.length} objects selected` : target.kind === 'canvas' ? 'Select an object to edit it' : target.kind === 'waypoint' ? `Waypoint ${target.index + 1} · ${n?.label || 'Connection'}` : `${{node:'Node', connection:'Connection', zone:'Zone'}[target.kind]} · ${n?.label || n?.id}`;
+    const name = target.kind === 'multiple' ? `${target.ids.length} objects selected` : target.kind === 'canvas' ? 'Select an object to edit it' : target.kind === 'waypoint' ? `Waypoint ${target.index + 1} · ${(n?identityText(n):'Connection')}` : `${{node:'Node', connection:'Connection', zone:'Zone'}[target.kind]} · ${(n?identityText(n)||n.id:'')}`;
     $('selection-name').textContent = name; $('selection-name').title = name; $('selection-name').setAttribute('aria-label', name);
     $('selection-bar').hidden=target.kind==='canvas';
     if (key !== barKey) {

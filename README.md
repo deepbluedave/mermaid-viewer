@@ -22,7 +22,7 @@ The [hosted editor](https://deepbluedave.github.io/mermaid-viewer/) uses GitHub 
 - Click a selected connection's endpoint to open **Side** and **Move up/down** controls beside it. Top/bottom sides use **Move left/right**. Source and Target tabs identify the end you are editing. Dragging an endpoint still reconnects it.
 - **File** contains New diagram, Open, Recent files, Save as, Download a copy, Autosave and Export; **Edit** contains Undo, Redo, Copy and Paste; **Open** and **Save** stay together in the compact header. **View** switches Hierarchy, Mermaid source and Properties. **Diagram** contains Theme, flow direction, layout style, Auto layout and Text size. Menus support arrows, typeahead and keyboard focus return; flyouts keep the parent menu visible; Left/Escape returns to it without moving selected objects.
 - On a phone or narrow window, the header has a tool chooser, Undo/Redo, **Selection actions** and **Properties**. Properties opens as a sheet with a Close button. All object actions remain available through Selection actions, right-click or long-press. Touch controls retain 44px targets. Dragging cancels a pending long-press; Shift+F10 opens selection actions from the canvas.
-- Choose **File → New diagram** for an empty canvas, paste Mermaid into the source panel and choose **Apply source**, or use **File → Open** for `.mmd`, `.mermaid`, `.txt`, or a saved project. New is undoable. Two local examples are available.
+- Choose **File → New diagram** for an empty canvas, paste Mermaid into the source panel and choose **Apply source**, or use **File → Open** for `.mmd`, `.mermaid`, `.txt`, or a saved project. New is undoable. The editor starts blank; local sample files remain in `diagrams/`.
 - Select and drag nodes. Drag a zone or container node to move its nested contents. Dropping an object into a container adopts it; dropping it out releases it to an enclosing container or top level. The destination is highlighted during the drag. Shift-click extends selection; Shift-drag the background selects objects inside a box.
 - **Node** and **Zone** place new objects where you click, or drag either toolbar button onto the canvas. Drag placement shows a preview and returns to Select after release; Escape or releasing outside the canvas cancels it. Objects created inside a zone or enabled container node join the innermost container. **Connect** lets you press anywhere on a source node or zone, drag to a highlighted target and release to connect. Clicking a source and then a target still works. Contextual handles remain available for explicit attachment sides. Empty drops and Escape cancel the pending connection without recording an edit. Each completed connection returns to **Select**, with the new edge selected; click **Connect** again to create another. Select an edge to edit it or drag either endpoint to reconnect it.
 - Properties puts Label, Description and Notes first, with text areas that grow as you type. Compact appearance controls pair Fill/Text and Width/Height; resets appear only for custom colors. The panel also edits shapes, parent membership, edge endpoints, arrow direction, line style, and straight/orthogonal routing. Choosing a parent visibly places the object inside that container; Top level moves it outside the former root container. The canvas reveals the moved object if necessary. Connections sharing a side use separate attachment points, with 12-unit spacing where room allows, and libavoid separates parallel route segments. Orthogonal connections to zones and parent nodes meet the chosen border side cleanly, using outward approaches for external peers and inward approaches for contained objects; container bodies and titles remain traversable. Nodes and zones have eight corner/side resize handles and Width/Height fields. Circles stay round; circle and diamond labels wrap and unwrap as their dimensions change, including short labels. Labels wrap only at whitespace and retain explicit line breaks. Whole words stay intact; an oversized word grows the shape instead of being split. Labels and container contents define minimum sizes. Resizing stops at neighbouring nodes. **Fit to label** restores automatic node sizing.
@@ -142,3 +142,49 @@ Earlier native automation scripts are retained for the preceding controls revisi
 Run `DIAGRAM_URL=http://127.0.0.1:8000 node tests/native-themes.cjs` for theme and override user sessions. It builds a Moonlight seed library from Mermaid, edits it through the UI, and checks desktop, keyboard, mobile touch, Undo, source edits, layout, save/open and exports. Screenshots and results are saved in `tests/artifacts/themes/`.
 
 The [Southartica architecture diagram](diagrams/architecture/README.md) maps the application with Blueprint, complete project descriptions and working notes. Its editable JSON retains context and arrangement; the companion Mermaid file retains the structure.
+
+
+## Mermaid extensions and agent tools
+
+Human and Agent actor presets use the local `studio` icon pack. The Shape menu also
+includes stadium, hexagon, document, cloud, Mermaid person and configurable icons.
+Unknown icon references show a question mark. Properties controls icon reference,
+background, size and label position. Actor containers keep a small icon in the header.
+
+Select **Text format → Markdown** to use **bold**, *italic* or ***both*** in labels
+and displayed descriptions. Line breaks and escaped markers are supported; plain
+text stays literal. HTML, links, lists and code are intentionally outside this scope.
+
+Mermaid imports accept common `classDef`, `class`, `style` and `linkStyle` properties:
+fill, text color, stroke color, width and solid/dashed lines. Exports carry resolved
+colors from the theme and custom appearance. **Portable Mermaid** replaces newer
+shapes/icons with traditional labeled shapes; editor comments restore those fields
+on reimport. Standard icon syntax needs a Mermaid version supporting icons; renderers
+without the `studio` pack use Mermaid’s native missing-icon fallback. SVG/PNG exports
+include the local actor artwork without external assets.
+
+Use the canvas chevron or **Collapse/Expand container** in Properties/actions to hide
+children. External connections attach to the collapsed group, while the project keeps
+real endpoints, expanded dimensions, positions and nested collapse settings. Selecting
+a hidden item in Hierarchy expands its ancestors. Expand a group before adjusting a
+hidden node’s attachment order. JSON and clipboard copies retain all hidden content.
+
+On browsers that expose WebMCP, the editor registers five tools automatically:
+`get_diagram`, `edit_diagram`, `apply_mermaid`, `arrange_diagram`, `export_diagram`.
+An agent reads the current revision before editing. Batches commit as one Undo step;
+stale, invalid, cancelled and conflicting requests leave the project intact. Tools
+respect source drafts, active edits and file conflicts, and successful changes follow
+the existing autosave preference. Export tools return content without triggering a
+download. No JavaScript execution or filesystem handles are exposed.
+
+WebMCP remains an experimental browser API and requires a compatible agent-enabled
+browser in a secure context (HTTPS or localhost). Ordinary editing works when the API
+is absent. The implementation feature-detects `document.modelContext` and the legacy
+navigator interface. See [Chrome’s imperative API documentation](https://developer.chrome.com/docs/ai/webmcp/imperative-api)
+and the [WebMCP draft](https://webmachinelearning.github.io/webmcp/).
+
+The acceptance specification is [EXTENSIONS-SPEC.md](EXTENSIONS-SPEC.md). Run `npm test`
+for model/routing/tool tests. With the local server running, open `tests/browser.html`,
+`tests/ui.html`, `tests/storage.html`, `tests/extensions.html` and
+`tests/extensions-ui.html` for real Mermaid, UI, persistence and native WebMCP tests.
+The native WebMCP cases need a browser providing `modelContext.getTools/executeTool`.

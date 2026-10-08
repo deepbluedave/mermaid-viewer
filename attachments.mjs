@@ -1,5 +1,5 @@
 // Attachment choices and comparisons only. libavoid still finds every route.
-import {waypointConflicts} from './waypoints.mjs?v=refinements';
+import {waypointConflicts} from './waypoints.mjs?v=extensions-10';
 export const attachmentKey=(edgeId,end)=>`${edgeId}:${end}`;
 export function attachmentSide(node,other,end,edge){
   if(edge[`${end}Side`])return edge[`${end}Side`];

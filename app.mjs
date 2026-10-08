@@ -1,14 +1,17 @@
-import { emptyModel, copy, items, object, shapes, textWidth, resizeNode, moveSelection, movableIds, expandZones, reparent, deleteSelection, nextId, arrange, toMermaid, validateModel, History, depth,ensureNodeSpacing,ensureLabelFit,separateSelection,dropSelection,dropParents,diagramFontSize,objectColors,containers,isContainer,containingParent,setNodeContainer,descendants,zonePadding,MAX_ZONE_PADDING,fitZonesToContents } from './core.mjs?v=refinements';
-import {resizeObject,resizeNodeTo,alignmentGuides} from './editing.mjs?v=refinements';
-import { initializeMermaid, importMermaid, layoutModel, mergeSource } from './mermaid-adapter.mjs?v=refinements';
+import {registerWebMCP} from './webmcp.mjs?v=extensions-10';
+import {shapeNames,iconNames,chooseShape} from './node-shapes.mjs?v=extensions-10';
+import {presentationModel} from './presentation.mjs?v=extensions-10';
+import { emptyModel, copy, items, object, identityText, shapes, textWidth, resizeNode, moveSelection, movableIds, expandZones, reparent, deleteSelection, nextId, arrange, toMermaid, validateModel, History, depth,ensureNodeSpacing,ensureLabelFit,separateSelection,dropSelection,dropParents,diagramFontSize,objectColors,containers,isContainer,containingParent,setNodeContainer,descendants,zonePadding,MAX_ZONE_PADDING,fitZonesToContents } from './core.mjs?v=extensions-10';
+import {resizeObject,resizeNodeTo,alignmentGuides} from './editing.mjs?v=extensions-10';
+import { initializeMermaid, importMermaid, layoutModel, mergeSource } from './mermaid-adapter.mjs?v=extensions-10';
 import { AvoidLib } from './vendor/libavoid/dist/index.js';
-import { DiagramRouter, sidePoint } from './routing.mjs?v=refinements';
-import { createScene, svgElement, exportSvg } from './scene.mjs?v=refinements';
-import {waypointConflicts,waypointInsertionIndex,translateWaypoints,MAX_WAYPOINTS} from './waypoints.mjs?v=refinements';
-import {layoutEdgeLabels,manualLabelPosition} from './labels.mjs?v=refinements';
-import {attachmentKey,reorderAttachment,resetAttachmentOrder,pruneAttachmentOrders} from './attachments.mjs?v=refinements';
-import {createEditingControls} from './controls.mjs';
-import {themes,diagramTheme} from './themes.mjs';
+import { DiagramRouter, sidePoint } from './routing.mjs?v=extensions-10';
+import { createScene, svgElement, exportSvg } from './scene.mjs?v=extensions-10';
+import {waypointConflicts,waypointInsertionIndex,translateWaypoints,MAX_WAYPOINTS} from './waypoints.mjs?v=extensions-10';
+import {layoutEdgeLabels,manualLabelPosition} from './labels.mjs?v=extensions-10';
+import {attachmentKey,reorderAttachment,resetAttachmentOrder,pruneAttachmentOrders} from './attachments.mjs?v=extensions-10';
+import {createEditingControls} from './controls.mjs?v=extensions-10';
+import {themes,diagramTheme} from './themes.mjs?v=extensions-10';
 import {createProjectFiles} from './file-ui.mjs';
 import {newSessionId} from './files.mjs';
 import {copyFragment,readFragment,pasteFragment,fragmentBounds} from './clipboard.mjs';
@@ -19,6 +22,8 @@ let pendingPropertyEdit=null,pendingFontSize=null;
 let editingControls=null,controlEdit=null,propertyHost=properties;
 let files=null,documentId=newSessionId(),lastPaste='',pasteCount=0;
 let propertiesNeedRefresh=false;
+let diagramRevision=0,revisionSnapshot='',webmcpRegistration=null;
+function currentRevision(){const state=copy(model);delete state.settings.view;const key=documentId+JSON.stringify(state);if(key!==revisionSnapshot){revisionSnapshot=key;diagramRevision++;}return diagramRevision;}
 let drawnView='';
 let connectSource=null,hoverId=null,dropTarget=null;
 let paletteStart=null,blockedPaletteClick=null;
@@ -74,8 +79,8 @@ function updateControls() {
   if(selected&&model.edges.includes(selected))for(const panel of properties.querySelectorAll('.attachment-order')){
     const end=panel.dataset.attachmentEnd,key=attachmentKey(selected.id,end),group=[...router.groups.values()].find(g=>g.entries.some(e=>e.key===key));if(!group)continue;
     const index=group.entries.findIndex(e=>e.key===key),buttons=panel.querySelectorAll('.attachment-order-buttons button');
-    buttons[0].disabled=busy||Boolean(gesture)||index===0;buttons[1].disabled=busy||Boolean(gesture)||index===group.entries.length-1;
-    panel.querySelector(`#btn-reset-${end}-attachment-order`).disabled=busy||Boolean(gesture)||!group.manual;
+    buttons[0].disabled=busy||Boolean(gesture)||group.n.id!==selected[end]||index===0;buttons[1].disabled=busy||Boolean(gesture)||group.n.id!==selected[end]||index===group.entries.length-1;
+    panel.querySelector(`#btn-reset-${end}-attachment-order`).disabled=busy||Boolean(gesture)||group.n.id!==selected[end]||!group.manual;
   }
   $('canvas-help').textContent={select:'Drag into or out of containers · Select a connection to edit its route',pan:'Drag to pan · Scroll to zoom · V returns to selection',node:'Click to add a node · Nodes keep a 24-unit gap · Escape cancels',connect:connectSource?'Drag or click a target · Release to connect · Escape cancels':'Drag from any source object to a target · Or click both',zone:'Click to add a zone · Drag nodes and zones into it',waypoint:'Click to place a waypoint · Adding one uses orthogonal routing · Escape cancels'}[tool];
   editingControls?.render();files?.render();
@@ -86,6 +91,7 @@ function draw({inspect=true,reroute=true}={}) {
   if(activeWaypoint&&(!selection.has(activeWaypoint.edgeId)||selection.size!==1||!object(model,activeWaypoint.edgeId)?.waypoints?.[activeWaypoint.index]))activeWaypoint=null;
   if(activeLabel&&(!selection.has(activeLabel)||selection.size!==1||!object(model,activeLabel)?.label))activeLabel=null;
   if(reroute)routes=router.route(model,{freezeOrder:Boolean(gesture&&['move','resize','waypoint'].includes(gesture.type))});
+  currentRevision();
   world.replaceChildren(createScene(model,routes,selection,{tool,connectSource,hoverId,connectTarget:gesture?.type==='connect'?hoverId:null,dropTarget,activeWaypoint}));updateView();updateControls();if(inspect&&!panelsSuspended){renderProperties();renderHierarchy();}files?.changed();
 }
 function safeDraw(options) {try{draw(options)}catch(e){error(e)}}
@@ -121,7 +127,7 @@ function applyPropertyValue(id,field,value){
   else if(field.startsWith('padding-')){const size=Number(value);if(!String(value).trim()||!Number.isFinite(size)||size<0||size>MAX_ZONE_PADDING)throw new Error(`Enter padding between 0 and ${MAX_ZONE_PADDING}.`);current.padding={...zonePadding(current),[field.slice(8)]:size};}
   else if(value===null&&['backgroundColor','fontColor'].includes(field))delete current[field];
   else current[field]=value;
-  if(field==='label'||field==='showDescription'||field==='description'&&current.showDescription){if(model.nodes.includes(current))resizeNode(current,diagramFontSize(model));if(model.zones.includes(current)&&!current.showDescription)current.width=Math.max(current.width,textWidth(current.label,diagramFontSize(model))+32);}
+  if(['textFormat','icon','iconForm','iconPosition','iconSize'].includes(field)||field==='label'||field==='showDescription'||field==='description'&&current.showDescription){if(model.nodes.includes(current))resizeNode(current,diagramFontSize(model));if(model.zones.includes(current)&&!current.showDescription)current.width=Math.max(current.width,textWidth(current.label,diagramFontSize(model))+32);}
 }
 function previewPropertyEdit(edit){
   if(busy||gesture)return;queuePropertyEdit(edit);const pending=pendingPropertyEdit,field=pending.field||'label';if(!pending.before){pending.before=copy(model);pending.dirtyBefore=dirty;}
@@ -175,9 +181,10 @@ function cancelControlDraft(){
 function executeControl(command,target,value){
   const id=target.id,ids=new Set(target.ids||[]),n=object(model,id);
   switch(command){
+    case 'collapse':mutate(n.collapsed?'Container expanded.':'Container collapsed.',()=>{n.collapsed=!n.collapsed;const visible=new Set([...items(presentationModel(model)),...presentationModel(model).edges].map(o=>o.id));selection=new Set([...selection].filter(id=>visible.has(id)));},{spacing:false});break;
     case 'show-description':mutate(n.showDescription?'Label displayed.':'Description displayed.',()=>applyPropertyValue(id,'showDescription',!n.showDescription));break;
     case 'recent':files.showRecent();break;
-    case 'set-shape':mutate('Node shape updated.',()=>{object(model,id).shape=value;resizeNode(object(model,id),diagramFontSize(model));});break;
+    case 'set-shape':mutate('Node shape updated.',()=>{chooseShape(object(model,id),value);resizeNode(object(model,id),diagramFontSize(model));});break;
     case 'set-style':mutate('Line style updated.',()=>object(model,id).style=value);break;
     case 'set-arrows':mutate('Arrow direction updated.',()=>object(model,id).direction=value);break;
     case 'fit-label':mutate('Node fitted to label.',()=>{delete object(model,id).manualSize;resizeNode(object(model,id),diagramFontSize(model));});break;
@@ -209,7 +216,7 @@ function executeControl(command,target,value){
     case 'paste':case 'paste-here':pasteSelection(target.point);break;
     case 'undo':undo();break;
     case 'redo':undo(true);break;
-    case 'export-svg':case 'export-png':case 'export-mermaid':$('export-format').value=command.slice(7);exportDiagram();break;
+    case 'export-svg':case 'export-png':case 'export-mermaid':case 'export-mermaid-portable':$('export-format').value=command.slice(7);exportDiagram();break;
     case 'source':case 'hierarchy':showPanel(command);break;
     case 'toggle-properties':{flushPropertyEdit();const panel=document.querySelector('.properties-panel');if(matchMedia('(max-width:850px)').matches){panel.hidden=false;panel.classList.toggle('is-open');}else panel.hidden=!panel.hidden;updateControls();break;}
     case 'set-flow':mutate('Flow direction set. Use Auto layout to rearrange.',()=>model.settings.direction=value);break;
@@ -225,6 +232,12 @@ function fitPropertyText(){if(properties.getClientRects().length)for(const input
 function pairFields(...controls){const pair=document.createElement('div');pair.className='property-pair';for(const control of controls)pair.append(control.parentElement);propertyHost.append(pair);}
 function propertyGroup(name){const section=document.createElement('section');section.className='property-group';section.dataset.group=name;const heading=document.createElement('h3');heading.textContent=name;section.append(heading);properties.append(section);propertyHost=section;return section;}
 function selectControl(label,value,options,onChange){const input=document.createElement('select');for(const [key,text]of options){const option=document.createElement('option');option.value=key;option.textContent=text;input.append(option);}input.value=value||'';field(label,input);input.addEventListener('change',()=>onChange(input.value));return input;}
+function appearanceFields(n,id,edge){
+  const color=document.createElement('input');color.type='color';color.value=(edge?n.color:n.borderColor)||diagramTheme(model).ink;field(edge?'Line color':'Border color',color);color.addEventListener('change',()=>changeAppearance('Stroke color updated.',()=>n[edge?'color':'borderColor']=color.value));
+  if(edge){const text=document.createElement('input');text.type='color';text.value=n.fontColor||diagramTheme(model).zoneText;field('Label color',text);text.addEventListener('change',()=>changeAppearance('Label color updated.',()=>n.fontColor=text.value));const fill=document.createElement('input');fill.type='color';fill.value=n.labelBackgroundColor||diagramTheme(model).node;field('Label fill',fill);fill.addEventListener('change',()=>changeAppearance('Label background updated.',()=>n.labelBackgroundColor=fill.value));}
+  const width=document.createElement('input');width.type='number';width.min=.5;width.max=8;width.step=.5;width.value=n.borderWidth||(edge?n.style==='thick'?3:1.5:1.3);field('Line width',width);width.addEventListener('change',()=>changeAppearance('Stroke width updated.',()=>n.borderWidth=Number(width.value)));
+  pairFields(color,width);if(!edge)selectControl('Border style',n.borderStyle||(model.zones.includes(n)?'dashed':'solid'),[['solid','Solid'],['dashed','Dashed']],value=>changeAppearance('Border style updated.',()=>n.borderStyle=value));
+}
 function renderProperties(){
   propertiesNeedRefresh=false;
   propertyHost=properties;
@@ -246,6 +259,8 @@ function renderProperties(){
   const label=document.createElement('textarea');label.value=n.label;field('Label',label);
   label.addEventListener('input',()=>{fitTextArea(label);previewPropertyEdit({id,value:label.value});});
   label.addEventListener('change',()=>{queuePropertyEdit({id,value:label.value});flushPropertyEdit();});label.addEventListener('blur',flushPropertyEdit);
+  selectControl('Text format',n.textFormat||'plain',[['plain','Plain text'],['markdown','Markdown: bold / italic']],value=>mutate('Text format updated.',()=>applyPropertyValue(id,'textFormat',value)));
+  if(n.textFormat==='markdown'){const hint=document.createElement('p');hint.className='small-note';hint.textContent='Use **bold**, *italic* or ***both***. Line breaks and escaped markers are supported.';propertyHost.append(hint);}
   if(model.edges.includes(n)){
     propertyGroup('Connection label');
     const position=document.createElement('p');position.className='small-note';position.textContent=n.labelPosition?'Manual label · follows the connection':'Automatic label placement';propertyHost.append(position);
@@ -257,12 +272,13 @@ function renderProperties(){
   for(const name of ['description','notes']){const input=document.createElement('textarea');input.value=n[name]||'';input.rows=name==='notes'?3:2;field(name[0].toUpperCase()+name.slice(1),input);input.addEventListener('input',()=>{fitTextArea(input);previewPropertyEdit({id,field:name,value:input.value});});input.addEventListener('change',()=>{queuePropertyEdit({id,field:name,value:input.value});flushPropertyEdit();});input.addEventListener('blur',flushPropertyEdit);}
   if(model.edges.includes(n)) {
     propertyGroup('Structure');
-    const endpoints=items(model).map(o=>[o.id,`${o.label.replace(/\n/g,' ')} (${o.id})`]);
+    const endpoints=items(model).map(o=>[o.id,`${identityText(o).replace(/\n/g,' ')} (${o.id})`]);
     selectControl('Source',n.source,endpoints,value=>mutate('Connection source updated.',()=>{const e=object(model,id);e.source=value;e.sourceSide=null;pruneAttachmentOrders(model);}));
     selectControl('Target',n.target,endpoints,value=>mutate('Connection target updated.',()=>{const e=object(model,id);e.target=value;e.targetSide=null;pruneAttachmentOrders(model);}));
     propertyGroup('Appearance');
     const arrows=selectControl('Direction',n.direction,[['forward','One arrow'],['none','No arrows'],['both','Two arrows']],value=>executeControl('set-arrows',target,value));arrows.previousElementSibling.textContent='Arrows';
     const lineStyle=selectControl('Line style',n.style,[['normal','Normal'],['dashed','Dashed'],['thick','Thick']],value=>executeControl('set-style',target,value));pairFields(arrows,lineStyle);
+    appearanceFields(n,id,true);
     propertyGroup('Connection route');
     selectControl('Routing',n.routing,[['orthogonal','Orthogonal'],['straight','Straight']],value=>{if(value==='straight'&&n.waypoints?.length){error(new Error('Reset route before choosing Straight to remove manual waypoints.'));$('property-routing').value=n.routing;return;}mutate('Routing updated.',()=>object(model,id).routing=value);});
     const sides=[['','Automatic'],['north','Top'],['south','Bottom'],['west','Left'],['east','Right']];
@@ -276,11 +292,17 @@ function renderProperties(){
       const row=document.createElement('div');row.className='waypoint-row';const pick=document.createElement('button');pick.textContent=`Waypoint ${index+1} · ${Math.round(p.x)}, ${Math.round(p.y)}`;pick.addEventListener('click',()=>{activeWaypoint={edgeId:id,index};safeDraw({reroute:false});viewport.focus();});
       const remove=document.createElement('button');remove.textContent='×';remove.setAttribute('aria-label',`Remove waypoint ${index+1}`);remove.addEventListener('click',()=>executeControl('remove-waypoint',{...target,index}));row.append(pick,remove);propertyHost.append(row);
     }
-    const conflicts=waypointConflicts(model,n);if(conflicts.length){const warning=document.createElement('p');warning.className='waypoint-warning';warning.textContent=conflicts.map(c=>`Waypoint ${c.index+1} is blocked by ${c.node.label}.`).join(' ')+' Move the point or node; the route currently skips blocked points.';propertyHost.append(warning);}
+    const conflicts=waypointConflicts(model,n);if(conflicts.length){const warning=document.createElement('p');warning.className='waypoint-warning';warning.textContent=conflicts.map(c=>`Waypoint ${c.index+1} is blocked by ${identityText(c.node)}.`).join(' ')+' Move the point or node; the route currently skips blocked points.';propertyHost.append(warning);}
     const reset=document.createElement('button');reset.id='btn-reset-route';reset.textContent='Reset route';reset.disabled=!n.waypoints?.length;reset.addEventListener('click',()=>executeControl('reset-route',target));propertyHost.append(reset);
   }else{
     propertyGroup('Appearance');
-    if(model.nodes.includes(n))selectControl('Shape',n.shape,shapes.map(s=>[s,{rectangle:'Rectangle',rounded:'Rounded rectangle',diamond:'Diamond',circle:'Circle',cylinder:'Database cylinder'}[s]]),value=>executeControl('set-shape',target,value));
+    if(model.nodes.includes(n))selectControl('Shape',n.shape,shapeNames,value=>executeControl('set-shape',target,value));
+    if(n.shape==='icon'){
+      const input=document.createElement('input');input.value=n.icon;field('Icon reference',input);input.setAttribute('list','studio-icons');const list=document.createElement('datalist');list.id='studio-icons';for(const [value,name]of iconNames){const o=document.createElement('option');o.value=value;o.label=name;list.append(o);}propertyHost.append(list);input.addEventListener('change',()=>mutate('Icon updated.',()=>applyPropertyValue(id,'icon',input.value)));
+      selectControl('Icon background',n.iconForm||'none',[['none','None'],['square','Square'],['circle','Circle'],['rounded','Rounded']],value=>mutate('Icon background updated.',()=>applyPropertyValue(id,'iconForm',value)));
+      selectControl('Icon label',n.iconPosition||'bottom',[['bottom','Below icon'],['top','Above icon']],value=>mutate('Icon label position updated.',()=>applyPropertyValue(id,'iconPosition',value)));
+      const size=document.createElement('input');size.type='number';size.min=48;size.max=256;size.value=n.iconSize||48;field('Icon size',size);size.addEventListener('change',()=>mutate('Icon size updated.',()=>applyPropertyValue(id,'iconSize',Number(size.value))));
+    }
     for(const [name,key,value]of[['Background color','backgroundColor',objectColors(model,n).background],['Font color','fontColor',objectColors(model,n).font]]){
       const hex=document.createElement('input');hex.type='text';hex.value=value;hex.maxLength=7;hex.spellcheck=false;field(name,hex);if(key==='fontColor')hex.previousElementSibling.textContent='Text color';const row=hex.parentElement;row.classList.add('color-field');
       const picker=document.createElement('input');picker.type='color';picker.value=value;picker.disabled=busy;picker.setAttribute('aria-label',`${name} picker`);row.append(picker);
@@ -291,10 +313,12 @@ function renderProperties(){
       const queue=()=>{if(/^#[\da-f]{6}$/i.test(hex.value.trim()))picker.value=hex.value.trim();queuePropertyEdit({id,field:key,value:hex.value.trim()});};hex.addEventListener('input',()=>{queue();previewPropertyEdit({id,field:key,value:hex.value.trim()});});hex.addEventListener('change',()=>{queue();flushPropertyEdit();});hex.addEventListener('blur',flushPropertyEdit);
       picker.addEventListener('input',()=>{hex.value=picker.value;queue();previewPropertyEdit({id,field:key,value:picker.value});});picker.addEventListener('change',()=>{hex.value=picker.value;queue();flushPropertyEdit();});picker.addEventListener('blur',flushPropertyEdit);
     }
+    appearanceFields(n,id,false);
     propertyGroup('Structure');
+    if(isContainer(model,n)){const b=document.createElement('button');b.id='btn-collapse';b.textContent=n.collapsed?'Expand container':'Collapse container';b.addEventListener('click',()=>executeControl('collapse',target));propertyHost.append(b);}
     if(model.nodes.includes(n)){const toggle=document.createElement('input');toggle.type='checkbox';toggle.checked=Boolean(n.container);field('Container node',toggle);toggle.addEventListener('change',()=>executeControl('container',target));}
     const excluded=movableIds(model,new Set([id]));
-    selectControl('Parent',n.parentId,[['','Top level'],...items(model).filter(z=>!excluded.has(z.id)).map(z=>[z.id,`${model.zones.includes(z)?'Zone':'Node'} · ${z.label}`])],value=>{mutate('Parent updated.',()=>reparent(model,id,value));selectAndReveal(id);});
+    selectControl('Parent',n.parentId,[['','Top level'],...items(model).filter(z=>!excluded.has(z.id)).map(z=>[z.id,`${model.zones.includes(z)?'Zone':'Node'} · ${identityText(z)}`])],value=>{mutate('Parent updated.',()=>reparent(model,id,value));selectAndReveal(id);});
     propertyGroup('Geometry');
     for(const dimension of ['width','height']) {
       const input=document.createElement('input');input.type='number';input.min=model.nodes.includes(n)?1:dimension==='width'?160:100;input.step=1;input.value=Math.round(n[dimension]);field(dimension==='width'?'Width':'Height',input);
@@ -310,7 +334,7 @@ function renderProperties(){
       const hint=document.createElement('p');hint.className='small-note';hint.textContent='Frames grow when contents need room. Manual size stays until you resize or fit; fitting keeps children in place and includes nested zone frames.';propertyHost.append(hint);
     }
     const geometry=document.createElement('div');geometry.className='geometry';geometry.textContent=`Position ${Math.round(n.x)}, ${Math.round(n.y)} · Size ${Math.round(n.width)} × ${Math.round(n.height)}`;propertyHost.append(geometry);
-    const connections=model.edges.filter(e=>e.source===id||e.target===id);if(connections.length){propertyGroup('Connections');for(const e of connections){const b=document.createElement('button');b.className='flow-row';b.textContent=`${e.source===id?'→':'←'} ${object(model,e.source===id?e.target:e.source)?.label}${e.label?' · '+e.label:''}`;b.addEventListener('click',()=>selectAndReveal(e.id));propertyHost.append(b);}}
+    const connections=model.edges.filter(e=>e.source===id||e.target===id);if(connections.length){propertyGroup('Connections');for(const e of connections){const b=document.createElement('button');b.className='flow-row';b.textContent=`${e.source===id?'→':'←'} ${identityText(object(model,e.source===id?e.target:e.source))}${e.label?' · '+identityText(e):''}`;b.addEventListener('click',()=>selectAndReveal(e.id));propertyHost.append(b);}}
   }
   for(const name of ['Label','Context','Appearance','Geometry','Structure','Connection route','Connection label','Connections']){const group=[...properties.children].find(el=>el.dataset.group===name);if(group)properties.append(group);}
   for(const p of properties.querySelectorAll('.property-group>.small-note'))if(p.textContent.length>85){const help=document.createElement('details'),summary=document.createElement('summary');help.className='property-help';const group=p.parentElement.dataset.group;summary.textContent=group==='Connection route'?(p.textContent.startsWith('Move an attachment')?'Attachment order':'Waypoints and sides'):group==='Connection label'?'Label placement':'Zone sizing';p.replaceWith(help);help.append(summary,p);}
@@ -320,6 +344,7 @@ function renderProperties(){
 }
 function renderAttachmentOrder(edge,end){
   const key=attachmentKey(edge.id,end),group=[...router.groups.values()].find(g=>g.entries.some(e=>e.key===key));if(!group)return;
+  if(group.n.id!==edge[end]){const hint=document.createElement('p');hint.className='small-note';hint.textContent=`${end==='source'?'Source':'Target'} attaches to collapsed ${identityText(group.n)}. Expand it to edit the hidden node’s attachment.`;propertyHost.append(hint);return;}
   const index=group.entries.findIndex(e=>e.key===key),horizontal=['north','south'].includes(group.side),sideName={north:'Top',south:'Bottom',west:'Left',east:'Right'}[group.side];
   const panel=document.createElement('div');panel.className='attachment-order';panel.dataset.attachmentEnd=end;
   const caption=document.createElement('p');caption.className='small-note';caption.textContent=`${end==='source'?'Source':'Target'} order · ${sideName} · ${index+1} of ${group.entries.length} · ${group.manual?'Manual':'Automatic'}`;panel.append(caption);
@@ -330,17 +355,17 @@ function renderAttachmentOrder(edge,end){
   const reset=document.createElement('button');reset.id=`btn-reset-${end}-attachment-order`;reset.textContent='Reset side order';reset.disabled=!group.manual;reset.addEventListener('click',()=>executeControl('reset-side-order',{id:edge.id,ids:[edge.id],end}));
   panel.append(row,reset);propertyHost.append(panel);
 }
-function selectAndReveal(id,extend=false){select(id,extend);const n=object(model,id);if(!n)return;const bounds=model.edges.includes(n)?routes.get(id):[{x:n.x,y:n.y},{x:n.x+n.width,y:n.y+n.height}];if(!bounds?.length)return;const x=(Math.min(...bounds.map(p=>p.x))+Math.max(...bounds.map(p=>p.x)))/2,y=(Math.min(...bounds.map(p=>p.y))+Math.max(...bounds.map(p=>p.y)))/2,v=model.settings.view;const sx=x*v.scale+v.x,sy=y*v.scale+v.y;if(sx<40||sx>viewport.clientWidth-40||sy<40||sy>viewport.clientHeight-40){v.x=viewport.clientWidth/2-x*v.scale;v.y=viewport.clientHeight/2-y*v.scale;updateView();}}
+function selectAndReveal(id,extend=false){const endpoints=model.edges.includes(object(model,id))?[object(model,id).source,object(model,id).target]:[id],ancestors=new Set();for(const endpoint of endpoints){let parent=object(model,endpoint)?.parentId;while(parent){ancestors.add(parent);parent=object(model,parent)?.parentId;}}if([...ancestors].some(id=>object(model,id).collapsed))mutate('Ancestors expanded.',()=>{for(const ancestor of ancestors)object(model,ancestor).collapsed=false;},{spacing:false});select(id,extend);const n=object(model,id);if(!n)return;const bounds=model.edges.includes(n)?routes.get(id):[{x:n.x,y:n.y},{x:n.x+n.width,y:n.y+n.height}];if(!bounds?.length)return;const x=(Math.min(...bounds.map(p=>p.x))+Math.max(...bounds.map(p=>p.x)))/2,y=(Math.min(...bounds.map(p=>p.y))+Math.max(...bounds.map(p=>p.y)))/2,v=model.settings.view;const sx=x*v.scale+v.x,sy=y*v.scale+v.y;if(sx<40||sx>viewport.clientWidth-40||sy<40||sy>viewport.clientHeight-40){v.x=viewport.clientWidth/2-x*v.scale;v.y=viewport.clientHeight/2-y*v.scale;updateView();}}
 function renderHierarchy(){
   if(panelsSuspended){hierarchyNeedsRefresh=true;return;}hierarchyNeedsRefresh=false;
   const host=$('hierarchy-tree');host.replaceChildren();
   const emit=(parent,level)=>{for(const n of items(model).filter(n=>n.parentId===parent)){
     const zone=model.zones.includes(n),container=isContainer(model,n),row=document.createElement('div');row.className='tree-row';row.style.paddingLeft=`${level*15}px`;row.dataset.treeId=n.id;
-    if(container){const toggle=document.createElement('button');toggle.className='tree-toggle';toggle.textContent=collapsedZones.has(n.id)?'▸':'▾';toggle.setAttribute('aria-label',`${collapsedZones.has(n.id)?'Expand':'Collapse'} ${n.label}`);toggle.setAttribute('aria-expanded',String(!collapsedZones.has(n.id)));toggle.addEventListener('click',()=>{collapsedZones.has(n.id)?collapsedZones.delete(n.id):collapsedZones.add(n.id);renderHierarchy();});row.append(toggle);}else{const spacer=document.createElement('span');spacer.className='tree-spacer';row.append(spacer);}
-    const b=document.createElement('button');b.className=`tree-object${selection.has(n.id)?' active':''}`;b.setAttribute('aria-label',`Select ${n.label}`);b.setAttribute('aria-pressed',String(selection.has(n.id)));b.textContent=`${zone?'▧':{rectangle:'□',rounded:'▢',diamond:'◇',circle:'○',cylinder:'▱'}[n.shape]} ${n.label||n.id}`;b.title=n.description||n.label;b.addEventListener('click',e=>selectAndReveal(n.id,e.shiftKey));row.append(b);host.append(row);if(container&&!collapsedZones.has(n.id))emit(n.id,level+1);
+    if(container){const toggle=document.createElement('button');toggle.className='tree-toggle';toggle.textContent=collapsedZones.has(n.id)?'▸':'▾';toggle.setAttribute('aria-label',`${collapsedZones.has(n.id)?'Expand':'Collapse'} ${identityText(n)}`);toggle.setAttribute('aria-expanded',String(!collapsedZones.has(n.id)));toggle.addEventListener('click',()=>{collapsedZones.has(n.id)?collapsedZones.delete(n.id):collapsedZones.add(n.id);renderHierarchy();});row.append(toggle);}else{const spacer=document.createElement('span');spacer.className='tree-spacer';row.append(spacer);}
+    const b=document.createElement('button');b.className=`tree-object${selection.has(n.id)?' active':''}`;b.setAttribute('aria-label',`Select ${identityText(n)}`);b.setAttribute('aria-pressed',String(selection.has(n.id)));b.textContent=`${zone?'▧':{rectangle:'□',rounded:'▢',diamond:'◇',circle:'○',cylinder:'▱',icon:'♙',person:'♙',document:'▤',cloud:'☁',hexagon:'⬡',stadium:'▢'}[n.shape]} ${identityText(n)||n.id}`;b.title=n.description||identityText(n);b.addEventListener('click',e=>selectAndReveal(n.id,e.shiftKey));row.append(b);host.append(row);if(container&&!collapsedZones.has(n.id))emit(n.id,level+1);
   }};emit(null,0);
   if(!items(model).length){const p=document.createElement('p');p.className='empty-properties';p.textContent='Add a zone or node to begin. Drag objects into zones or container nodes to build the hierarchy.';host.append(p);}
-  const flows=$('hierarchy-flows');flows.replaceChildren();for(const e of model.edges){const b=document.createElement('button');b.className=`flow-row${selection.has(e.id)?' active':''}`;b.textContent=`${object(model,e.source)?.label} ${e.direction==='both'?'↔':e.direction==='none'?'—':'→'} ${object(model,e.target)?.label}${e.label?' · '+e.label:''}`;b.title=b.textContent;b.addEventListener('click',()=>selectAndReveal(e.id));flows.append(b);}
+  const flows=$('hierarchy-flows');flows.replaceChildren();for(const e of model.edges){const b=document.createElement('button');b.className=`flow-row${selection.has(e.id)?' active':''}`;b.textContent=`${identityText(object(model,e.source))} ${e.direction==='both'?'↔':e.direction==='none'?'—':'→'} ${identityText(object(model,e.target))}${e.label?' · '+identityText(e):''}`;b.title=b.textContent;b.addEventListener('click',()=>selectAndReveal(e.id));flows.append(b);}
   $('hierarchy-count').textContent=`${items(model).length} objects`;if(!model.edges.length)flows.textContent='No connections yet.';
 }
 function diagramPoint(event){const b=canvas.getBoundingClientRect(),v=model.settings.view;return{x:(event.clientX-b.left-v.x)/v.scale,y:(event.clientY-b.top-v.y)/v.scale};}
@@ -371,6 +396,7 @@ function beginPointer(event){
   if(editingControls&&!editingControls.beforeAction())return;
   $('error-banner').hidden=true;
   const point=diagramPoint(event),target=event.target;
+  const collapse=target.closest('[data-collapse]');if(collapse){event.preventDefault();executeControl('collapse',{id:collapse.dataset.collapse});return;}
   if(tool==='pan'||spaceHeld){capture(event,{type:'pan',view:{...model.settings.view}});return;}
   if(tool==='waypoint'){
     const id=waypointEdge,edge=object(model,id);if(!edge||!model.edges.includes(edge)){setTool('select');return;}
@@ -396,6 +422,7 @@ function beginPointer(event){
   viewport.focus();
 }
 viewport.addEventListener('pointerdown',beginPointer);
+viewport.addEventListener('keydown',event=>{const button=event.target.closest('[data-collapse]');if(button&&['Enter',' '].includes(event.key)){event.preventDefault();event.stopPropagation();executeControl('collapse',{id:button.dataset.collapse});}});
 function moveGesture(event){
   if(!gesture||gesture.pointerId!==event.pointerId)return;
   const g=gesture,point=diagramPoint(event);g.last={clientX:event.clientX,clientY:event.clientY};
@@ -424,7 +451,7 @@ function moveGesture(event){
     if(model.settings.guides!==false){const layer=svgElement('g',{class:'alignment-guides editor-only'});for(const line of alignmentGuides(model,g.type==='move'?g.selected:new Set([g.id])))layer.append(svgElement('line',line.axis==='x'?{x1:line.value,x2:line.value,y1:line.start,y2:line.end}:{y1:line.value,y2:line.value,x1:line.start,x2:line.end}));world.append(layer);}
   }else if(g.type==='marquee'){
     const x=Math.min(g.start.x,point.x),y=Math.min(g.start.y,point.y),w=Math.abs(g.start.x-point.x),h=Math.abs(g.start.y-point.y);
-    selection=new Set(g.extend);for(const n of items(model))if(n.x>=x&&n.y>=y&&n.x+n.width<=x+w&&n.y+n.height<=y+h)selection.add(n.id);
+    selection=new Set(g.extend);for(const n of items(presentationModel(model)))if(n.x>=x&&n.y>=y&&n.x+n.width<=x+w&&n.y+n.height<=y+h)selection.add(n.id);
     safeDraw({inspect:false,reroute:false});world.append(svgElement('rect',{class:'marquee editor-only',x,y,width:w,height:h}));
   }else if(g.type==='connect'){
     hoverId=connectionAt(event.clientX,event.clientY)?.id||null;safeDraw({inspect:false,reroute:false});let start;
@@ -482,7 +509,7 @@ function saveProject(){return files.save();}
 
 async function exportDiagram(){if(busy||gesture||(editingControls&&!editingControls.beforeAction()))return;flushPropertyEdit();try{
   const type=$('export-format').value;
-  if(type==='mermaid'){download(new Blob([toMermaid(model)],{type:'text/plain;charset=utf-8'}),'diagram.mmd');status('Mermaid source exported. Manual positions are saved in project files.');return;}
+  if(type==='mermaid'||type==='mermaid-portable'){download(new Blob([toMermaid(model,{portable:type==='mermaid-portable'})],{type:'text/plain;charset=utf-8'}),'diagram.mmd');status('Mermaid source exported. Manual positions are saved in project files.');return;}
   const svg=exportSvg(model,routes),blob=new Blob([svg.text],{type:'image/svg+xml;charset=utf-8'});
   if(type==='svg'){download(blob,'diagram.svg');status('SVG exported with the current arrangement.');return;}
   const url=URL.createObjectURL(blob);try{const image=new Image();image.src=url;await image.decode();const output=document.createElement('canvas'),factor=Math.min(2,16000/Math.max(svg.width,svg.height));output.width=Math.ceil(svg.width*factor);output.height=Math.ceil(svg.height*factor);const context=output.getContext('2d');context.fillStyle='#fff';context.fillRect(0,0,output.width,output.height);context.drawImage(image,0,0,output.width,output.height);const png=await new Promise(resolve=>output.toBlob(resolve,'image/png'));if(!png)throw new Error('PNG generation failed.');download(png,'diagram.png');status('PNG exported with the current arrangement.');}finally{URL.revokeObjectURL(url);}
@@ -492,7 +519,7 @@ $('btn-apply').addEventListener('click',applySource);$('btn-discard').addEventLi
 $('btn-new').addEventListener('click',()=>files.newDiagram());$('btn-open').addEventListener('click',()=>files.open());$('btn-save').addEventListener('click',saveProject);$('btn-export').addEventListener('click',exportDiagram);
 function showPanel(name){const same=!$('source-panel').hidden&&!$(name==='source'?'source-content':'hierarchy-content').hidden;$('source-panel').hidden=same;$('source-content').hidden=name!=='source';$('hierarchy-content').hidden=name!=='hierarchy';$('btn-source').setAttribute('aria-expanded',String(!same&&name==='source'));$('btn-hierarchy').setAttribute('aria-expanded',String(!same&&name==='hierarchy'));}
 $('btn-source').addEventListener('click',()=>showPanel('source'));$('btn-hierarchy').addEventListener('click',()=>showPanel('hierarchy'));
-$('example').addEventListener('change',()=>loadExample($('example').value));
+$('example')?.addEventListener('change',()=>loadExample($('example').value));
 $('btn-layout').addEventListener('click',async()=>{if(await runAsync('Automatic layout applied.',()=>layoutModel(model)))fit();});
 $('direction').addEventListener('change',()=>mutate('Flow direction set. Use Auto layout to rearrange.',()=>model.settings.direction=$('direction').value));
 $('layout-mode').addEventListener('change',()=>mutate('Layout preference set. Use Auto layout to rearrange.',()=>model.settings.layout=$('layout-mode').value));
@@ -512,7 +539,7 @@ document.addEventListener('keydown',event=>{
   if(editing||busy)return;
   if(mod&&event.key.toLowerCase()==='z'){event.preventDefault();undo(event.shiftKey);return;}
   if(mod&&event.key.toLowerCase()==='y'){event.preventDefault();undo(true);return;}
-  if(mod&&event.key.toLowerCase()==='a'){event.preventDefault();selection=new Set(items(model).map(n=>n.id));safeDraw({reroute:false});return;}
+  if(mod&&event.key.toLowerCase()==='a'){event.preventDefault();selection=new Set(items(presentationModel(model)).map(n=>n.id));safeDraw({reroute:false});return;}
   if(event.code==='Space'&&(event.target===viewport||event.target.closest('#canvas'))){event.preventDefault();spaceHeld=true;return;}
   if(event.key==='Delete'||event.key==='Backspace'){event.preventDefault();deleteSelected();return;}
   if(event.key.startsWith('Arrow')&&activeLabel){event.preventDefault();const id=activeLabel,step=event.shiftKey?50:model.settings.grid?20:10;mutate('Connection label nudged.',()=>{const anchor=layoutEdgeLabels(model,routes).get(id)?.anchor;if(!anchor)return;object(model,id).labelPosition=manualLabelPosition(routes.get(id),{x:snap(anchor.x+(event.key==='ArrowLeft'?-step:event.key==='ArrowRight'?step:0)),y:snap(anchor.y+(event.key==='ArrowUp'?-step:event.key==='ArrowDown'?step:0))});});return;}
@@ -580,5 +607,33 @@ editingControls=createEditingControls({
   activateLabel(id){select(id);activeLabel=id;safeDraw({reroute:false});},
   beginDraft:beginControlDraft,previewDraft:previewControlDraft,finishDraft:finishControlDraft,cancelDraft:cancelControlDraft
 });
-async function start(){try{initializeMermaid();await AvoidLib.load(new URL('./vendor/libavoid/dist/libavoid.wasm',import.meta.url).href);router=new DiagramRouter(AvoidLib.getInstance());const response=await fetch('./diagrams/zones-and-subzones.mmd');if(!response.ok)throw new Error('The starter diagram could not be loaded.');model=await importMermaid(await response.text());syncSource(true);draw();loading(false);fit();files.start();status('Ready. Import, arrange, and evolve your diagram.');}catch(e){loading(false);error(e);}}
+function agentState(){
+ const f=files.state();return{model,revision:currentRevision(),selection,
+ file:{name:f.name,dirty:f.dirty,connected:f.connected,autosave:f.autosave,paused:f.paused||null},
+ blocked:busy?'The editor is busy.':gesture?'Finish the current canvas gesture.':controlEdit||pendingPropertyEdit||pendingFontSize!==null?'Finish the current property edit.':sourceDirty?'Apply or discard the Mermaid source draft first.':files.dialogOpen()?'Close the file dialog first.':f.paused==='conflict'?'Resolve the external file conflict first.':null};
+}
+function checkAgent(signal){if(signal?.aborted)throw new Error('Tool execution cancelled; no edits applied.');const block=agentState().blocked;if(block)throw new Error(block);}
+function commitAgent(next,message,{signal}={}){
+ checkAgent(signal);if(editingControls&&!editingControls.beforeAction())throw new Error('Finish the current editor action first.');const before=copy(model),validated=validateModel(next);router.route(validated);if(signal?.aborted){router.route(model);throw new Error('Tool execution cancelled; no edits applied.');}
+ model=validated;const visible=presentationModel(model),ids=new Set([...items(visible),...visible.edges].map(o=>o.id));selection=new Set([...selection].filter(id=>ids.has(id)));commit(before,message);return true;
+}
+async function computeAgent(message,fn,{signal}={}){
+ checkAgent(signal);const before=copy(model),revision=currentRevision();loading(true,message);let next;
+ try{next=await fn(copy(before));if(signal?.aborted)throw new Error('Tool execution cancelled; no edits applied.');if(currentRevision()!==revision)throw new Error('The diagram changed while the tool was running. Read it again.');}
+ finally{loading(false);}
+ return commitAgent(next,message,{signal});
+}
+async function enableWebMCP(){
+ webmcpRegistration?.dispose();
+ webmcpRegistration=await registerWebMCP({read:agentState,commit:commitAgent,
+ applyMermaid:(source,options)=>computeAgent('Agent Mermaid source applied.',async previous=>{const incoming=await importMermaid(source,{layout:previous.settings.layout});return options.autoLayout?incoming:mergeSource(previous,incoming);},options),
+ arrange:(action,ids,options)=>computeAgent('Agent arrangement applied.',async next=>{if(action==='auto-layout'){if(items(next).length)await layoutModel(next);}else{if(!Array.isArray(ids)||ids.some(id=>!items(next).some(n=>n.id===id)))throw new Error('Choose existing nodes or zones to arrange.');arrange(next,new Set(ids),action);}return next;},options),
+ svg:()=>exportSvg(model,routes).text
+ },{onError:e=>console.warn('WebMCP registration unavailable:',e.message)});
+ document.body.dataset.webmcp=webmcpRegistration.available?'available':'unavailable';
+ const badge=$('webmcp-status');if(badge)badge.hidden=!webmcpRegistration.available;
+}
+window.addEventListener('pagehide',()=>webmcpRegistration?.dispose());
+window.addEventListener('pageshow',event=>{if(event.persisted&&router)enableWebMCP();});
+async function start(){try{initializeMermaid();await AvoidLib.load(new URL('./vendor/libavoid/dist/libavoid.wasm',import.meta.url).href);router=new DiagramRouter(AvoidLib.getInstance());model=emptyModel();syncSource(true);draw();loading(false);fit();files.start();await enableWebMCP();status('Ready. Import, arrange, and evolve your diagram.');}catch(e){loading(false);error(e);}}
 loading(true,'Starting local engines…');start();
