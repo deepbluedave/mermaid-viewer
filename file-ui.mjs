@@ -5,8 +5,9 @@ import {validateModel} from './core.mjs?v=icons-3';
 const $=id=>document.getElementById(id);
 const fileTypes=[{description:'Editable diagram project',accept:{'application/json':['.json']}}];
 export function createProjectFiles(api){
-  let started=false,switching=false,picking=false,nativeDisabled=false,recovery=null,recoveryStore=null,recoveryFailed=false,recoveryKey='',lastError=null,noticeKey='',inputApproval=null,hasRecovery=false;
-  const supported=()=>!nativeDisabled&&window.isSecureContext&&typeof window.showOpenFilePicker==='function'&&typeof window.showSaveFilePicker==='function';
+  let started=false,switching=false,picking=false,recovery=null,recoveryStore=null,recoveryFailed=false,recoveryKey='',lastError=null,noticeKey='',inputApproval=null,hasRecovery=false;
+  const canPick=kind=>window.isSecureContext&&typeof window['show'+kind+'FilePicker']==='function';
+  const supported=()=>session.state().connected||canPick('Save');
   try{let tabId=sessionStorage.getItem('diagram-studio.tab');if(!tabId){tabId=newSessionId();sessionStorage.setItem('diagram-studio.tab',tabId);}recoveryStore=createRecoveryStore(localStorage,tabId);recovery=recoveryStore.find({ownOnly:true});hasRecovery=Boolean(recoveryStore.find());}catch{recoveryFailed=true;}
   let preferenceStorage=null;try{preferenceStorage=localStorage;}catch{}
   const recentFiles=createRecentFiles();
@@ -55,20 +56,25 @@ export function createProjectFiles(api){
     if(answer==='save')return await save()&&!session.state().dirty;
     return answer==='discard';
   }
-  function fallback(err){if(err?.name==='SecurityError'||err?.name==='NotSupportedError'){nativeDisabled=true;render();api.status('Direct file access is unavailable here. Open and Save use file copies.');return true;}return false;}
+  function fallback(err){return err?.name==='SecurityError'||err?.name==='NotSupportedError';}
+  function saveCopy(s,pickerBlocked=false){
+    const text=snapshot();api.download(new Blob([text],{type:'application/json'}),s.name==='Untitled'?'diagram.mermaid-project.json':s.name.endsWith('.json')?s.name:'diagram.mermaid-project.json');
+    // A downloaded copy never marks an existing working file as updated.
+    if(!s.connected)session.markDownloaded(text);
+    api.status(s.connected?'Project copy downloaded. Working file and unsaved changes retained. Try Save as again to choose another working file.':pickerBlocked?'The file picker was blocked, so a project copy was downloaded. Click Save again to retry connecting a working file.':'Project copy downloaded. This browser cannot save back to the original file.');
+    render();return !s.connected;
+  }
   async function save(as=false,overwrite=false){
     if(picking||switching||!api.prepare())return false;changed();
     const s=session.state();
-    if(!supported()){
-      const text=snapshot();api.download(new Blob([text],{type:'application/json'}),s.name==='Untitled'?'diagram.mermaid-project.json':s.name.endsWith('.json')?s.name:'diagram.mermaid-project.json');session.markDownloaded(text);api.status('Project copy downloaded. This browser cannot save back to the original file.');return true;
-    }
+    if((as||!s.connected)&&!canPick('Save'))return saveCopy(s);
     let handle=null,baseline=null,unavailable=false;
     if(as||!s.connected){
       picking=true;
       try{handle=await window.showSaveFilePicker({suggestedName:s.name.endsWith('.json')?s.name:'diagram.mermaid-project.json',types:fileTypes});baseline=await(await handle.getFile()).text();}
       catch(err){if(err.name==='AbortError')return false;if(fallback(err))unavailable=true;else{api.error(err);return false;}}
       finally{picking=false;}
-      if(unavailable)return save();
+      if(unavailable){changed();return saveCopy(session.state(),true);}
     }
     // Include edits made while the chooser was open. Keep editing enabled while
     // the write runs; a later edit remains dirty until its own write succeeds.
@@ -101,10 +107,10 @@ export function createProjectFiles(api){
   function fallbackOpen(){inputApproval={content:snapshot(),draft:api.sourceDraft()};$('file-input').click();}
   async function open(){
     if(picking||switching||!await guard())return;
-    if(!supported()){fallbackOpen();return;}
+    if(!canPick('Open')){fallbackOpen();return;}
     picking=true;let handle,file;
     try{[handle]=await window.showOpenFilePicker({multiple:false,types:[...fileTypes,{description:'Mermaid source',accept:{'text/plain':['.mmd','.mermaid','.txt']}}]});file=await handle.getFile();}
-    catch(err){if(fallback(err))fallbackOpen();else if(err.name!=='AbortError')api.error(err);return;}
+    catch(err){if(fallback(err)){api.status('The file picker was blocked. Open a copy here, or click Open again to retry connecting the original file.');fallbackOpen();}else if(err.name!=='AbortError')api.error(err);return;}
     finally{picking=false;}
     await load(file,handle,{guarded:true});
   }

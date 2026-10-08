@@ -1,0 +1,154 @@
+{
+  "passed": 37,
+  "total": 37,
+  "results": [
+    {
+      "name": "Open JSON retains a working file; Save changes the original rather than downloading",
+      "pass": true
+    },
+    {
+      "name": "Save remains dirty until close; edits made during the write remain pending",
+      "pass": true
+    },
+    {
+      "name": "Autosave is optional and saves focused label, description and notes typing without splitting Undo",
+      "pass": true
+    },
+    {
+      "name": "completed drags autosave; cancelled gestures and unconfirmed popover previews stay off disk",
+      "pass": true
+    },
+    {
+      "name": "Save as switches working file only on success; cancellation retains the original binding",
+      "pass": true
+    },
+    {
+      "name": "Download a copy preserves working-file binding, autosave preference and unsaved state",
+      "pass": true
+    },
+    {
+      "name": "lost permission pauses autosave without prompting; Save retries after permission returns",
+      "pass": true
+    },
+    {
+      "name": "write failure retains edits and retries without silently claiming Saved",
+      "pass": true
+    },
+    {
+      "name": "external disk changes pause autosave and offer explicit Overwrite, Save as and Reload",
+      "pass": true
+    },
+    {
+      "name": "Reload validates changed disk content before replacing the current diagram",
+      "pass": true
+    },
+    {
+      "name": "New and Open protect unsaved edits; cancellation and failed parsing keep the current binding",
+      "pass": true
+    },
+    {
+      "name": "Save and continue writes the old working file before New and detaches Undo from that file",
+      "pass": true
+    },
+    {
+      "name": "a queued old save completes against the old file before opening another project",
+      "pass": true
+    },
+    {
+      "name": "Mermaid Open is an import and first Save creates JSON without overwriting the source",
+      "pass": true
+    },
+    {
+      "name": "keyboard and Edit-menu copy/paste preserve a section, select it and make one Undo step",
+      "pass": true
+    },
+    {
+      "name": "copying collapsed nested zones includes every child once; boundary edges stay behind",
+      "pass": true
+    },
+    {
+      "name": "edge-only clipboard stays in its source document; cross-document section paste works",
+      "pass": true
+    },
+    {
+      "name": "ordinary text fields keep native copy/paste and malformed clipboard leaves model untouched",
+      "pass": true
+    },
+    {
+      "name": "Paste here uses the context point; repeated pastes remain separate and autosave persists the section",
+      "pass": true
+    },
+    {
+      "name": "first focused edit can be undone after autosave even when Open cleared the previous history",
+      "pass": true
+    },
+    {
+      "name": "failed Save as and external-conflict Save as preserve the original disk file",
+      "pass": true
+    },
+    {
+      "name": "a clipboard permission delay cannot paste into a different document opened meanwhile",
+      "pass": true
+    },
+    {
+      "name": "keyboard paste reveals a copied section when its original coordinates are offscreen",
+      "pass": true
+    },
+    {
+      "name": "a very wide section reveals an actual pasted node rather than an empty bounding-box centre",
+      "pass": true
+    },
+    {
+      "name": "unapplied source draft is protected by New and does not get silently treated as saved JSON",
+      "pass": true
+    },
+    {
+      "name": "browser recovery survives refresh with focused notes and restores detached with autosave off",
+      "pass": true
+    },
+    {
+      "name": "connected files keep saving when picker APIs become unavailable",
+      "pass": true
+    },
+    {
+      "name": "Save only requires the save picker when choosing a new working file",
+      "pass": true
+    },
+    {
+      "name": "unsupported browsers retain Open and Save download fallback with autosave unavailable",
+      "pass": true
+    },
+    {
+      "name": "a blocked direct-save picker degrades to a downloaded copy in the same action",
+      "pass": true
+    },
+    {
+      "name": "a temporary blocked picker can reconnect on the next Save without refreshing",
+      "pass": true
+    },
+    {
+      "name": "blocked Save as retains a connected file, unsaved edits, and later native saving",
+      "pass": true
+    },
+    {
+      "name": "autosave preference survives New, another file, browser refresh and recovery without storing it in JSON",
+      "pass": true
+    },
+    {
+      "name": "Recent files opens the current disk file, deduplicates handles and keeps cancelled or invalid imports out",
+      "pass": true
+    },
+    {
+      "name": "Recent browser copies persist in IndexedDB across refresh and reopen as detached projects",
+      "pass": true
+    },
+    {
+      "name": "description mode is selectable on nodes and zones, wraps above children, survives clipboard and SVG export",
+      "pass": true
+    },
+    {
+      "name": "recent files refresh across tabs and concurrent IndexedDB updates preserve both entries",
+      "pass": true
+    }
+  ]
+}

@@ -14,7 +14,7 @@ import {layoutEdgeLabels,manualLabelPosition} from './labels.mjs?v=icons-3';
 import {attachmentKey,reorderAttachment,resetAttachmentOrder,pruneAttachmentOrders} from './attachments.mjs?v=icons-3';
 import {createEditingControls} from './controls.mjs?v=icons-3';
 import {themes,diagramTheme} from './themes.mjs?v=icons-3';
-import {createProjectFiles} from './file-ui.mjs';
+import {createProjectFiles} from './file-ui.mjs?v=save-retry-1';
 import {newSessionId} from './files.mjs';
 import {copyFragment,readFragment,pasteFragment,fragmentBounds} from './clipboard.mjs';
 const $=id=>document.getElementById(id);
