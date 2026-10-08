@@ -1,8 +1,8 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {emptyModel,copy,validateModel,object,items,nodeMetrics,resizeNode,toMermaid,moveSelection,arrange,containingParent,setNodeContainer} from '../core.mjs?v=extensions-10';
+import {emptyModel,copy,validateModel,object,items,nodeMetrics,resizeNode,toMermaid,moveSelection,arrange,containingParent,setNodeContainer} from '../core.mjs?v=icons-3';
 import {shapes,chooseShape,shapeParts,cloudIntersection,iconFrame} from '../node-shapes.mjs';
 import {parseText,lineRuns} from '../rich-text.mjs';import {presentationModel} from '../presentation.mjs';import {importStyles,classStyles} from '../appearance.mjs';import {applyOperations} from '../editor-commands.mjs';import {createDiagramTools,registerWebMCP} from '../webmcp.mjs';
-import {AvoidLib} from '../vendor/libavoid/dist/index-node.mjs';import {DiagramRouter,sidePoint} from '../routing.mjs?v=extensions-10';
+import {AvoidLib} from '../vendor/libavoid/dist/index-node.mjs';import {DiagramRouter,sidePoint} from '../routing.mjs?v=icons-3';
 await AvoidLib.load(new URL('../vendor/libavoid/dist/libavoid.wasm',import.meta.url).pathname);const router=new DiagramRouter(AvoidLib.getInstance());
 const node=(id,x=0,y=0)=>({id,label:id,shape:'rectangle',parentId:null,x,y,width:120,height:54});
 const edge=(id,source,target)=>({id,source,target,label:'',direction:'forward',style:'normal',routing:'orthogonal',sourceSide:null,targetSide:null});

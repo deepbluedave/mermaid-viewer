@@ -13,8 +13,13 @@ containment, connections, Undo/Redo, browser recovery, and file autosave prefere
 ## Shapes and icons
 
 - Retain existing shapes; add stadium, hexagon, document, cloud, person and icon.
-- Provide Human actor and Agent actor presets and a small local Iconify-compatible
-  collection. No runtime CDN, font, image download, or new server dependency.
+- Provide Human actor and Agent actor presets, the local Studio collection and the
+  full Tabler, Lucide, Carbon, Phosphor, Fluent Color and SVG Logos packs. No runtime
+  icon API/CDN, external font/image download, or new server dependency.
+- A searchable icon picker previews results and filters by pack. It supports keyboard
+  selection, cancellation, pagination and one-step Undo/Redo. Bundled packs load only
+  from app assets; view boxes, aliases, colours and gradient IDs render correctly on
+  the canvas and in standalone SVG/PNG exports. Ship pinned sources and full licenses.
 - Icon properties: reference (`pack:name`), background (none/square/circle/rounded),
   label position (top/bottom), and icon size (48–256). Unknown icons show a question
   mark, with their label and connections retained.

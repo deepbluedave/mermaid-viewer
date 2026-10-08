@@ -1,10 +1,10 @@
-import {iconFrame,cloudIntersection} from './node-shapes.mjs?v=extensions-10';
-import {presentationModel} from './presentation.mjs?v=extensions-10';
+import {iconFrame,cloudIntersection} from './node-shapes.mjs?v=icons-3';
+import {presentationModel} from './presentation.mjs?v=icons-3';
 // Adapter only: route finding is performed by libavoid, never by application code.
-import { items } from './core.mjs?v=extensions-10';
-import {waypointConflicts} from './waypoints.mjs?v=extensions-10';
-import {findJoinRepairs,acceptJoinRepair,sameRoute} from './route-joins.mjs?v=extensions-10';
-import {attachmentGroups,attachmentCandidates,acceptAttachmentSwap} from './attachments.mjs?v=extensions-10';
+import { items } from './core.mjs?v=icons-3';
+import {waypointConflicts} from './waypoints.mjs?v=icons-3';
+import {findJoinRepairs,acceptJoinRepair,sameRoute} from './route-joins.mjs?v=icons-3';
+import {attachmentGroups,attachmentCandidates,acceptAttachmentSwap} from './attachments.mjs?v=icons-3';
 const sides = { north:{dir:1,opposite:2}, south:{dir:2,opposite:1}, west:{dir:4,opposite:8}, east:{dir:8,opposite:4} };
 const edgeSpacing=12;
 export function sidePoint(n, side, fraction=.5) {

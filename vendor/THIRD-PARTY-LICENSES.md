@@ -75,6 +75,10 @@ The Mermaid build uses the pinned packages in package-lock.json. The following l
 - **ts-dedent 2.3.0** — MIT: [LICENSE](licenses/ts-dedent_2.3.0/LICENSE)
 - **uuid 14.0.2** — MIT: [LICENSE.md](licenses/uuid_14.0.2/LICENSE.md)
 
+## Icon packs
+
+Six local Iconify packs and their full licenses are recorded in [icons/README.md](icons/README.md). Rebuild with `npm run build:icons`.
+
 ## libavoid routing
 
 - **libavoid-js 0.5.0-beta.5 / libavoid** — LGPL-2.1-or-later. [Full licence](libavoid/LICENSE); [source archives and replacement/build instructions](libavoid/SOURCE.md).

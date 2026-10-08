@@ -1,17 +1,19 @@
-import {registerWebMCP} from './webmcp.mjs?v=extensions-10';
-import {shapeNames,iconNames,chooseShape} from './node-shapes.mjs?v=extensions-10';
-import {presentationModel} from './presentation.mjs?v=extensions-10';
-import { emptyModel, copy, items, object, identityText, shapes, textWidth, resizeNode, moveSelection, movableIds, expandZones, reparent, deleteSelection, nextId, arrange, toMermaid, validateModel, History, depth,ensureNodeSpacing,ensureLabelFit,separateSelection,dropSelection,dropParents,diagramFontSize,objectColors,containers,isContainer,containingParent,setNodeContainer,descendants,zonePadding,MAX_ZONE_PADDING,fitZonesToContents } from './core.mjs?v=extensions-10';
-import {resizeObject,resizeNodeTo,alignmentGuides} from './editing.mjs?v=extensions-10';
-import { initializeMermaid, importMermaid, layoutModel, mergeSource } from './mermaid-adapter.mjs?v=extensions-10';
+import {registerWebMCP} from './webmcp.mjs?v=icons-3';
+import {shapeNames,chooseShape} from './node-shapes.mjs?v=icons-3';
+import {ensureIconPacks,modelIconReferences,needsIconPack,iconLabel} from './icons.mjs?v=icons-3';
+import {createIconPicker,iconPreview} from './icon-picker.mjs?v=icons-3';
+import {presentationModel} from './presentation.mjs?v=icons-3';
+import { emptyModel, copy, items, object, identityText, shapes, textWidth, resizeNode, moveSelection, movableIds, expandZones, reparent, deleteSelection, nextId, arrange, toMermaid, validateModel, History, depth,ensureNodeSpacing,ensureLabelFit,separateSelection,dropSelection,dropParents,diagramFontSize,objectColors,containers,isContainer,containingParent,setNodeContainer,descendants,zonePadding,MAX_ZONE_PADDING,fitZonesToContents } from './core.mjs?v=icons-3';
+import {resizeObject,resizeNodeTo,alignmentGuides} from './editing.mjs?v=icons-3';
+import { initializeMermaid, importMermaid, layoutModel, mergeSource } from './mermaid-adapter.mjs?v=icons-3';
 import { AvoidLib } from './vendor/libavoid/dist/index.js';
-import { DiagramRouter, sidePoint } from './routing.mjs?v=extensions-10';
-import { createScene, svgElement, exportSvg } from './scene.mjs?v=extensions-10';
-import {waypointConflicts,waypointInsertionIndex,translateWaypoints,MAX_WAYPOINTS} from './waypoints.mjs?v=extensions-10';
-import {layoutEdgeLabels,manualLabelPosition} from './labels.mjs?v=extensions-10';
-import {attachmentKey,reorderAttachment,resetAttachmentOrder,pruneAttachmentOrders} from './attachments.mjs?v=extensions-10';
-import {createEditingControls} from './controls.mjs?v=extensions-10';
-import {themes,diagramTheme} from './themes.mjs?v=extensions-10';
+import { DiagramRouter, sidePoint } from './routing.mjs?v=icons-3';
+import { createScene, svgElement, exportSvg } from './scene.mjs?v=icons-3';
+import {waypointConflicts,waypointInsertionIndex,translateWaypoints,MAX_WAYPOINTS} from './waypoints.mjs?v=icons-3';
+import {layoutEdgeLabels,manualLabelPosition} from './labels.mjs?v=icons-3';
+import {attachmentKey,reorderAttachment,resetAttachmentOrder,pruneAttachmentOrders} from './attachments.mjs?v=icons-3';
+import {createEditingControls} from './controls.mjs?v=icons-3';
+import {themes,diagramTheme} from './themes.mjs?v=icons-3';
 import {createProjectFiles} from './file-ui.mjs';
 import {newSessionId} from './files.mjs';
 import {copyFragment,readFragment,pasteFragment,fragmentBounds} from './clipboard.mjs';
@@ -21,6 +23,8 @@ let model=emptyModel(),selection=new Set(),tool='select',gesture=null,busy=true,
 let pendingPropertyEdit=null,pendingFontSize=null;
 let editingControls=null,controlEdit=null,propertyHost=properties;
 let files=null,documentId=newSessionId(),lastPaste='',pasteCount=0;
+const iconPicker=createIconPicker();
+let iconLoadTask=null;
 let propertiesNeedRefresh=false;
 let diagramRevision=0,revisionSnapshot='',webmcpRegistration=null;
 function currentRevision(){const state=copy(model);delete state.settings.view;const key=documentId+JSON.stringify(state);if(key!==revisionSnapshot){revisionSnapshot=key;diagramRevision++;}return diagramRevision;}
@@ -88,6 +92,8 @@ function updateControls() {
 function draw({inspect=true,reroute=true}={}) {
   if(inspect)flushPropertyEdit();
   if(!router)return;
+  const references=modelIconReferences(model);
+  if(!iconLoadTask&&references.some(needsIconPack))iconLoadTask=ensureIconPacks(references).then(()=>{iconLoadTask=null;safeDraw({inspect:false,reroute:false});if(!pendingPropertyEdit&&!controlEdit&&!iconPicker.isOpen())renderProperties();}).catch(e=>{iconLoadTask=null;error(e);});
   if(activeWaypoint&&(!selection.has(activeWaypoint.edgeId)||selection.size!==1||!object(model,activeWaypoint.edgeId)?.waypoints?.[activeWaypoint.index]))activeWaypoint=null;
   if(activeLabel&&(!selection.has(activeLabel)||selection.size!==1||!object(model,activeLabel)?.label))activeLabel=null;
   if(reroute)routes=router.route(model,{freezeOrder:Boolean(gesture&&['move','resize','waypoint'].includes(gesture.type))});
@@ -298,7 +304,10 @@ function renderProperties(){
     propertyGroup('Appearance');
     if(model.nodes.includes(n))selectControl('Shape',n.shape,shapeNames,value=>executeControl('set-shape',target,value));
     if(n.shape==='icon'){
-      const input=document.createElement('input');input.value=n.icon;field('Icon reference',input);input.setAttribute('list','studio-icons');const list=document.createElement('datalist');list.id='studio-icons';for(const [value,name]of iconNames){const o=document.createElement('option');o.value=value;o.label=name;list.append(o);}propertyHost.append(list);input.addEventListener('change',()=>mutate('Icon updated.',()=>applyPropertyValue(id,'icon',input.value)));
+      const picker=document.createElement('button');picker.type='button';picker.className='property-icon-picker';picker.setAttribute('aria-haspopup','dialog');picker.setAttribute('aria-label','Choose icon');picker.title='Choose icon';
+      const caption=document.createElement('span'),name=document.createElement('strong'),reference=document.createElement('small');name.textContent=iconLabel(n.icon);reference.textContent=n.icon;caption.append(name,reference);picker.append(iconPreview(n.icon),caption);field('Icon',picker).parentElement.classList.add('icon-choice-field');
+      picker.addEventListener('click',()=>{if(!prepareFileAction())return;const token=documentId;iconPicker.open({value:n.icon,returnFocus:picker,onChoose:value=>{if(token===documentId&&object(model,id)?.shape==='icon'){mutate('Icon updated.',()=>applyPropertyValue(id,'icon',value));$('property-icon')?.focus({preventScroll:true});}}});});
+      const input=document.createElement('input');input.value=n.icon;input.spellcheck=false;field('Icon reference',input).parentElement.classList.add('inline-field');input.addEventListener('change',()=>mutate('Icon updated.',()=>applyPropertyValue(id,'icon',input.value)));
       selectControl('Icon background',n.iconForm||'none',[['none','None'],['square','Square'],['circle','Circle'],['rounded','Rounded']],value=>mutate('Icon background updated.',()=>applyPropertyValue(id,'iconForm',value)));
       selectControl('Icon label',n.iconPosition||'bottom',[['bottom','Below icon'],['top','Above icon']],value=>mutate('Icon label position updated.',()=>applyPropertyValue(id,'iconPosition',value)));
       const size=document.createElement('input');size.type='number';size.min=48;size.max=256;size.value=n.iconSize||48;field('Icon size',size);size.addEventListener('change',()=>mutate('Icon size updated.',()=>applyPropertyValue(id,'iconSize',Number(size.value))));
@@ -500,7 +509,7 @@ viewport.addEventListener('wheel',event=>{if(event.target.closest('.zoom-toolbar
 function fit(){if(!items(model).length)return;const scene=world.querySelector('#diagram-scene');if(!scene)return;const b=scene.getBBox(),padding=54;const scale=Math.max(.02,Math.min(1.25,(viewport.clientWidth-2*padding)/Math.max(1,b.width),(viewport.clientHeight-2*padding)/Math.max(1,b.height)));model.settings.view={x:(viewport.clientWidth-b.width*scale)/2-b.x*scale,y:(viewport.clientHeight-b.height*scale)/2-b.y*scale,scale};updateView();}
 function deleteSelected(){if(activeWaypoint&&selection.has(activeWaypoint.edgeId)){mutate('Waypoint removed.',()=>{object(model,activeWaypoint.edgeId)?.waypoints?.splice(activeWaypoint.index,1);activeWaypoint=null;});return;}mutate('Selection deleted.',()=>{deleteSelection(model,selection);selection.clear();});}
 function undo(redo=false){if(busy||gesture||(editingControls&&!editingControls.beforeAction()))return;flushPropertyEdit();const view={...model.settings.view};const next=redo?history.redo(model):history.undo(model);if(!next)return;model=next;model.settings.view=view;activeWaypoint=null;activeLabel=null;selection=new Set([...selection].filter(id=>object(model,id)));dirty=true;syncSource();safeDraw();status(redo?'Edit redone.':'Edit undone.');}
-async function runAsync(message,fn,{forceSource=false}={}){if(busy||gesture||(editingControls&&!editingControls.beforeAction()))return false;flushPropertyEdit();const before=copy(model),oldSelection=new Set(selection);loading(true,message);try{await fn();validateModel(model);router.route(model);commit(before,message,{forceSource});if(forceSource)syncSource(true);$('error-banner').hidden=true;return true;}catch(e){model=before;selection=oldSelection;safeDraw();error(e);return false;}finally{loading(false);}}
+async function runAsync(message,fn,{forceSource=false}={}){if(busy||gesture||(editingControls&&!editingControls.beforeAction()))return false;flushPropertyEdit();const before=copy(model),oldSelection=new Set(selection);loading(true,message);try{await fn();validateModel(model);await ensureIconPacks(modelIconReferences(model));router.route(model);commit(before,message,{forceSource});if(forceSource)syncSource(true);$('error-banner').hidden=true;return true;}catch(e){model=before;selection=oldSelection;safeDraw();error(e);return false;}finally{loading(false);}}
 async function applySource(){flushPropertyEdit();const draft=editor.value;if(!draft.trim()){error(new Error('Enter a Mermaid flowchart, or choose New for an empty diagram.'));return;}let fresh=false;const applied=await runAsync('Source applied.',async()=>{const parsed=await importMermaid(draft,{layout:model.settings.layout}),ids=new Set(items(model).map(n=>n.id));fresh=!items(parsed).some(n=>ids.has(n.id));model=mergeSource(model,parsed);selection=new Set([...selection].filter(id=>object(model,id)));},{forceSource:true});if(applied&&fresh)fit();}
 function newDiagram(){if(busy||(editingControls&&!editingControls.beforeAction()))return;if(gesture)cancelGesture();flushPropertyEdit();const before=copy(model);model=emptyModel();selection.clear();activeWaypoint=null;activeLabel=null;waypointEdge=null;collapsedZones.clear();connectSource=null;hoverId=null;tool='select';commit(before,'New diagram. Add nodes and zones, or paste Mermaid.',{forceSource:true});syncSource(true);$('error-banner').hidden=true;viewport.focus();}
 async function loadExample(name){if(!name)return;try{const response=await fetch(`./diagrams/${name}.mmd`);if(!response.ok)throw new Error('The local example could not be loaded.');await files.load(new File([await response.text()],name+'.mmd',{type:'text/plain'}));}catch(e){error(e);}finally{$('example').value='';}}
@@ -510,7 +519,8 @@ function saveProject(){return files.save();}
 async function exportDiagram(){if(busy||gesture||(editingControls&&!editingControls.beforeAction()))return;flushPropertyEdit();try{
   const type=$('export-format').value;
   if(type==='mermaid'||type==='mermaid-portable'){download(new Blob([toMermaid(model,{portable:type==='mermaid-portable'})],{type:'text/plain;charset=utf-8'}),'diagram.mmd');status('Mermaid source exported. Manual positions are saved in project files.');return;}
-  const svg=exportSvg(model,routes),blob=new Blob([svg.text],{type:'image/svg+xml;charset=utf-8'});
+  const exported=copy(model),exportRoutes=new Map(routes);await ensureIconPacks(modelIconReferences(exported));
+  const svg=exportSvg(exported,exportRoutes),blob=new Blob([svg.text],{type:'image/svg+xml;charset=utf-8'});
   if(type==='svg'){download(blob,'diagram.svg');status('SVG exported with the current arrangement.');return;}
   const url=URL.createObjectURL(blob);try{const image=new Image();image.src=url;await image.decode();const output=document.createElement('canvas'),factor=Math.min(2,16000/Math.max(svg.width,svg.height));output.width=Math.ceil(svg.width*factor);output.height=Math.ceil(svg.height*factor);const context=output.getContext('2d');context.fillStyle='#fff';context.fillRect(0,0,output.width,output.height);context.drawImage(image,0,0,output.width,output.height);const png=await new Promise(resolve=>output.toBlob(resolve,'image/png'));if(!png)throw new Error('PNG generation failed.');download(png,'diagram.png');status('PNG exported with the current arrangement.');}finally{URL.revokeObjectURL(url);}
 }catch(e){error(e)}}
@@ -532,7 +542,7 @@ $('btn-fit').addEventListener('click',fit);$('btn-zoom-in').addEventListener('cl
 $('dismiss-error').addEventListener('click',()=>$('error-banner').hidden=true);
 document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
 document.addEventListener('keydown',event=>{
-  if(files.dialogOpen())return;
+  if(files.dialogOpen()||iconPicker.isOpen())return;
   const editing=textEditing(event.target);const mod=event.metaKey||event.ctrlKey;
   if(mod&&event.key.toLowerCase()==='s'){event.preventDefault();saveProject();return;}
   if(event.key==='Escape'){paletteStart=null;if(gesture)cancelGesture();else if(connectSource){connectSource=null;selection.clear();safeDraw({reroute:false});status('Connection cancelled. Choose a source.');}else{selection.clear();setTool('select');}return;}
@@ -554,7 +564,7 @@ new ResizeObserver(()=>updateView()).observe(viewport);
 let propertyTextWidth=0;
 new ResizeObserver(()=>{const width=properties.getBoundingClientRect().width;if(width!==propertyTextWidth){propertyTextWidth=width;fitPropertyText();}}).observe(properties);
 
-function prepareFileAction(){if(busy||gesture||(editingControls&&!editingControls.beforeAction()))return false;flushPropertyEdit();try{validateModel(model);return true;}catch(e){error(e);return false;}}
+function prepareFileAction(){if(busy||gesture||iconPicker.isOpen()||(editingControls&&!editingControls.beforeAction()))return false;flushPropertyEdit();try{validateModel(model);return true;}catch(e){error(e);return false;}}
 files=createProjectFiles({
   snapshot:()=>controlEdit?.before||gesture?.before||model,
   sourceDraft:()=>sourceDirty?editor.value:null,
@@ -572,7 +582,7 @@ files=createProjectFiles({
   }
 });
 function textEditing(target){return target?.matches?.('input,textarea,select')||target?.isContentEditable;}
-function canClipboard(target){return !textEditing(target)&&!busy&&!gesture&&!files.dialogOpen();}
+function canClipboard(target){return !textEditing(target)&&!busy&&!gesture&&!files.dialogOpen()&&!iconPicker.isOpen();}
 function copiedText(ids=selection){if(!prepareFileAction())return null;return copyFragment(model,new Set(ids),documentId);}
 async function copySelection(ids=selection){
   try{const text=copiedText(ids);if(!text)return;if(!navigator.clipboard?.writeText)throw new Error('Use Ctrl/Cmd+C on the canvas to copy in this browser.');await navigator.clipboard.writeText(text);status('Diagram selection copied, including descendants and internal connections.');}
@@ -610,11 +620,11 @@ editingControls=createEditingControls({
 function agentState(){
  const f=files.state();return{model,revision:currentRevision(),selection,
  file:{name:f.name,dirty:f.dirty,connected:f.connected,autosave:f.autosave,paused:f.paused||null},
- blocked:busy?'The editor is busy.':gesture?'Finish the current canvas gesture.':controlEdit||pendingPropertyEdit||pendingFontSize!==null?'Finish the current property edit.':sourceDirty?'Apply or discard the Mermaid source draft first.':files.dialogOpen()?'Close the file dialog first.':f.paused==='conflict'?'Resolve the external file conflict first.':null};
+ blocked:iconPicker.isOpen()?'Close the icon picker first.':busy?'The editor is busy.':gesture?'Finish the current canvas gesture.':controlEdit||pendingPropertyEdit||pendingFontSize!==null?'Finish the current property edit.':sourceDirty?'Apply or discard the Mermaid source draft first.':files.dialogOpen()?'Close the file dialog first.':f.paused==='conflict'?'Resolve the external file conflict first.':null};
 }
 function checkAgent(signal){if(signal?.aborted)throw new Error('Tool execution cancelled; no edits applied.');const block=agentState().blocked;if(block)throw new Error(block);}
-function commitAgent(next,message,{signal}={}){
- checkAgent(signal);if(editingControls&&!editingControls.beforeAction())throw new Error('Finish the current editor action first.');const before=copy(model),validated=validateModel(next);router.route(validated);if(signal?.aborted){router.route(model);throw new Error('Tool execution cancelled; no edits applied.');}
+async function commitAgent(next,message,{signal}={}){
+ checkAgent(signal);const revision=currentRevision();await ensureIconPacks(modelIconReferences(next));checkAgent(signal);if(revision!==currentRevision())throw new Error('The diagram changed while icons were loading. Read it again.');if(editingControls&&!editingControls.beforeAction())throw new Error('Finish the current editor action first.');const before=copy(model),validated=validateModel(next);router.route(validated);if(signal?.aborted){router.route(model);throw new Error('Tool execution cancelled; no edits applied.');}
  model=validated;const visible=presentationModel(model),ids=new Set([...items(visible),...visible.edges].map(o=>o.id));selection=new Set([...selection].filter(id=>ids.has(id)));commit(before,message);return true;
 }
 async function computeAgent(message,fn,{signal}={}){
@@ -628,7 +638,7 @@ async function enableWebMCP(){
  webmcpRegistration=await registerWebMCP({read:agentState,commit:commitAgent,
  applyMermaid:(source,options)=>computeAgent('Agent Mermaid source applied.',async previous=>{const incoming=await importMermaid(source,{layout:previous.settings.layout});return options.autoLayout?incoming:mergeSource(previous,incoming);},options),
  arrange:(action,ids,options)=>computeAgent('Agent arrangement applied.',async next=>{if(action==='auto-layout'){if(items(next).length)await layoutModel(next);}else{if(!Array.isArray(ids)||ids.some(id=>!items(next).some(n=>n.id===id)))throw new Error('Choose existing nodes or zones to arrange.');arrange(next,new Set(ids),action);}return next;},options),
- svg:()=>exportSvg(model,routes).text
+ svg:async()=>{const exported=copy(model),exportRoutes=new Map(routes);await ensureIconPacks(modelIconReferences(exported));return exportSvg(exported,exportRoutes).text;}
  },{onError:e=>console.warn('WebMCP registration unavailable:',e.message)});
  document.body.dataset.webmcp=webmcpRegistration.available?'available':'unavailable';
  const badge=$('webmcp-status');if(badge)badge.hidden=!webmcpRegistration.available;

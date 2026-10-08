@@ -1,11 +1,11 @@
-import { object, identityText, items, descendants, zonePadding, objectColors, MAX_ZONE_PADDING } from './core.mjs?v=extensions-10';
-import { attachmentKey } from './attachments.mjs?v=extensions-10';
-import { MAX_WAYPOINTS } from './waypoints.mjs?v=extensions-10';
-import {themes,diagramTheme} from './themes.mjs?v=extensions-10';
-import {svgElement} from './scene.mjs?v=extensions-10';
+import { object, identityText, items, descendants, zonePadding, objectColors, MAX_ZONE_PADDING } from './core.mjs?v=icons-3';
+import { attachmentKey } from './attachments.mjs?v=icons-3';
+import { MAX_WAYPOINTS } from './waypoints.mjs?v=icons-3';
+import {themes,diagramTheme} from './themes.mjs?v=icons-3';
+import {svgElement} from './scene.mjs?v=icons-3';
 
 const $ = id => document.getElementById(id);
-import {shapeNames,shapeParts,iconBody} from './node-shapes.mjs?v=extensions-10';
+import {shapeNames,shapeParts,iconBody} from './node-shapes.mjs?v=icons-3';
 const sideNames = [['', 'Automatic'], ['north', 'Top'], ['east', 'Right'], ['south', 'Bottom'], ['west', 'Left']];
 const alignNames = [['left', 'Left'], ['center-x', 'Horizontal center'], ['right', 'Right'], ['top', 'Top'], ['center-y', 'Vertical center'], ['bottom', 'Bottom']];
 const toolNames = [['select', 'Select'], ['pan', 'Pan'], ['node', 'Node'], ['zone', 'Zone'], ['connect', 'Connect']];

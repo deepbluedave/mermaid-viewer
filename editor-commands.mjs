@@ -1,6 +1,6 @@
-import {copy,object,items,nextId,resizeNode,diagramFontSize,moveSelection,reparent,deleteSelection,setNodeContainer,expandZones,ensureNodeSpacing,validateModel} from './core.mjs?v=extensions-10';
-import {chooseShape} from './node-shapes.mjs?v=extensions-10';
-import {pruneAttachmentOrders} from './attachments.mjs?v=extensions-10';
+import {copy,object,items,nextId,resizeNode,diagramFontSize,moveSelection,reparent,deleteSelection,setNodeContainer,expandZones,ensureNodeSpacing,validateModel} from './core.mjs?v=icons-3';
+import {chooseShape} from './node-shapes.mjs?v=icons-3';
+import {pruneAttachmentOrders} from './attachments.mjs?v=icons-3';
 const common=['label','description','notes','textFormat','fontColor'];
 const nodeFields=[...common,'shape','backgroundColor','borderColor','borderWidth','borderStyle','showDescription','icon','iconForm','iconPosition','iconSize'];
 const edgeFields=[...common,'source','target','style','direction','routing','sourceSide','targetSide','color','borderWidth','labelBackgroundColor'];

@@ -148,8 +148,22 @@ The [Southartica architecture diagram](diagrams/architecture/README.md) maps the
 
 Human and Agent actor presets use the local `studio` icon pack. The Shape menu also
 includes stadium, hexagon, document, cloud, Mermaid person and configurable icons.
-Unknown icon references show a question mark. Properties controls icon reference,
-background, size and label position. Actor containers keep a small icon in the header.
+Choose **Shape → Icon**, then click the icon preview in Properties to open the
+searchable picker. Browse all packs or filter Studio, Tabler, Lucide, Carbon, Phosphor,
+Fluent Color and SVG Logos. The six full Iconify packs provide 23,729 icons, alongside
+our five Studio icons. Search names or references, such as `tabler:ai-agent`,
+`lucide:bot` or `logos:redis`. Human/person and agent/robot searches find actor icons.
+Keyboard arrows navigate the results; Enter selects, Escape cancels. **Show more**
+extends browsing without creating thousands of preview elements at once.
+
+All pack data is bundled in `vendor/icons/`; only the required packs load from app
+assets. No icon API or CDN is contacted, including on GitHub Pages. Wide logos retain
+their proportions, monochrome icons follow Text color, and coloured icons retain their
+original palette. SVG/PNG exports embed the artwork. Unknown references show a question
+mark. Properties retains a manual reference field, background, size and label position.
+Actor containers keep a small icon in the header. Pack versions, sources and full
+licenses are in [vendor/icons/README.md](vendor/icons/README.md). Rebuild with
+`npm ci` and `npm run build:icons`.
 
 Select **Text format → Markdown** to use **bold**, *italic* or ***both*** in labels
 and displayed descriptions. Line breaks and escaped markers are supported; plain
@@ -160,8 +174,8 @@ fill, text color, stroke color, width and solid/dashed lines. Exports carry reso
 colors from the theme and custom appearance. **Portable Mermaid** replaces newer
 shapes/icons with traditional labeled shapes; editor comments restore those fields
 on reimport. Standard icon syntax needs a Mermaid version supporting icons; renderers
-without the `studio` pack use Mermaid’s native missing-icon fallback. SVG/PNG exports
-include the local actor artwork without external assets.
+without the referenced pack use Mermaid’s native missing-icon fallback. Portable
+exports keep readable labels and traditional shapes without needing any icon pack.
 
 Use the canvas chevron or **Collapse/Expand container** in Properties/actions to hide
 children. External connections attach to the collapsed group, while the project keeps
@@ -186,5 +200,6 @@ and the [WebMCP draft](https://webmachinelearning.github.io/webmcp/).
 The acceptance specification is [EXTENSIONS-SPEC.md](EXTENSIONS-SPEC.md). Run `npm test`
 for model/routing/tool tests. With the local server running, open `tests/browser.html`,
 `tests/ui.html`, `tests/storage.html`, `tests/extensions.html` and
-`tests/extensions-ui.html` for real Mermaid, UI, persistence and native WebMCP tests.
+`tests/extensions-ui.html` and `tests/icons.html` for real Mermaid, UI, persistence,
+local icon packs and native WebMCP tests.
 The native WebMCP cases need a browser providing `modelContext.getTools/executeTool`.

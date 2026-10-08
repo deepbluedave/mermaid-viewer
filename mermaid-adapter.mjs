@@ -1,13 +1,13 @@
-import {localIconPack} from './node-shapes.mjs?v=extensions-10';
-import {importStyles,classStyles} from './appearance.mjs?v=extensions-10';
-import {pruneAttachmentOrders} from './attachments.mjs?v=extensions-10';
-import { emptyModel, resizeNode, expandZones, validateModel, configureTextMeasure, textWidth,ensureNodeSpacing,diagramFontSize,copy,shapes,ensureLayoutSpacing } from './core.mjs?v=extensions-10';
+import {mermaidIconPacks} from './icons.mjs?v=icons-3';
+import {importStyles,classStyles} from './appearance.mjs?v=icons-3';
+import {pruneAttachmentOrders} from './attachments.mjs?v=icons-3';
+import { emptyModel, resizeNode, expandZones, validateModel, configureTextMeasure, textWidth,ensureNodeSpacing,diagramFontSize,copy,shapes,ensureLayoutSpacing } from './core.mjs?v=icons-3';
 let renderCount = 0;
 const shapeTypes = { square:'rectangle', rect:'rectangle', round:'rounded', rounded:'rounded', diamond:'diamond', circle:'circle', cylinder:'cylinder', stadium:'stadium',hex:'hexagon',hexagon:'hexagon',doc:'document',document:'document',cloud:'cloud',person:'person' };
 export function initializeMermaid() {
   const context = document.createElement('canvas').getContext('2d');
   configureTextMeasure((text,size,style={})=>{context.font=`${style.italic?'italic ':''}${style.bold?'700 ':''}${size}px system-ui, sans-serif`;return context.measureText(text).width;});
-  mermaid.registerIconPacks([{name:'studio',icons:localIconPack}]);
+  mermaid.registerIconPacks(mermaidIconPacks());
   mermaid.initialize({ startOnLoad:false, securityLevel:'strict', maxEdges:1000, maxTextSize:200000,
     theme:'base', themeVariables:{ primaryColor:'#ffffff', primaryTextColor:'#1e293b', primaryBorderColor:'#64748b', lineColor:'#64748b', clusterBkg:'#eef2f6', clusterBorder:'#94a3b8', edgeLabelBackground:'#ffffff' },
     fontFamily:'system-ui, sans-serif', flowchart:{ useMaxWidth:false, htmlLabels:true, curve:'basis',nodeSpacing:48,rankSpacing:64 } });
@@ -79,7 +79,7 @@ export async function importMermaid(source, { direction, layout = 'adaptive' } =
 }
 export async function layoutModel(model) {
   const manualRoutes=new Map(model.edges.filter(e=>e.waypoints).map(e=>[e.id,copy(e.waypoints)]));
-  const { toMermaid } = await import('./core.mjs?v=extensions-10');
+  const { toMermaid } = await import('./core.mjs?v=icons-3');
   const source = `---\nconfig:\n  layout: ${model.settings.layout === 'hierarchical' ? 'elk.mrtree' : 'elk'}\n  themeVariables:\n    fontSize: ${diagramFontSize(model)}px\n---\n${toMermaid(model,{layout:true})}`;
   const id = `layout-${++renderCount}`;
   const { svg:markup } = await mermaid.render(id,source);

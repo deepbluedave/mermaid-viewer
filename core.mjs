@@ -1,11 +1,11 @@
-import {presentationModel} from './presentation.mjs?v=extensions-10';
-import {clearanceTranslation,NODE_GAP,containingZone} from './geometry.mjs?v=extensions-10';
-import {translateWaypoints,MAX_WAYPOINTS} from './waypoints.mjs?v=extensions-10';
-import {pruneAttachmentOrders} from './attachments.mjs?v=extensions-10';
-import {diagramTheme,zoneThemeColor,readableColor,themes} from './themes.mjs?v=extensions-10';
-export {NODE_GAP} from './geometry.mjs?v=extensions-10';
-import {shapes} from './node-shapes.mjs?v=extensions-10';
-import {formattedText,lineRuns,validateMarkdown,rawDisplayText} from './rich-text.mjs?v=extensions-10';
+import {presentationModel} from './presentation.mjs?v=icons-3';
+import {clearanceTranslation,NODE_GAP,containingZone} from './geometry.mjs?v=icons-3';
+import {translateWaypoints,MAX_WAYPOINTS} from './waypoints.mjs?v=icons-3';
+import {pruneAttachmentOrders} from './attachments.mjs?v=icons-3';
+import {diagramTheme,zoneThemeColor,readableColor,themes} from './themes.mjs?v=icons-3';
+export {NODE_GAP} from './geometry.mjs?v=icons-3';
+import {shapes} from './node-shapes.mjs?v=icons-3';
+import {formattedText,lineRuns,validateMarkdown,rawDisplayText} from './rich-text.mjs?v=icons-3';
 export {shapes};
 export const directions = ['TD', 'LR', 'BT', 'RL'];
 export const copy = value => structuredClone(value);
@@ -355,7 +355,7 @@ export function validateModel(input) {
   }
   for (const n of items(model)) {
     if(n.collapsed!==undefined&&(typeof n.collapsed!=='boolean'||!isContainer(model,n)))throw new Error('Only containers can collapse.');
-    if(n.shape==='icon'){if(!/^[A-Za-z][\w-]*:[A-Za-z][\w-]*$/.test(n.icon||'studio:human'))throw new Error('Use an icon reference such as studio:agent.');if(!['none','square','circle','rounded'].includes(n.iconForm||'none')||!['top','bottom'].includes(n.iconPosition||'bottom')||!Number.isFinite(n.iconSize||48)||(n.iconSize||48)<48||(n.iconSize||48)>256)throw new Error('Invalid icon form, label position or size (48–256).');}
+    if(n.shape==='icon'){if(!/^[A-Za-z][\w-]*:[A-Za-z0-9][\w-]*$/.test(n.icon||'studio:human'))throw new Error('Use an icon reference such as studio:agent.');if(!['none','square','circle','rounded'].includes(n.iconForm||'none')||!['top','bottom'].includes(n.iconPosition||'bottom')||!Number.isFinite(n.iconSize||48)||(n.iconSize||48)<48||(n.iconSize||48)>256)throw new Error('Invalid icon form, label position or size (48–256).');}
     if(n.showDescription!==undefined&&typeof n.showDescription!=='boolean')throw new Error('Invalid description display setting.');
     for(const field of ['backgroundColor','fontColor'])if(n[field]!==undefined&&(typeof n[field]!=='string'||!/^#[\da-f]{6}$/i.test(n[field])))throw new Error('Use a six-digit hex color, such as #3b82f6.');
     for (const field of ['x', 'y', 'width', 'height']) if (!Number.isFinite(n[field]) || Math.abs(n[field]) > 1e6) throw new Error('Invalid object geometry.');

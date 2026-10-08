@@ -1,5 +1,5 @@
-import {copy,items,object,movableIds,diagramFontSize,setNodeSize,expandZones,related,descendants,zoneMinimumSize,zoneChildBounds}from'./core.mjs?v=extensions-10';
-import{overlapsWithGap}from'./geometry.mjs?v=extensions-10';
+import {copy,items,object,movableIds,diagramFontSize,setNodeSize,expandZones,related,descendants,zoneMinimumSize,zoneChildBounds}from'./core.mjs?v=icons-3';
+import{overlapsWithGap}from'./geometry.mjs?v=icons-3';
 
 export function resizeObject(model,id,handle,dx,dy) {
   const before=copy(object(model,id)),node=model.nodes.some(n=>n.id===id),font=diagramFontSize(model);

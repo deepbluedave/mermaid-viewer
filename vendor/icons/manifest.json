@@ -1,0 +1,109 @@
+[
+  {
+    "prefix": "tabler",
+    "package": "@iconify-json/tabler",
+    "version": "1.2.42",
+    "count": 6480,
+    "author": {
+      "name": "Paweł Kuna",
+      "url": "https://github.com/tabler/tabler-icons"
+    },
+    "license": {
+      "title": "MIT",
+      "spdx": "MIT",
+      "url": "https://github.com/tabler/tabler-icons/blob/master/LICENSE"
+    },
+    "licenseSource": "https://raw.githubusercontent.com/tabler/tabler-icons/master/LICENSE",
+    "source": "https://github.com/tabler/tabler-icons",
+    "sha256": "6d7b347bb74adbd11c0dfbb1338e63f74f671b784070dde6e93e8440d5201589"
+  },
+  {
+    "prefix": "lucide",
+    "package": "@iconify-json/lucide",
+    "version": "1.2.141",
+    "count": 2160,
+    "author": {
+      "name": "Lucide Contributors",
+      "url": "https://github.com/lucide-icons/lucide"
+    },
+    "license": {
+      "title": "ISC",
+      "spdx": "ISC",
+      "url": "https://github.com/lucide-icons/lucide/blob/main/LICENSE"
+    },
+    "licenseSource": "https://raw.githubusercontent.com/lucide-icons/lucide/main/LICENSE",
+    "source": "https://github.com/lucide-icons/lucide",
+    "sha256": "14ed9ae01d35445bde75921d092bf7c06fd85e9f0ea83eb13757b3998eed45a1"
+  },
+  {
+    "prefix": "carbon",
+    "package": "@iconify-json/carbon",
+    "version": "1.2.28",
+    "count": 2793,
+    "author": {
+      "name": "IBM",
+      "url": "https://github.com/carbon-design-system/carbon/tree/main/packages/icons"
+    },
+    "license": {
+      "title": "Apache 2.0",
+      "spdx": "Apache-2.0"
+    },
+    "licenseSource": "https://raw.githubusercontent.com/carbon-design-system/carbon/main/LICENSE",
+    "source": "https://github.com/carbon-design-system/carbon/tree/main/packages/icons",
+    "sha256": "38e9b5f749a3dc2f4edc6884095c66f65766717b2354790de600e7e7deea91c4"
+  },
+  {
+    "prefix": "ph",
+    "package": "@iconify-json/ph",
+    "version": "1.2.2",
+    "count": 9198,
+    "author": {
+      "name": "Phosphor Icons",
+      "url": "https://github.com/phosphor-icons/core"
+    },
+    "license": {
+      "title": "MIT",
+      "spdx": "MIT",
+      "url": "https://github.com/phosphor-icons/core/blob/main/LICENSE"
+    },
+    "licenseSource": "https://raw.githubusercontent.com/phosphor-icons/core/main/LICENSE",
+    "source": "https://github.com/phosphor-icons/core",
+    "sha256": "decf0e585df46702450f0e7410024df0b1e32756e8b72b88e6d61d37c7e1e6ec"
+  },
+  {
+    "prefix": "fluent-color",
+    "package": "@iconify-json/fluent-color",
+    "version": "1.2.21",
+    "count": 890,
+    "author": {
+      "name": "Microsoft Corporation",
+      "url": "https://github.com/microsoft/fluentui-system-icons"
+    },
+    "license": {
+      "title": "MIT",
+      "spdx": "MIT",
+      "url": "https://github.com/microsoft/fluentui-system-icons/blob/main/LICENSE"
+    },
+    "licenseSource": "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/LICENSE",
+    "source": "https://github.com/microsoft/fluentui-system-icons",
+    "sha256": "0be65534fa38eaa3fa1ab1cfb98f7592c66548986cd51bafda9d76eebb6bfcab"
+  },
+  {
+    "prefix": "logos",
+    "package": "@iconify-json/logos",
+    "version": "1.2.15",
+    "count": 2208,
+    "author": {
+      "name": "Gil Barbara",
+      "url": "https://github.com/gilbarbara/logos"
+    },
+    "license": {
+      "title": "CC0",
+      "spdx": "CC0-1.0",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/master/LICENSE.txt"
+    },
+    "licenseSource": "https://raw.githubusercontent.com/gilbarbara/logos/master/LICENSE.txt",
+    "source": "https://github.com/gilbarbara/logos",
+    "sha256": "4e76da751f381ce436fb3edb3e5532c034758e50dacfb307c9fac90642db209b"
+  }
+]

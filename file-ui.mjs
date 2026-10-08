@@ -1,6 +1,6 @@
 import {createFileSession,createRecoveryStore,newSessionId} from './files.mjs';
 import {createRecentFiles,readAutosavePreference,writeAutosavePreference,AUTOSAVE_PREFERENCE} from './recent-files.mjs';
-import {validateModel} from './core.mjs?v=extensions-10';
+import {validateModel} from './core.mjs?v=icons-3';
 
 const $=id=>document.getElementById(id);
 const fileTypes=[{description:'Editable diagram project',accept:{'application/json':['.json']}}];

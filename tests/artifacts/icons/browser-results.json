@@ -1,0 +1,158 @@
+{
+  "picker": {
+    "failed": 0,
+    "passed": 21,
+    "results": [
+      {
+        "name": "all six packs import through real Mermaid using local loaders",
+        "pass": true
+      },
+      {
+        "name": "native Mermaid roundtrip retains every pack reference",
+        "pass": true
+      },
+      {
+        "name": "portable Mermaid renders fallback shapes and restores icon metadata",
+        "pass": true
+      },
+      {
+        "name": "SVG and PNG embed wide logos and repeated gradient icons without outside assets",
+        "pass": true
+      },
+      {
+        "name": "editor source imports local packs with correct canvas view boxes",
+        "pass": true
+      },
+      {
+        "name": "picker offers all seven packs, useful starter icons and bounded first page",
+        "pass": true
+      },
+      {
+        "name": "human/agent synonyms find actual actors and exclude bottom/bottles",
+        "pass": true
+      },
+      {
+        "name": "pack filter and multiple search words restrict visible matches",
+        "pass": true
+      },
+      {
+        "name": "rapid search changes discard older results",
+        "pass": true
+      },
+      {
+        "name": "empty search is clear and cancellation preserves icon and Undo state",
+        "pass": true
+      },
+      {
+        "name": "picker selects tabler:ai-agent with one Undo/Redo step",
+        "pass": true
+      },
+      {
+        "name": "picker selects lucide:bot with one Undo/Redo step",
+        "pass": true
+      },
+      {
+        "name": "picker selects carbon:ai-agent-invocation with one Undo/Redo step",
+        "pass": true
+      },
+      {
+        "name": "picker selects ph:robot-duotone with one Undo/Redo step",
+        "pass": true
+      },
+      {
+        "name": "picker selects fluent-color:agents-24 with one Undo/Redo step",
+        "pass": true
+      },
+      {
+        "name": "picker selects logos:google with one Undo/Redo step",
+        "pass": true
+      },
+      {
+        "name": "keyboard arrows navigate cards; Escape closes without clearing the selection",
+        "pass": true
+      },
+      {
+        "name": "Show more expands browsing without losing search or pack filter",
+        "pass": true
+      },
+      {
+        "name": "JSON reopen prepares packs and SVG export contains actual artwork",
+        "pass": true
+      },
+      {
+        "name": "runtime pack requests are exclusively same-origin app assets",
+        "pass": true
+      },
+      {
+        "name": "narrow-screen picker stays within the viewport without horizontal overflow",
+        "pass": true
+      }
+    ]
+  },
+  "extensions": {
+    "passed": 14,
+    "results": [
+      {
+        "name": "startup is blank and source panel has no examples",
+        "pass": true
+      },
+      {
+        "name": "actors, styled labels and compact icon properties are editable",
+        "pass": true
+      },
+      {
+        "name": "shape flyout shows every new shape preview and switches presets",
+        "pass": true
+      },
+      {
+        "name": "Markdown properties render emphasis and preserve description headers",
+        "pass": true
+      },
+      {
+        "name": "collapsing a zone preserves contents and reroutes external edge; Undo restores",
+        "pass": true
+      },
+      {
+        "name": "canvas collapse button, movement, expand and Hierarchy selection preserve children",
+        "pass": true
+      },
+      {
+        "name": "actor container places icon and formatted description in header above children",
+        "pass": true
+      },
+      {
+        "name": "new fields survive JSON open and nested clipboard paste",
+        "pass": true
+      },
+      {
+        "name": "native WebMCP registers five tools and reports stable diagram/file context",
+        "pass": true
+      },
+      {
+        "name": "native agent batch creates connected actors with one-step Undo/Redo",
+        "pass": true
+      },
+      {
+        "name": "native stale/invalid requests and source drafts reject without partial edits",
+        "pass": true
+      },
+      {
+        "name": "native arrangement, apply source and read-only exports share the real editor",
+        "pass": true
+      },
+      {
+        "name": "SVG and PNG download handlers render current styled actor layout",
+        "pass": true
+      },
+      {
+        "name": "opening identical content as a new file invalidates the previous agent revision",
+        "pass": true
+      }
+    ],
+    "total": 14
+  },
+  "nativeWebMCP": {
+    "packCount": 7,
+    "blockedDuringPicker": true
+  }
+}

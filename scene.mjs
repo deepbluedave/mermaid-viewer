@@ -1,12 +1,13 @@
-import {presentationModel} from './presentation.mjs?v=extensions-10';
-import {shapeParts,iconBody,iconFrame} from './node-shapes.mjs?v=extensions-10';
-import {lineRuns} from './rich-text.mjs?v=extensions-10';
-import { nodeMetrics,identityText, depth,diagramFontSize,zoneHeaderHeight,objectColors,containerTitleBox,object,zoneTitleMetrics } from './core.mjs?v=extensions-10';
-import { sidePoint } from './routing.mjs?v=extensions-10';
-import { layoutEdgeLabels, zoneTitleBox } from './labels.mjs?v=extensions-10';
-import { bridgedPaths } from './bridges.mjs?v=extensions-10';
-import {waypointConflicts} from './waypoints.mjs?v=extensions-10';
-import {diagramTheme} from './themes.mjs?v=extensions-10';
+import {iconData,iconBody} from './icons.mjs?v=icons-3';
+import {presentationModel} from './presentation.mjs?v=icons-3';
+import {shapeParts,iconFrame} from './node-shapes.mjs?v=icons-3';
+import {lineRuns} from './rich-text.mjs?v=icons-3';
+import { nodeMetrics,identityText, depth,diagramFontSize,zoneHeaderHeight,objectColors,containerTitleBox,object,zoneTitleMetrics } from './core.mjs?v=icons-3';
+import { sidePoint } from './routing.mjs?v=icons-3';
+import { layoutEdgeLabels, zoneTitleBox } from './labels.mjs?v=icons-3';
+import { bridgedPaths } from './bridges.mjs?v=icons-3';
+import {waypointConflicts} from './waypoints.mjs?v=icons-3';
+import {diagramTheme} from './themes.mjs?v=icons-3';
 const ns='http://www.w3.org/2000/svg';
 export const svgElement=(tag,attributes={},text=null)=>{const element=document.createElementNS(ns,tag);for(const [key,value] of Object.entries(attributes))if(value!==null&&value!==undefined)element.setAttribute(key,String(value));if(text!==null)element.textContent=text;return element;};
 export const sceneStyle=`.diagram-zone>rect{fill:#eef2f6;fill-opacity:.8;stroke:var(--zone-border,#94a3b8);stroke-width:1;stroke-dasharray:3 3}.diagram-zone>.zone-header{fill:#e2e8f0;fill-opacity:.7;stroke:none}.zone-title>.zone-label-backing{fill:#e2e8f0;fill-opacity:.72;stroke:none}.zone-label{fill:#475569;font:12px system-ui,sans-serif}.diagram-node>.node-shape{fill:#fff;stroke:var(--diagram-ink,#64748b);stroke-width:1.3}.diagram-node text{fill:#1e293b;font:13px system-ui,sans-serif}.edge-line{fill:none;stroke:var(--diagram-ink,#64748b);stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}.edge-label rect{fill:var(--label-fill,#fff);stroke:var(--label-border,#e2e8f0);stroke-width:.7}.edge-label text{fill:var(--label-text,#475569);font:11px system-ui,sans-serif}.node-container-title text{font-family:system-ui,sans-serif}`;
@@ -68,7 +69,7 @@ export function createScene(model,routes,selection=new Set(),{controls=true,tool
     if(!parts.length)group.append(svgElement('rect',{class:'node-hit',width:w,height:h,fill:'transparent',stroke:'none'}));
     for(const part of parts)group.append(svgElement(part.tag,{class:'node-shape',...part.attrs,style:`fill:${colors.background};stroke:${n.borderColor||theme.ink};stroke-width:${n.borderWidth||1.3};stroke-dasharray:${n.borderStyle==='dashed'?'5 4':'none'}${n.container?';fill-opacity:.85':''}`}));
     if(n.shape==='icon'||n.container&&n.shape==='person'){
-      const frame=n.container?{x:12,y:9,width:24,height:24}:iconFrame(n),glyph=svgElement('g',{class:'actor-icon',transform:`translate(${frame.x},${frame.y}) scale(${frame.width/24})`,style:`color:${colors.font}`});glyph.innerHTML=iconBody(n.icon||'studio:human');group.append(glyph);
+      const frame=n.container?{x:12,y:9,width:24,height:24}:iconFrame(n),reference=n.icon||'studio:human',glyph=svgElement('svg',{class:'actor-icon',...frame,viewBox:iconData(reference).viewBox,'data-icon':reference,'pointer-events':'none',style:`color:${colors.font}`});glyph.innerHTML=iconBody(reference);group.append(glyph);
     }
     const {lines,lineHeight}=nodeMetrics(n,fontSize),text=svgElement('text',{'text-anchor':'middle',style:`fill:${colors.font};font-size:${fontSize}px`});
     if(n.container){

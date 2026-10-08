@@ -1,4 +1,4 @@
-import {nodeMetrics,diagramFontSize} from './core.mjs?v=extensions-10';
+import {nodeMetrics,diagramFontSize} from './core.mjs?v=icons-3';
 // A presentation is derived; persistent endpoints and expanded geometry never change.
 export function presentationModel(model){
   const all=[...model.zones,...model.nodes],lookup=new Map(all.map(n=>[n.id,n]));
